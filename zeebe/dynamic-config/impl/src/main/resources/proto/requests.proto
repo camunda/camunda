@@ -192,22 +192,20 @@ message ClusterRestoreRequest {
 }
 
 message TopologyChangeResponse {
+  reserved 2, 3, 4;
+  reserved "currentTopology", "expectedTopology", "plannedChanges";
   int64 changeId = 1;
-  map<string, topology_protocol.MemberState> currentTopology = 2;
-  map<string, topology_protocol.MemberState> expectedTopology = 3;
-  repeated topology_protocol.TopologyChangeOperation plannedChanges = 4;
-  // The new multi-partition-group configuration, in addition to the legacy
-  // default-group projection above.
   topology_protocol.CurrentClusterConfiguration currentConfiguration = 5;
   topology_protocol.CurrentClusterConfiguration expectedConfiguration = 6;
   repeated topology_protocol.PhasedChangePlanPhase phases = 7;
 }
 
 message Response {
+  reserved 3;
+  reserved "clusterTopology";
   oneof response {
     ErrorResponse error = 1;
     TopologyChangeResponse topologyChangeResponse = 2;
-    topology_protocol.ClusterTopology clusterTopology = 3;
     topology_protocol.CurrentClusterConfiguration currentClusterConfiguration = 4;
   }
 }

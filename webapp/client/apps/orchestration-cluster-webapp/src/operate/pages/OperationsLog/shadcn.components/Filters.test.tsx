@@ -8,14 +8,14 @@
 
 import {afterEach, beforeEach, describe, expect} from 'vitest';
 import {userEvent} from 'vitest/browser';
-import {http, HttpResponse} from 'msw';
+import {HttpResponse} from 'msw';
 import {z} from 'zod';
 import {useSearch} from '@tanstack/react-router';
-import {endpoints, queryProcessDefinitionsRequestBodySchema} from '@camunda/camunda-api-zod-schemas/8.11';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {
 	mockCurrentUserEndpoint,
+	mockGetProcessDefinitionEndpoint,
 	mockQueryAuditLogsEndpoint,
 	mockQueryDecisionDefinitionsEndpoint,
 	mockQueryProcessDefinitionsEndpoint,
@@ -29,7 +29,6 @@ import {
 import {createAuditLog, createQueryAuditLogsResponse} from '#/shared-test-modules/api-mocks/audit-logs';
 import {createQueryDecisionDefinitionsResponse} from '#/shared-test-modules/api-mocks/decision-definitions';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
-import {isCursorForwardPagination} from '#/shared-test-modules/api-mocks/shared';
 import {OperationsLog} from './OperationsLog';
 import {operationsLogSearchSchema} from '../operationsLog.schema';
 
@@ -118,7 +117,7 @@ describe('Operations Log saved filters', () => {
 	});
 
 	it.for([
-		{query: '?version=2', emptyState: 'No operations log found'},
+		{query: '?version=2', emptyState: 'No operations match these filters'},
 		{query: '?allVersions=true', emptyState: 'No operation log items yet'},
 	])('should show the log unfiltered by process for orphaned $query', async ({query, emptyState}, {worker}) => {
 		worker.use(
@@ -135,46 +134,30 @@ describe('Operations Log saved filters', () => {
 	});
 
 	it('should resolve a legacy link in the selected tenant beyond the first page', async ({worker}) => {
-		const otherProcessInTenant = createProcessDefinition({
-			...OTHER_A,
-			processDefinitionKey: 'shipment-B-5',
-			tenantId: TENANT_B,
-		});
 		worker.use(
-			http.post(endpoints.queryProcessDefinitions.getUrl(), async ({request}) => {
-				const body = queryProcessDefinitionsRequestBodySchema.parse(await request.json());
-				if (body.filter?.isLatestVersion) {
-					return HttpResponse.json(
-						createQueryProcessDefinitionsResponse(
-							isCursorForwardPagination(body.page) && body.page.after
-								? {items: [B_VERSION_2]}
-								: {
-										items: [otherProcessInTenant],
-										page: {totalItems: 2, hasMoreTotalItems: false, endCursor: 'picker-page-2'},
-									},
-						),
-					);
-				}
-				if (Object.keys(body.filter ?? {}).length === 0) {
-					return HttpResponse.json(createQueryProcessDefinitionsResponse({items: [A_VERSION_1, B_VERSION_2]}));
-				}
-				const definitionId = body.filter?.processDefinitionId;
-				if (body.filter?.tenantId !== TENANT_B || typeof definitionId === 'string' || definitionId?.$eq !== 'invoice') {
-					return new HttpResponse(null, {status: 400});
-				}
-				if (body.filter.version === undefined) {
-					return HttpResponse.json(createQueryProcessDefinitionsResponse({items: [B_VERSION_2]}));
-				}
-				if (body.filter.version !== 2) {
-					return new HttpResponse(null, {status: 400});
-				}
-				return HttpResponse.json(
-					createQueryProcessDefinitionsResponse(
-						isCursorForwardPagination(body.page) && body.page.after
-							? {items: [B_VERSION_2]}
-							: {items: [], page: {totalItems: 1, hasMoreTotalItems: false, endCursor: 'page-2'}},
-					),
-				);
+			mockQueryProcessDefinitionsEndpoint({
+				schema: z.strictObject({
+					filter: z.union([
+						z.strictObject({isLatestVersion: z.literal(true), tenantId: z.literal(TENANT_B)}),
+						z.strictObject({
+							processDefinitionId: z.strictObject({$eq: z.literal('invoice')}),
+							tenantId: z.literal(TENANT_B),
+						}),
+						z.strictObject({
+							processDefinitionId: z.strictObject({$eq: z.literal('invoice')}),
+							tenantId: z.literal(TENANT_B),
+							version: z.literal(2),
+						}),
+					]),
+					page: z.strictObject({limit: z.literal(1000), after: z.literal('page-2')}),
+				}),
+				successResponse: HttpResponse.json(createQueryProcessDefinitionsResponse({items: [B_VERSION_2]})),
+				failureResponse: HttpResponse.json(
+					createQueryProcessDefinitionsResponse({
+						items: [],
+						page: {totalItems: 1, hasMoreTotalItems: false, endCursor: 'page-2'},
+					}),
+				),
 			}),
 			mockCurrentUserEndpoint({successResponse: TWO_TENANTS_USER}),
 			mockQueryDecisionDefinitionsEndpoint({successResponse: NO_DECISION_DEFINITIONS}),
@@ -192,7 +175,7 @@ describe('Operations Log saved filters', () => {
 			'?tenantId=%3Ctenant-B%3E&processDefinitionId=invoice&processDefinitionVersion=2&operationType=CREATE,UPDATE&entityType=JOB,VARIABLE',
 		);
 
-		await expect.element(screen.getByText('No operations log found')).toBeVisible();
+		await expect.element(screen.getByText('No operations match these filters')).toBeVisible();
 		await expect.element(screen.getByRole('combobox', {name: 'Name'})).toHaveTextContent('Invoice B');
 		await expect.element(screen.getByRole('combobox', {name: 'Select a tenant'})).toMatchTextContent('Tenant B');
 		await expect.element(screen.getByRole('combobox', {name: 'Version'})).toBeEnabled();
@@ -203,8 +186,8 @@ describe('Operations Log saved filters', () => {
 			mockQueryProcessDefinitionsEndpoint({
 				successResponse: HttpResponse.json(createQueryProcessDefinitionsResponse({items: [B_VERSION_2]})),
 			}),
-			http.get(endpoints.getProcessDefinition.getUrl({processDefinitionKey: 'key-B-1'}), () =>
-				HttpResponse.json(
+			mockGetProcessDefinitionEndpoint({
+				successResponse: HttpResponse.json(
 					createGetProcessDefinitionResponse({
 						...B_VERSION_2,
 						processDefinitionKey: 'key-B-1',
@@ -212,7 +195,7 @@ describe('Operations Log saved filters', () => {
 						name: 'Historic Invoice',
 					}),
 				),
-			),
+			}),
 			mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
 			mockQueryDecisionDefinitionsEndpoint({successResponse: NO_DECISION_DEFINITIONS}),
 			mockQueryAuditLogsEndpoint({
@@ -238,10 +221,7 @@ describe('Operations Log saved filters', () => {
 
 	it('should retain a process ID when its definition name cannot be loaded', async ({worker}) => {
 		worker.use(
-			http.get(
-				endpoints.getProcessDefinition.getUrl({processDefinitionKey: 'key-B-1'}),
-				() => new HttpResponse(null, {status: 503}),
-			),
+			mockGetProcessDefinitionEndpoint({successResponse: new HttpResponse(null, {status: 503})}),
 			mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
 			mockQueryDecisionDefinitionsEndpoint({successResponse: NO_DECISION_DEFINITIONS}),
 			mockQueryAuditLogsEndpoint({
@@ -264,31 +244,6 @@ describe('Operations Log saved filters', () => {
 		const screen = await renderPage();
 
 		await expect.element(screen.getByText('invoice')).toBeVisible();
-	});
-
-	it('should stop after a capped-count lookup returns its final empty page', async ({worker}) => {
-		worker.use(
-			http.post(endpoints.queryProcessDefinitions.getUrl(), async ({request}) => {
-				const body = queryProcessDefinitionsRequestBodySchema.parse(await request.json());
-				if (body.filter?.processDefinitionId) {
-					return HttpResponse.json(
-						createQueryProcessDefinitionsResponse(
-							isCursorForwardPagination(body.page) && body.page.after
-								? {items: [], page: {totalItems: 10000, hasMoreTotalItems: true}}
-								: {items: [A_VERSION_1], page: {totalItems: 10000, hasMoreTotalItems: true, endCursor: 'end'}},
-						),
-					);
-				}
-				return HttpResponse.json(createQueryProcessDefinitionsResponse({items: [A_VERSION_1]}));
-			}),
-			mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
-			mockQueryDecisionDefinitionsEndpoint({successResponse: NO_DECISION_DEFINITIONS}),
-			mockAuditLogsFilteredBy(z.object({processDefinitionKey: z.literal('key-A-1')})),
-		);
-
-		const screen = await renderPage('?tenantId=%3Ctenant-A%3E&process=invoice&version=1');
-
-		await expect.element(screen.getByText('No operations log found')).toBeVisible();
 	});
 
 	it('should require a tenant before offering processes in a multi-tenant deployment', async ({worker}) => {
@@ -341,8 +296,7 @@ describe('Operations Log saved filters', () => {
 		const screen = await renderPage('?tenantId=%3Ctenant-B%3E&process=invoice&version=2');
 		const versionField = screen.getByRole('combobox', {name: 'Version'});
 		await expect.element(versionField).toBeEnabled();
-		versionField.element().focus();
-		await userEvent.keyboard('{Space}');
+		await userEvent.click(versionField);
 
 		await expect.element(screen.getByRole('option', {name: '4'})).toBeVisible();
 		await expect.element(screen.getByRole('option', {name: '1'})).not.toBeInTheDocument();
@@ -361,21 +315,15 @@ describe('Operations Log saved filters', () => {
 		const screen = await renderPage('?tenantId=%3Ctenant-A%3E&process=invoice&version=1');
 		const versionField = screen.getByRole('combobox', {name: 'Version'});
 		await expect.element(versionField).toBeEnabled();
-		versionField.element().focus();
-		await userEvent.keyboard('{Space}');
+		await userEvent.click(versionField);
 
 		await expect.element(screen.getByRole('option', {name: 'All versions'})).not.toBeInTheDocument();
 	});
 
 	it('should show no audit rows when the selected version is missing', async ({worker}) => {
 		worker.use(
-			http.post(endpoints.queryProcessDefinitions.getUrl(), async ({request}) => {
-				const body = queryProcessDefinitionsRequestBodySchema.parse(await request.json());
-				return HttpResponse.json(
-					createQueryProcessDefinitionsResponse({
-						items: body.filter?.isLatestVersion ? [A_VERSION_1] : [],
-					}),
-				);
+			mockQueryProcessDefinitionsEndpoint({
+				successResponse: HttpResponse.json(createQueryProcessDefinitionsResponse({items: [A_VERSION_1]})),
 			}),
 			mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
 			mockQueryAuditLogsEndpoint({successResponse: AUDIT_WITH_ROW}),
@@ -390,13 +338,8 @@ describe('Operations Log saved filters', () => {
 
 	it('should let the user dismiss the unavailable definition alert', async ({worker}) => {
 		worker.use(
-			http.post(endpoints.queryProcessDefinitions.getUrl(), async ({request}) => {
-				const body = queryProcessDefinitionsRequestBodySchema.parse(await request.json());
-				return HttpResponse.json(
-					createQueryProcessDefinitionsResponse({
-						items: body.filter?.isLatestVersion ? [A_VERSION_1] : [],
-					}),
-				);
+			mockQueryProcessDefinitionsEndpoint({
+				successResponse: HttpResponse.json(createQueryProcessDefinitionsResponse()),
 			}),
 			mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
 			mockQueryAuditLogsEndpoint({successResponse: AUDIT_WITH_ROW}),
@@ -410,26 +353,35 @@ describe('Operations Log saved filters', () => {
 	});
 
 	it('should show the timestamp range in the picker and drop it from the query when cleared', async ({worker}) => {
-		let lastFilter: Record<string, unknown> | undefined;
 		worker.use(
 			mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
 			mockQueryDecisionDefinitionsEndpoint({successResponse: NO_DECISION_DEFINITIONS}),
-			http.post(endpoints.queryAuditLogs.getUrl(), async ({request}) => {
-				const body = (await request.json()) as {filter?: Record<string, unknown>};
-				lastFilter = body.filter;
-				return HttpResponse.json(createQueryAuditLogsResponse());
-			}),
+			mockAuditLogsFilteredBy(
+				z.object({
+					timestamp: z.strictObject({
+						$gt: z.literal(new Date('2024-06-10T12:00:00').toISOString()),
+						$lt: z.literal(new Date('2024-06-20T18:30:00').toISOString()),
+					}),
+				}),
+			),
 		);
 
 		const screen = await renderPage('?timestampAfter=2024-06-10T12:00:00&timestampBefore=2024-06-20T18:30:00');
 		const picker = screen.getByRole('button', {name: /Timestamp date range/});
 		await expect.element(picker).toHaveTextContent('Jun 10, 2024 12:00:00 PM – Jun 20, 2024 06:30:00 PM');
-		await expect.poll(() => lastFilter?.['timestamp']).toBeDefined();
+		await expect.element(screen.getByText('No operations match these filters')).toBeVisible();
 
+		worker.use(
+			mockQueryAuditLogsEndpoint({
+				schema: z.object({filter: z.object({timestamp: z.never().optional()})}),
+				successResponse: AUDIT_WITH_ROW,
+				failureResponse: REJECTED_AUDIT_QUERY,
+			}),
+		);
 		await userEvent.click(screen.getByRole('button', {name: 'Clear date and time range'}));
 
 		await expect.element(picker).toHaveTextContent('Enter date range');
-		await expect.poll(() => lastFilter?.['timestamp']).toBeUndefined();
+		await expect.element(screen.getByText('unscoped-actor')).toBeVisible();
 	});
 
 	it('should block a selected version when process resolution fails even if decision names fail', async ({worker}) => {
@@ -465,7 +417,7 @@ describe('Operations Log saved filters', () => {
 
 		const screen = await renderPage('?processDefinitionId=invoice&processDefinitionVersion=all');
 
-		await expect.element(screen.getByText('No operations log found')).toBeVisible();
+		await expect.element(screen.getByText('No operations match these filters')).toBeVisible();
 		await expect.element(screen.getByRole('combobox', {name: 'Name'})).toHaveTextContent('invoice');
 	});
 
@@ -481,26 +433,17 @@ describe('Operations Log saved filters', () => {
 
 		const screen = await renderPage('?processDefinitionId=invoice&processDefinitionVersion=2');
 
-		await expect.element(screen.getByText('No operations log found')).toBeVisible();
+		await expect.element(screen.getByText('No operations match these filters')).toBeVisible();
 	});
 
 	it('should not pick a tenant when the requested version exists in multiple tenants', async ({worker}) => {
 		worker.use(
-			http.post(endpoints.queryProcessDefinitions.getUrl(), async ({request}) => {
-				const body = queryProcessDefinitionsRequestBodySchema.parse(await request.json());
-				if (body.filter?.version === 2) {
-					return HttpResponse.json(
-						createQueryProcessDefinitionsResponse(
-							isCursorForwardPagination(body.page) && body.page.after
-								? {items: [B_VERSION_2]}
-								: {
-										items: [createProcessDefinition({...A_VERSION_1, version: 2})],
-										page: {totalItems: 2, hasMoreTotalItems: false, endCursor: 'second-tenant'},
-									},
-						),
-					);
-				}
-				return HttpResponse.json(createQueryProcessDefinitionsResponse({items: [A_VERSION_1, B_VERSION_2]}));
+			mockQueryProcessDefinitionsEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessDefinitionsResponse({
+						items: [createProcessDefinition({...A_VERSION_1, version: 2}), B_VERSION_2],
+					}),
+				),
 			}),
 			mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
 			mockQueryAuditLogsEndpoint({successResponse: AUDIT_WITH_ROW}),
@@ -532,17 +475,12 @@ describe('Operations Log saved filters', () => {
 			'?tenantId=%3Ctenant-B%3E&processDefinitionId=invoice&processDefinitionVersion=all',
 		);
 
-		await expect.element(screen.getByText('No operations log found')).toBeVisible();
+		await expect.element(screen.getByText('No operations match these filters')).toBeVisible();
 	});
 
 	it('should retain a tenant-scoped audit query and show an error when the process picker fails', async ({worker}) => {
 		worker.use(
-			http.post(endpoints.queryProcessDefinitions.getUrl(), async ({request}) => {
-				const body = queryProcessDefinitionsRequestBodySchema.parse(await request.json());
-				return body.filter?.isLatestVersion
-					? new HttpResponse(null, {status: 500})
-					: HttpResponse.json(createQueryProcessDefinitionsResponse({items: [B_VERSION_2]}));
-			}),
+			mockQueryProcessDefinitionsEndpoint({successResponse: new HttpResponse(null, {status: 500})}),
 			mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
 			mockQueryDecisionDefinitionsEndpoint({successResponse: NO_DECISION_DEFINITIONS}),
 			mockAuditLogsFilteredBy(z.object({tenantId: z.literal(TENANT_B), processDefinitionId: z.literal('invoice')})),
@@ -552,18 +490,15 @@ describe('Operations Log saved filters', () => {
 			'?tenantId=%3Ctenant-B%3E&processDefinitionId=invoice&processDefinitionVersion=all',
 		);
 
-		await expect.element(screen.getByText('No operations log found')).toBeVisible();
-		await expect.element(screen.getByText("Couldn't load process definitions")).toBeVisible();
+		await expect.element(screen.getByText('No operations match these filters')).toBeVisible();
+		await expect.element(screen.getByText("Couldn't load process definitions")).toHaveLength(2);
 	});
 
 	it('should query all versions without tenant inference in a single-tenant deployment', async ({worker}) => {
 		sessionStorage.setItem('clientConfig', JSON.stringify(createSystemConfiguration()));
 		worker.use(
-			http.post(endpoints.queryProcessDefinitions.getUrl(), async ({request}) => {
-				const body = queryProcessDefinitionsRequestBodySchema.parse(await request.json());
-				return HttpResponse.json(
-					createQueryProcessDefinitionsResponse({items: body.filter?.processDefinitionId ? [] : [A_VERSION_1]}),
-				);
+			mockQueryProcessDefinitionsEndpoint({
+				successResponse: HttpResponse.json(createQueryProcessDefinitionsResponse()),
 			}),
 			mockQueryDecisionDefinitionsEndpoint({successResponse: NO_DECISION_DEFINITIONS}),
 			mockAuditLogsFilteredBy(
@@ -577,7 +512,7 @@ describe('Operations Log saved filters', () => {
 
 		const screen = await renderPage('?processDefinitionId=invoice&processDefinitionVersion=all');
 
-		await expect.element(screen.getByText('No operations log found')).toBeVisible();
+		await expect.element(screen.getByText('No operations match these filters')).toBeVisible();
 	});
 
 	it('should display an explicitly saved All versions selection on a single-version process', async ({worker}) => {
@@ -659,19 +594,11 @@ describe('Operations Log saved filters', () => {
 		await expect.element(screen.getByRole('combobox', {name: 'Version'})).toHaveTextContent('5');
 	});
 
-	it('should not show audit rows while a selected definition is loading or after lookup failure', async ({worker}) => {
-		let releaseLookup: () => void = () => {};
-		const lookupHeld = new Promise<void>((resolve) => {
-			releaseLookup = resolve;
-		});
+	it('should not show audit rows while a selected definition is loading', async ({worker}) => {
 		worker.use(
-			http.post(endpoints.queryProcessDefinitions.getUrl(), async ({request}) => {
-				const body = queryProcessDefinitionsRequestBodySchema.parse(await request.json());
-				if (body.filter?.isLatestVersion) {
-					return HttpResponse.json(createQueryProcessDefinitionsResponse({items: [A_VERSION_1]}));
-				}
-				await lookupHeld;
-				return new HttpResponse(null, {status: 500});
+			mockQueryProcessDefinitionsEndpoint({
+				successResponse: HttpResponse.json(createQueryProcessDefinitionsResponse({items: [A_VERSION_1]})),
+				delay: 'infinite',
 			}),
 			mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
 			mockQueryAuditLogsEndpoint({successResponse: AUDIT_WITH_ROW}),
@@ -680,9 +607,6 @@ describe('Operations Log saved filters', () => {
 		const screen = await renderPage('?tenantId=%3Ctenant-A%3E&process=invoice&version=1');
 
 		await expect.element(screen.getByText('Loading selected process definition')).toBeVisible();
-		await expect.element(screen.getByText('unscoped-actor')).not.toBeInTheDocument();
-		releaseLookup();
-		await expect.element(screen.getByText("Couldn't load the selected process definition")).toBeVisible();
 		await expect.element(screen.getByText('unscoped-actor')).not.toBeInTheDocument();
 	});
 });

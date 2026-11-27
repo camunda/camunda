@@ -62,6 +62,7 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
   private final CslTenantCheck tenantCheck;
   private final VariableBehavior variableBehavior;
   private final SuspensionState suspensionState;
+  private final StorageOrdinalProvider storageOrdinalProvider;
 
   public SignalBroadcastProcessor(
       final Writers writers,
@@ -86,6 +87,7 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
     this.tenantCheck = tenantCheck;
     this.variableBehavior = variableBehavior;
     suspensionState = processingState.getSuspensionState();
+    this.storageOrdinalProvider = storageOrdinalProvider;
     eventHandle =
         new EventHandle(
             keyGenerator,
@@ -264,7 +266,9 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
                 keyGenerator.nextKey(),
                 subscriptionRecord.getCatchEventIdBuffer(),
                 signalRecord.getVariablesBuffer(),
-                signalRecord.getTenantId());
+                signalRecord.getTenantId(),
+                null,
+                storageOrdinalProvider.getStorageOrdinal());
           } else {
             activateElement(subscriptionRecord, signalRecord.getVariablesBuffer());
           }

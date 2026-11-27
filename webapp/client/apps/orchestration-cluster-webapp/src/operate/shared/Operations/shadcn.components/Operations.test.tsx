@@ -12,6 +12,7 @@ import {userEvent} from 'vitest/browser';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {HttpResponse} from 'msw';
 import {it} from '#/vitest-modules/test-extend';
+import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {mockGetProcessInstanceCallHierarchyEndpoint} from '#/shared-test-modules/mock-handlers';
 import {createCallHierarchy} from '#/shared-test-modules/api-mocks/call-hierarchy';
 import {Operations} from './Operations';
@@ -96,24 +97,8 @@ describe('<Operations />', () => {
 			wrapper: getWrapper(),
 		});
 
-		expect(
-			screen.getByRole('button', {name: `Retry instance ${PROCESS_INSTANCE_KEY}`, exact: true}).elements(),
-		).toHaveLength(0);
-		expect(
-			screen.getByRole('button', {name: `Cancel instance ${PROCESS_INSTANCE_KEY}`, exact: true}).elements(),
-		).toHaveLength(0);
-		expect(
-			screen.getByRole('button', {name: `Modify instance ${PROCESS_INSTANCE_KEY}`, exact: true}).elements(),
-		).toHaveLength(0);
-		expect(
-			screen.getByRole('button', {name: `Delete instance ${PROCESS_INSTANCE_KEY}`, exact: true}).elements(),
-		).toHaveLength(0);
-		expect(
-			screen.getByRole('button', {name: `Suspend instance ${PROCESS_INSTANCE_KEY}`, exact: true}).elements(),
-		).toHaveLength(0);
-		expect(
-			screen.getByRole('button', {name: `Resume instance ${PROCESS_INSTANCE_KEY}`, exact: true}).elements(),
-		).toHaveLength(0);
+		await expect.element(screen.getByRole('list')).toBeInTheDocument();
+		await expect.element(screen.getByRole('button')).not.toBeInTheDocument();
 	});
 
 	it('should execute resolve incident operation', async () => {
@@ -338,12 +323,14 @@ describe('<Operations />', () => {
 			}),
 		);
 
-		const screen = await render(
-			<Operations
-				operations={[{type: 'CANCEL_PROCESS_INSTANCE', onExecute: vi.fn()}]}
-				processInstanceKey={PROCESS_INSTANCE_KEY}
-			/>,
-			{wrapper: getWrapper()},
+		const screen = await renderWithRouter(
+			() => (
+				<Operations
+					operations={[{type: 'CANCEL_PROCESS_INSTANCE', onExecute: vi.fn()}]}
+					processInstanceKey={PROCESS_INSTANCE_KEY}
+				/>
+			),
+			{path: '/operate-preview/processes'},
 		);
 
 		await userEvent.click(screen.getByRole('button', {name: /cancel instance/i}));
@@ -357,6 +344,31 @@ describe('<Operations />', () => {
 		await expect.element(screen.getByRole('button', {name: 'Apply', exact: true})).not.toBeInTheDocument();
 	});
 
+	it('should open the root instance in the app when its key is clicked', async ({worker}) => {
+		worker.use(
+			mockGetProcessInstanceCallHierarchyEndpoint({
+				successResponse: HttpResponse.json([
+					createCallHierarchy({processInstanceKey: '3', processDefinitionName: 'some root process'}),
+				]),
+			}),
+		);
+
+		const screen = await renderWithRouter(
+			() => (
+				<Operations
+					operations={[{type: 'CANCEL_PROCESS_INSTANCE', onExecute: vi.fn()}]}
+					processInstanceKey={PROCESS_INSTANCE_KEY}
+				/>
+			),
+			{path: '/operate-preview/processes'},
+		);
+
+		await userEvent.click(screen.getByRole('button', {name: /cancel instance/i}));
+		await userEvent.click(screen.getByRole('link', {name: '3'}));
+
+		await expect.poll(() => screen.router.state.location.pathname).toBe('/operate-preview/processes/3');
+	});
+
 	it('should move focus into the root instance warning modal once the call hierarchy check resolves', async ({
 		worker,
 	}) => {
@@ -368,19 +380,21 @@ describe('<Operations />', () => {
 			}),
 		);
 
-		const screen = await render(
-			<Operations
-				operations={[{type: 'CANCEL_PROCESS_INSTANCE', onExecute: vi.fn()}]}
-				processInstanceKey={PROCESS_INSTANCE_KEY}
-			/>,
-			{wrapper: getWrapper()},
+		const screen = await renderWithRouter(
+			() => (
+				<Operations
+					operations={[{type: 'CANCEL_PROCESS_INSTANCE', onExecute: vi.fn()}]}
+					processInstanceKey={PROCESS_INSTANCE_KEY}
+				/>
+			),
+			{path: '/operate-preview/processes'},
 		);
 
 		await userEvent.click(screen.getByRole('button', {name: /cancel instance/i}));
 
 		const passiveModal = screen.getByTestId('passive-cancellation-modal');
 		await expect.element(passiveModal).toBeVisible();
-		await expect.poll(() => passiveModal.element().contains(document.activeElement)).toBe(true);
+		await expect.element(passiveModal.getByRole('button', {name: 'Close'})).toHaveFocus();
 	});
 
 	it('should keep the root instance warning modal open when clicking outside it', async ({worker}) => {
@@ -392,12 +406,14 @@ describe('<Operations />', () => {
 			}),
 		);
 
-		const screen = await render(
-			<Operations
-				operations={[{type: 'CANCEL_PROCESS_INSTANCE', onExecute: vi.fn()}]}
-				processInstanceKey={PROCESS_INSTANCE_KEY}
-			/>,
-			{wrapper: getWrapper()},
+		const screen = await renderWithRouter(
+			() => (
+				<Operations
+					operations={[{type: 'CANCEL_PROCESS_INSTANCE', onExecute: vi.fn()}]}
+					processInstanceKey={PROCESS_INSTANCE_KEY}
+				/>
+			),
+			{path: '/operate-preview/processes'},
 		);
 
 		await userEvent.click(screen.getByRole('button', {name: /cancel instance/i}));

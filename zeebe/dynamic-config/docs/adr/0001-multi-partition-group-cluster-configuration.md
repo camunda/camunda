@@ -4,6 +4,13 @@
 
 **Status**: Accepted
 
+**Update (8.11)**: The legacy single-group model has been removed. Brokers no longer dual-write
+the legacy gossip field (D4), which is now reserved; that was removed in
+[#64244](https://github.com/camunda/camunda/pull/64244). They also no longer migrate version 1
+configuration files (D5): a version 1 file fails at startup. Upgrading to
+8.11 requires running 8.10 first, so that every broker has rewritten its file in the new format.
+The text below describes the model at the time of the decision.
+
 **Purpose**: Defines the data model, merge semantics, migration strategy, and phase-advancement
 model for extending dynamic cluster configuration from a single Raft partition group to multiple
 named groups.

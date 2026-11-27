@@ -19,10 +19,8 @@ import java.util.Objects;
 import java.util.function.UnaryOperator;
 
 /**
- * New-model applier for {@code PartitionGroupOperation.ScaleUpOperation.AwaitRelocationCompletion},
- * operating on a single named {@link PartitionGroupConfiguration} as a whole. Mirrors the legacy
- * {@code AwaitRelocationCompletionApplier} in {@code changes/}, which this does not replace or
- * modify.
+ * Applier for {@code PartitionGroupOperation.ScaleUpOperation.AwaitRelocationCompletion}, operating
+ * on a single named {@link PartitionGroupConfiguration} as a whole.
  */
 public final class AwaitRelocationCompletionApplier
     implements PartitionGroupConfigurationChangeApplier {

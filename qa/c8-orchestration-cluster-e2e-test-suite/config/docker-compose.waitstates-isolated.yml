@@ -67,6 +67,9 @@ services:
       - CAMUNDA_DATA_AUDITLOG_CLIENT_CATEGORIES_0=ADMIN
       - CAMUNDA_DATA_AUDITLOG_CLIENT_EXCLUDES_0=PROCESS_INSTANCE
       - CAMUNDA_PROCESSINSTANCECREATION_BUSINESSIDUNIQUENESSENABLED=true
+      # Gateway response validation: contract-violating responses become 5xx. This
+      # isolated service has its own env and does not inherit docker-compose.yml.
+      - CAMUNDA_REST_RESPONSEVALIDATION_ENABLED=${CAMUNDA_REST_RESPONSEVALIDATION_ENABLED:-true}
       # camunda.data.wait-states.enabled -> WAIT_STATES (not WAITSTATES)
       - CAMUNDA_DATA_WAIT_STATES_ENABLED=false
     ports:

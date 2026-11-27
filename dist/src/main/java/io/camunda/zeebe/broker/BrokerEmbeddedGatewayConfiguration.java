@@ -11,6 +11,7 @@ import io.atomix.cluster.AtomixCluster;
 import io.camunda.application.commons.actor.GatewayActorScheduler;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.security.spring.oidc.ScopedJwtDecoderFactory;
 import io.camunda.security.spring.oidc.ScopedOidcClaimsProviderFactory;
 import io.camunda.service.registry.ServiceRegistry;
@@ -22,6 +23,7 @@ import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
 import io.camunda.zeebe.gateway.impl.stream.JobStreamClientImpl;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.observation.ObservationRegistry;
 import java.util.concurrent.TimeUnit;
 import org.agrona.CloseHelper;
 import org.jspecify.annotations.NullMarked;
@@ -58,9 +60,13 @@ public class BrokerEmbeddedGatewayConfiguration {
       @Autowired(required = false) final ServiceRegistry serviceRegistry,
       final PasswordEncoder passwordEncoder,
       @Autowired(required = false) final ScopedJwtDecoderFactory scopedJwtDecoderFactory,
+      @Autowired(required = false) final CamundaSecurityLibraryProperties securityProperties,
       @Autowired(required = false)
           final ScopedOidcClaimsProviderFactory scopedOidcClaimsProviderFactory,
-      final MeterRegistry meterRegistry) {
+      final MeterRegistry meterRegistry,
+      // Spring Boot provides the registry; none exists only without its observation
+      // autoconfiguration
+      @Autowired(required = false) final @Nullable ObservationRegistry observationRegistry) {
     final var brokerCfg = configuration.config();
     if (!brokerCfg.getGateway().isEnable()) {
       return new BrokerEmbeddedGateway(null, null);
@@ -82,7 +88,9 @@ public class BrokerEmbeddedGatewayConfiguration {
             brokerCfg.getExperimental().getEngine().getValidators().getMaxNameFieldLength(),
             serviceRegistry,
             scopedJwtDecoderFactory,
-            scopedOidcClaimsProviderFactory);
+            securityProperties,
+            scopedOidcClaimsProviderFactory,
+            observationRegistry);
     final var embeddedGateway = new BrokerEmbeddedGateway(gateway, jobStreamClient);
 
     LOGGER.info("Starting gateway next to the broker");

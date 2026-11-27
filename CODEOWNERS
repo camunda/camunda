@@ -223,12 +223,10 @@
 # Experience FE frontend skills
 /.agents/skills/frontend-feature/          @camunda/orchestration-cluster-webapps
 /.agents/skills/frontend-integration-test/ @camunda/orchestration-cluster-webapps
-/.agents/skills/frontend-operate-migrator/ @camunda/orchestration-cluster-webapps
 /.agents/skills/frontend-unit-test/        @camunda/orchestration-cluster-webapps
 
 # Operate frontend skills
-/.agents/skills/operate-engineering-loop/ @camunda/operate-admin-pod
-/.agents/skills/operate-frontend/         @camunda/operate-admin-pod
+/.agents/skills/operate-frontend/ @camunda/operate-admin-pod
 
 # Tasklist frontend skills
 /.agents/skills/tasklist-frontend/ @camunda/employee-engagement-tasklist

@@ -20,6 +20,7 @@ dependencies {
   testImplementation(projectArtifact(":zeebe-logstreams", ArtifactKind.TESTS))
   testImplementation(project(":zeebe-stream-platform"))
   testImplementation(project(":zeebe-workflow-engine"))
+  testImplementation(project(":zeebe-workflow-engine-api"))
   testImplementation(project(":camunda-client-java"))
   testImplementation(project(":camunda-db-rdbms"))
   testImplementation(project(":zeebe-gateway"))

@@ -10,6 +10,7 @@ import {useEffect, useRef, useState} from 'react';
 import {DiffEditor, type Monaco} from '@monaco-editor/react';
 import type {editor} from 'monaco-editor';
 import {observer} from 'mobx-react-lite';
+import {useResolvedTheme} from '@camunda/design-system';
 import {themeStore} from '#/shared/theme/theme';
 import {applyDsTheme, defineDsTheme, getMonacoThemeName, type EditorTheme} from './dsMonacoTheme';
 
@@ -23,7 +24,8 @@ type Props = {
 
 const MonacoDiffEditor = observer(
 	({originalValue, modifiedValue, height = '90vh', width = '100%', theme = 'stock'}: Props) => {
-		const colorMode = themeStore.actualTheme;
+		const dsColorMode = useResolvedTheme(themeStore.selectedTheme);
+		const colorMode = theme === 'ds' ? dsColorMode : themeStore.actualTheme;
 		const mounted = useRef<{diffEditor: editor.IStandaloneDiffEditor; model: editor.IDiffEditorModel} | null>(null);
 		const [monaco, setMonaco] = useState<Monaco | null>(null);
 		const wrapperRef = useRef<HTMLElement>(null);

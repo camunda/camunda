@@ -41,7 +41,6 @@ describe('<CancelConfirmationModal />', () => {
 			<CancelConfirmationModal
 				processInstanceKey={PROCESS_INSTANCE_KEY}
 				open
-				getRootInstancePath={(rootInstanceId) => `/operate/processes/${rootInstanceId}`}
 				onConfirm={onConfirm}
 				onCancel={onCancel}
 			/>,
@@ -65,7 +64,6 @@ describe('<CancelConfirmationModal />', () => {
 			<CancelConfirmationModal
 				processInstanceKey={PROCESS_INSTANCE_KEY}
 				open
-				getRootInstancePath={(rootInstanceId) => `/operate/processes/${rootInstanceId}`}
 				onConfirm={onConfirm}
 				onCancel={onCancel}
 			/>,

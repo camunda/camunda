@@ -28,6 +28,7 @@ import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.jobstream.RemoteJobStreamErrorHandlerService;
 import io.camunda.zeebe.broker.jobstream.YieldingJobStreamErrorHandler;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
+import io.camunda.zeebe.broker.partitioning.PhysicalTenantActorSchedulers;
 import io.camunda.zeebe.broker.partitioning.RecoveryPartitionManager;
 import io.camunda.zeebe.broker.partitioning.startup.ZeebePartitionFactory;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
@@ -35,12 +36,14 @@ import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
 import io.camunda.zeebe.broker.system.PhysicalTenantContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
+import io.camunda.zeebe.broker.test.TestEngineFactory;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
+import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -49,6 +52,7 @@ import io.camunda.zeebe.util.FeatureFlags;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -95,6 +99,8 @@ class PartitionManagerStepTest {
       testBrokerStartupContext.setBrokerInfo(new BrokerInfo());
       testBrokerStartupContext.setBrokerConfiguration(TEST_BROKER_CONFIG);
       testBrokerStartupContext.setActorSchedulingService(actorScheduler);
+      testBrokerStartupContext.setPhysicalTenantActorSchedulers(
+          PhysicalTenantActorSchedulers.shared(actorScheduler));
       testBrokerStartupContext.setShutdownTimeout(TEST_SHUTDOWN_TIMEOUT);
       testBrokerStartupContext.setConcurrencyControl(CONCURRENCY_CONTROL);
       testBrokerStartupContext.setAdminApiService(mock(AdminApiRequestHandler.class));
@@ -262,7 +268,8 @@ class PartitionManagerStepTest {
               flagsA,
               testBrokerStartupContext.getBrokerConfiguration(),
               new ExporterRepository(),
-              new SecretStoreRegistry(Map.of())));
+              new SecretStoreRegistry(Map.of()),
+              TestEngineFactory.create()));
       testBrokerStartupContext.setPhysicalTenantContext(
           secondTenantId,
           new PhysicalTenantContext(
@@ -271,7 +278,8 @@ class PartitionManagerStepTest {
               flagsB,
               testBrokerStartupContext.getBrokerConfiguration(),
               new ExporterRepository(),
-              new SecretStoreRegistry(Map.of())));
+              new SecretStoreRegistry(Map.of()),
+              TestEngineFactory.create()));
 
       final var secondFuture = CONCURRENCY_CONTROL.<BrokerStartupContext>createFuture();
       final var secondStep = new PartitionManagerStep(secondTenantId);
@@ -335,7 +343,8 @@ class PartitionManagerStepTest {
               FeatureFlags.createDefaultForTests(),
               testBrokerStartupContext.getBrokerConfiguration(),
               new ExporterRepository(),
-              new SecretStoreRegistry(Map.of())));
+              new SecretStoreRegistry(Map.of()),
+              TestEngineFactory.create()));
       testBrokerStartupContext.addJobStreamService(PHYSICAL_TENANT_ID, jobStreamService);
 
       // when
@@ -407,6 +416,44 @@ class PartitionManagerStepTest {
       // then
       assertThat(shutdownFuture).succeedsWithin(TIME_OUT);
       assertThat(shutdownFuture.join()).isNotNull();
+    }
+
+    @Test
+    void shouldFailFutureWhenStoppingPartitionsFails() {
+      // given
+      final var failure = new IllegalStateException("expected");
+      when(mockPartitionManager.stop())
+          .thenReturn(CompletableActorFuture.completedExceptionally(failure));
+
+      // when
+      sut.shutdownInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, shutdownFuture);
+
+      // then
+      assertThat(shutdownFuture)
+          .failsWithin(TIME_OUT)
+          .withThrowableOfType(ExecutionException.class)
+          .havingRootCause()
+          .isSameAs(failure);
+    }
+
+    @Test
+    void shouldReleaseTenantSchedulerWhenStoppingPartitionsFails() {
+      // given
+      final var tenantScheduler = mock(ActorScheduler.class);
+      when(tenantScheduler.stop()).thenReturn(CompletableFuture.completedFuture(null));
+      final var schedulers = PhysicalTenantActorSchedulers.dedicated(id -> tenantScheduler);
+      schedulers.schedulingService(PHYSICAL_TENANT_ID).submitActor(mock(Actor.class));
+      testBrokerStartupContext.setPhysicalTenantActorSchedulers(schedulers);
+      when(mockPartitionManager.stop())
+          .thenReturn(
+              CompletableActorFuture.completedExceptionally(new IllegalStateException("expected")));
+
+      // when
+      sut.shutdownInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, shutdownFuture);
+
+      // then
+      assertThat(shutdownFuture).failsWithin(TIME_OUT);
+      verify(tenantScheduler).stop();
     }
 
     @Test

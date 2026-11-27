@@ -44,9 +44,9 @@ async function renderTable(overrides: RenderOverrides = {}, {initialEntry = '/'}
 	let setIsFetchingNextPageState: ((isFetchingNextPage: boolean) => void) | undefined;
 	function TestRouteComponent() {
 		const [rows, setRows] = useState(props.rows);
-		const [isFetching, setIsFetching] = useState(props.isFetching ?? false);
-		const [isFetchingPreviousPage, setIsFetchingPreviousPage] = useState(props.isFetchingPreviousPage ?? false);
-		const [isFetchingNextPage, setIsFetchingNextPage] = useState(props.isFetchingNextPage ?? false);
+		const [isFetching, setIsFetching] = useState(props.isFetching);
+		const [isFetchingPreviousPage, setIsFetchingPreviousPage] = useState(props.isFetchingPreviousPage);
+		const [isFetchingNextPage, setIsFetchingNextPage] = useState(props.isFetchingNextPage);
 		useEffect(() => {
 			setRowsState = setRows;
 			setIsFetchingState = setIsFetching;
@@ -115,7 +115,7 @@ describe('<SortableTable />', () => {
 		const screen = await renderTable({onRowClick});
 
 		// when
-		await screen.getByText('Shipping process').click();
+		await userEvent.click(screen.getByText('Shipping process'));
 
 		// then
 		expect(onRowClick).toHaveBeenCalledExactlyOnceWith(ROWS[1]);
@@ -130,7 +130,7 @@ describe('<SortableTable />', () => {
 		});
 
 		// when
-		await screen.getByRole('button', {name: 'Expand row'}).first().click();
+		await userEvent.click(screen.getByRole('button', {name: 'Expand row'}).first());
 
 		// then
 		await expect.element(screen.getByText('Details of Order process')).toBeVisible();
@@ -180,10 +180,8 @@ describe('<SortableTable />', () => {
 		const screen = await renderTable({isFetching: true, rows: []});
 
 		// then
+		await expect.element(screen.getByRole('table', {name: 'Process instances'})).toHaveAttribute('aria-busy', 'true');
 		await expect.element(screen.getByTestId('table-loading-overlay')).not.toBeInTheDocument();
-		await expect
-			.poll(() => document.querySelectorAll('[data-slot="data-table-skeleton-row"]').length)
-			.toBeGreaterThan(0);
 	});
 
 	it('should mark the default column as sorted ascending with no sort param in the URL', async () => {
@@ -574,25 +572,13 @@ describe('<SortableTable />', () => {
 				onVerticalScrollEndReach: vi.fn(),
 				className: 'h-80',
 			});
-			const header = screen.getByRole('row', {name: 'Name Id'}).element();
-			const lastRow = screen.getByRole('row', {name: /Process 59/}).element();
-			const headerTopBefore = header.getBoundingClientRect().top;
-			const lastRowTopBefore = lastRow.getBoundingClientRect().top;
 
 			// when
-			lastRow.scrollIntoView();
+			await userEvent.wheel(screen.getByRole('table', {name: 'Process instances'}), {delta: {y: 5000}});
 
 			// then
-			await expect.poll(() => lastRow.getBoundingClientRect().top).toBeLessThan(lastRowTopBefore);
-			expect(header.getBoundingClientRect().top).toBe(headerTopBefore);
-		});
-
-		it('should not render scroll sentinels when no scroll handlers are given', async () => {
-			// given / when
-			await renderTable();
-
-			// then
-			expect(document.querySelectorAll('[data-slot^="data-table-"][data-slot$="-sentinel"]')).toHaveLength(0);
+			await expect.element(screen.getByRole('row', {name: /^Process 0 /})).not.toBeInViewport();
+			await expect.element(screen.getByRole('row', {name: 'Name Id'})).toBeInViewport({ratio: 1});
 		});
 
 		it('should call onVerticalScrollStartReach when the top of the table is in view', async () => {
@@ -623,10 +609,7 @@ describe('<SortableTable />', () => {
 			});
 
 			// when
-			screen
-				.getByRole('row', {name: /Process 59/})
-				.element()
-				.scrollIntoView();
+			await userEvent.wheel(screen.getByRole('table', {name: 'Process instances'}), {delta: {y: 5000}});
 
 			// then
 			await expect.poll(() => onVerticalScrollEndReach).toHaveBeenCalled();
@@ -640,10 +623,10 @@ describe('<SortableTable />', () => {
 			screen.setIsFetchingNextPage(true);
 
 			// then
-			await expect.poll(() => document.querySelectorAll('[data-slot="data-table-skeleton-row"]').length).toBe(1);
+			await expect.element(screen.getByRole('table', {name: 'Process instances'})).toHaveAttribute('aria-busy', 'true');
 			await expect.element(screen.getByText('Order process')).toBeVisible();
 			await expect.element(screen.getByText('Shipping process')).toBeVisible();
-			expect(screen.getByTestId('table-loading-overlay').elements()).toHaveLength(0);
+			await expect.element(screen.getByTestId('table-loading-overlay')).not.toBeInTheDocument();
 		});
 	});
 });

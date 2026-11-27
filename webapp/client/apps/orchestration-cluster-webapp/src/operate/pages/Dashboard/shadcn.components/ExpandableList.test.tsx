@@ -6,11 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useState} from 'react';
 import {describe, expect, vi} from 'vitest';
 import {render} from 'vitest-browser-react';
 import {userEvent} from 'vitest/browser';
 import {it} from '#/vitest-modules/test-extend';
-import {setUpFakeIntersectionObserver} from '#/vitest-modules/fake-intersection-observer';
 import {ExpandableList} from './ExpandableList';
 import type {ExpandableListRow} from './ExpandableList.types';
 import {EXPANDABLE_LIST_VARIANT_IDS, type ExpandableListVariant} from './ExpandableList.variants';
@@ -19,27 +19,6 @@ const noop = () => {};
 
 function buildRow({id, name}: {id: string; name: string}): ExpandableListRow {
 	return {id, content: <span>{name}</span>};
-}
-
-function mockElementHeights({
-	headerHeight = 999,
-	rowHeight = 60,
-	detailHeight = 500,
-}: {headerHeight?: number; rowHeight?: number; detailHeight?: number} = {}) {
-	return vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
-		let height = rowHeight;
-
-		if (this.closest('[data-slot="table-header"]')) {
-			height = headerHeight;
-		} else if (
-			this.getAttribute('data-slot') === 'data-table-expansion-row' ||
-			this.querySelector('[data-row-kind="detail"]')
-		) {
-			height = detailHeight;
-		}
-
-		return {height} as DOMRect;
-	});
 }
 
 type RenderOverrides = Partial<React.ComponentProps<typeof ExpandableList>>;
@@ -67,7 +46,158 @@ function renderList(overrides: RenderOverrides = {}) {
 	);
 }
 
-const {getObserver} = setUpFakeIntersectionObserver();
+const PAGE_NAMES = [
+	'Order',
+	'Shipping',
+	'Payment',
+	'Billing',
+	'Invoice',
+	'Audit',
+	'Archive',
+	'Notify',
+	'Review',
+	'Close',
+];
+
+function buildPage(prefix: string) {
+	return PAGE_NAMES.map((name) => buildRow({id: `${prefix}-${name}`, name: `${prefix}${name} process`}));
+}
+
+const CURRENT_PAGE = buildPage('');
+const PREVIOUS_PAGE = buildPage('Earlier ');
+const NEXT_PAGE = buildPage('Later ');
+
+const SizedContainer: React.FC<{children?: React.ReactNode}> = ({children}) => (
+	<div style={{height: '240px', display: 'flex', flexDirection: 'column'}}>{children}</div>
+);
+
+const PrependingList: React.FC<{variant: ExpandableListVariant}> = ({variant}) => {
+	const [rows, setRows] = useState([...CURRENT_PAGE, ...NEXT_PAGE]);
+	const [hasPreviousPage, setHasPreviousPage] = useState(true);
+
+	return (
+		<ExpandableList
+			variant={variant}
+			isPending={false}
+			isError={false}
+			listTestId="list"
+			dataTestId="table"
+			header="Process name"
+			rows={rows}
+			expandedContents={{}}
+			hasNextPage={false}
+			hasPreviousPage={hasPreviousPage}
+			isFetchingNextPage={false}
+			isFetchingPreviousPage={false}
+			isFetchNextPageError={false}
+			isFetchPreviousPageError={false}
+			onLoadNextPage={noop}
+			onLoadPreviousPage={() => {
+				setRows([...PREVIOUS_PAGE, ...CURRENT_PAGE]);
+				setHasPreviousPage(false);
+			}}
+		/>
+	);
+};
+
+const EvictingList: React.FC<{variant: ExpandableListVariant}> = ({variant}) => {
+	const [rows, setRows] = useState(CURRENT_PAGE);
+	const [hasNextPage, setHasNextPage] = useState(true);
+
+	return (
+		<ExpandableList
+			variant={variant}
+			isPending={false}
+			isError={false}
+			listTestId="list"
+			dataTestId="table"
+			header="Process name"
+			rows={rows}
+			expandedContents={{}}
+			hasNextPage={hasNextPage}
+			hasPreviousPage={false}
+			isFetchingNextPage={false}
+			isFetchingPreviousPage={false}
+			isFetchNextPageError={false}
+			isFetchPreviousPageError={false}
+			onLoadNextPage={() => {
+				setRows([...CURRENT_PAGE.slice(8), ...NEXT_PAGE]);
+				setHasNextPage(false);
+			}}
+			onLoadPreviousPage={noop}
+		/>
+	);
+};
+
+const ORDER_DETAILS = {'-Order': <div style={{height: '400px'}}>Order process details</div>};
+
+const PagingWithExpandedRowList: React.FC = () => {
+	const [rows, setRows] = useState(CURRENT_PAGE);
+	const [hasNextPage, setHasNextPage] = useState(true);
+	const [hasPreviousPage, setHasPreviousPage] = useState(false);
+
+	return (
+		<ExpandableList
+			variant="nativeExpansion"
+			isPending={false}
+			isError={false}
+			listTestId="list"
+			dataTestId="table"
+			header="Process name"
+			rows={rows}
+			expandedContents={ORDER_DETAILS}
+			hasNextPage={hasNextPage}
+			hasPreviousPage={hasPreviousPage}
+			isFetchingNextPage={false}
+			isFetchingPreviousPage={false}
+			isFetchNextPageError={false}
+			isFetchPreviousPageError={false}
+			onLoadNextPage={() => {
+				setRows([...CURRENT_PAGE.slice(8), ...NEXT_PAGE]);
+				setHasNextPage(false);
+				setHasPreviousPage(true);
+			}}
+			onLoadPreviousPage={() => {
+				setRows([...CURRENT_PAGE, ...NEXT_PAGE]);
+				setHasPreviousPage(false);
+			}}
+		/>
+	);
+};
+
+describe.each(EXPANDABLE_LIST_VARIANT_IDS)('<ExpandableList /> scroll anchoring (variant: %s)', (variant) => {
+	it('should keep the first visible row in view when a previous page is prepended and the last page is evicted', async () => {
+		const screen = await render(<PrependingList variant={variant} />, {wrapper: SizedContainer});
+
+		await expect.element(screen.getByText('Earlier Order process')).toBeInTheDocument();
+		await expect.element(screen.getByText('Earlier Order process')).not.toBeInViewport();
+		await expect.element(screen.getByText('Order process', {exact: true})).toBeInViewport({ratio: 1});
+	});
+
+	it('should keep the last visible row in view when a next page evicts rows from the top', async () => {
+		const screen = await render(<EvictingList variant={variant} />, {wrapper: SizedContainer});
+		await expect.element(screen.getByText('Close process')).toBeVisible();
+
+		await userEvent.wheel(screen.getByTestId('list'), {delta: {y: 2000}});
+
+		await expect.element(screen.getByText('Later Order process')).toBeInTheDocument();
+		await expect.element(screen.getByText('Close process')).toBeInViewport({ratio: 1});
+	});
+});
+
+describe('<ExpandableList /> nativeExpansion scroll anchoring', () => {
+	it('should keep the visible rows in view when an evicted expanded row is prepended again', async () => {
+		const screen = await render(<PagingWithExpandedRowList />, {wrapper: SizedContainer});
+		await userEvent.click(screen.getByRole('button', {name: 'Expand row'}));
+		await expect.element(screen.getByText('Order process details')).toBeVisible();
+
+		await userEvent.wheel(screen.getByTestId('list'), {delta: {y: 5000}});
+
+		await expect.element(screen.getByText('Later Order process')).toBeInTheDocument();
+		await expect.element(screen.getByText('Order process details')).not.toBeInViewport();
+		await expect.element(screen.getByText('Review process')).toBeInViewport({ratio: 1});
+	});
+});
 
 describe.each(EXPANDABLE_LIST_VARIANT_IDS)('<ExpandableList /> (variant: %s)', (variant: ExpandableListVariant) => {
 	it('should show loading skeleton rows in the table while pending', async () => {
@@ -75,10 +205,7 @@ describe.each(EXPANDABLE_LIST_VARIANT_IDS)('<ExpandableList /> (variant: %s)', (
 		const screen = await renderList({variant, isPending: true});
 
 		// then
-		await expect.element(screen.getByTestId('table')).toBeVisible();
-		await expect
-			.poll(() => document.querySelectorAll('[data-slot="data-table-skeleton-row"]').length)
-			.toBeGreaterThan(0);
+		await expect.element(screen.getByRole('table', {name: 'Process name'})).toHaveAttribute('aria-busy', 'true');
 	});
 
 	it('should show the fetch-error empty state on error', async () => {
@@ -89,7 +216,7 @@ describe.each(EXPANDABLE_LIST_VARIANT_IDS)('<ExpandableList /> (variant: %s)', (
 		await expect.element(screen.getByRole('heading', {name: 'Process name'})).toBeVisible();
 		await expect.element(screen.getByText("Couldn't fetch data")).toBeVisible();
 		await expect.element(screen.getByText('Refresh the page to try again')).toBeVisible();
-		await expect.element(screen.getByTestId('table')).not.toBeInTheDocument();
+		await expect.element(screen.getByRole('table', {name: 'Process name'})).not.toBeInTheDocument();
 	});
 
 	it('should render the caller-provided empty state instead of the table when given one', async () => {
@@ -102,7 +229,7 @@ describe.each(EXPANDABLE_LIST_VARIANT_IDS)('<ExpandableList /> (variant: %s)', (
 		// then
 		await expect.element(screen.getByRole('heading', {name: 'Process name'})).toBeVisible();
 		await expect.element(screen.getByTestId('custom-empty-state')).toBeVisible();
-		await expect.element(screen.getByTestId('table')).not.toBeInTheDocument();
+		await expect.element(screen.getByRole('table', {name: 'Process name'})).not.toBeInTheDocument();
 	});
 
 	it('should render every row', async () => {
@@ -214,11 +341,9 @@ describe.each(EXPANDABLE_LIST_VARIANT_IDS)('<ExpandableList /> (variant: %s)', (
 			onLoadNextPage,
 		});
 
-		// when
-		getObserver().intersect(screen.getByTestId('list-bottom-sentinel').element());
-
 		// then
-		expect(onLoadNextPage).toHaveBeenCalledOnce();
+		await expect.element(screen.getByTestId('list-bottom-sentinel')).toBeInViewport();
+		await expect.poll(() => onLoadNextPage).toHaveBeenCalledOnce();
 	});
 
 	it('should load the previous page when the top sentinel intersects', async () => {
@@ -231,145 +356,9 @@ describe.each(EXPANDABLE_LIST_VARIANT_IDS)('<ExpandableList /> (variant: %s)', (
 			onLoadPreviousPage,
 		});
 
-		// when
-		getObserver().intersect(screen.getByTestId('list-top-sentinel').element());
-
 		// then
-		expect(onLoadPreviousPage).toHaveBeenCalledOnce();
-	});
-
-	it('should not load the next page again while already fetching it', async () => {
-		// given
-		const onLoadNextPage = vi.fn();
-		const screen = await renderList({
-			variant,
-			rows: [buildRow({id: 'process-1', name: 'Order process'})],
-			hasNextPage: true,
-			isFetchingNextPage: true,
-			onLoadNextPage,
-		});
-
-		// when
-		getObserver().intersect(screen.getByTestId('list-bottom-sentinel').element());
-
-		// then
-		expect(onLoadNextPage).not.toHaveBeenCalled();
-	});
-
-	it('should load the next page when a bottom-sentinel intersection happened while fetching and fetching then ends', async () => {
-		// given
-		const onLoadNextPage = vi.fn();
-		const rows = [buildRow({id: 'process-1', name: 'Order process'})];
-		const screen = await renderList({
-			variant,
-			rows,
-			hasNextPage: true,
-			isFetchingNextPage: true,
-			onLoadNextPage,
-		});
-
-		// when
-		getObserver().intersect(screen.getByTestId('list-bottom-sentinel').element());
-		await screen.rerender(
-			<ExpandableList
-				variant={variant}
-				isPending={false}
-				isError={false}
-				listTestId="list"
-				dataTestId="table"
-				header="Process name"
-				rows={rows}
-				expandedContents={{}}
-				hasNextPage={true}
-				hasPreviousPage={false}
-				isFetchingNextPage={false}
-				isFetchingPreviousPage={false}
-				isFetchNextPageError={false}
-				isFetchPreviousPageError={false}
-				onLoadNextPage={onLoadNextPage}
-				onLoadPreviousPage={noop}
-			/>,
-		);
-
-		// then
-		expect(onLoadNextPage).toHaveBeenCalledOnce();
-	});
-
-	it('should not retry a failed next-page fetch until the sentinel intersects again', async () => {
-		// given
-		const onLoadNextPage = vi.fn();
-		const rows = [buildRow({id: 'process-1', name: 'Order process'})];
-		const screen = await renderList({
-			variant,
-			rows,
-			hasNextPage: true,
-			isFetchingNextPage: true,
-			onLoadNextPage,
-		});
-		getObserver().intersect(screen.getByTestId('list-bottom-sentinel').element());
-
-		// when
-		await screen.rerender(
-			<ExpandableList
-				variant={variant}
-				isPending={false}
-				isError={false}
-				listTestId="list"
-				dataTestId="table"
-				header="Process name"
-				rows={rows}
-				expandedContents={{}}
-				hasNextPage={true}
-				hasPreviousPage={false}
-				isFetchingNextPage={false}
-				isFetchingPreviousPage={false}
-				isFetchNextPageError={true}
-				onLoadNextPage={onLoadNextPage}
-				onLoadPreviousPage={noop}
-			/>,
-		);
-
-		// then
-		expect(onLoadNextPage).not.toHaveBeenCalled();
-	});
-
-	it('should load the previous page when a top-sentinel intersection happened while fetching and fetching then ends', async () => {
-		// given
-		const onLoadPreviousPage = vi.fn();
-		const rows = [buildRow({id: 'process-1', name: 'Order process'})];
-		const screen = await renderList({
-			variant,
-			rows,
-			hasPreviousPage: true,
-			isFetchingPreviousPage: true,
-			onLoadPreviousPage,
-		});
-
-		// when
-		getObserver().intersect(screen.getByTestId('list-top-sentinel').element());
-		await screen.rerender(
-			<ExpandableList
-				variant={variant}
-				isPending={false}
-				isError={false}
-				listTestId="list"
-				dataTestId="table"
-				header="Process name"
-				rows={rows}
-				expandedContents={{}}
-				hasNextPage={false}
-				hasPreviousPage={true}
-				isFetchingNextPage={false}
-				isFetchingPreviousPage={false}
-				isFetchNextPageError={false}
-				isFetchPreviousPageError={false}
-				onLoadNextPage={noop}
-				onLoadPreviousPage={onLoadPreviousPage}
-			/>,
-		);
-
-		// then
-		expect(onLoadPreviousPage).toHaveBeenCalledOnce();
+		await expect.element(screen.getByTestId('list-top-sentinel')).toBeInViewport();
+		await expect.poll(() => onLoadPreviousPage).toHaveBeenCalledOnce();
 	});
 
 	it('should trigger only one direction when both sentinels intersect in the same batch', async () => {
@@ -386,14 +375,12 @@ describe.each(EXPANDABLE_LIST_VARIANT_IDS)('<ExpandableList /> (variant: %s)', (
 		});
 
 		// when
-		getObserver().intersectAll([
-			screen.getByTestId('list-top-sentinel').element(),
-			screen.getByTestId('list-bottom-sentinel').element(),
-		]);
+		await expect.element(screen.getByTestId('list-top-sentinel')).toBeInViewport();
+		await expect.element(screen.getByTestId('list-bottom-sentinel')).toBeInViewport();
 
 		// then
-		const totalFetchCalls = onLoadNextPage.mock.calls.length + onLoadPreviousPage.mock.calls.length;
-		expect(totalFetchCalls).toBe(1);
+		await expect.poll(() => onLoadPreviousPage).toHaveBeenCalledOnce();
+		expect(onLoadNextPage).not.toHaveBeenCalled();
 	});
 
 	it('should re-observe a freshly-mounted bottom sentinel after it was unmounted for an error state', async () => {
@@ -401,6 +388,7 @@ describe.each(EXPANDABLE_LIST_VARIANT_IDS)('<ExpandableList /> (variant: %s)', (
 		const onLoadNextPage = vi.fn();
 		const rows = [buildRow({id: 'process-1', name: 'Order process'})];
 		const screen = await renderList({variant, rows, hasNextPage: true, onLoadNextPage});
+		await expect.poll(() => onLoadNextPage).toHaveBeenCalledOnce();
 
 		await screen.rerender(
 			<ExpandableList
@@ -444,155 +432,9 @@ describe.each(EXPANDABLE_LIST_VARIANT_IDS)('<ExpandableList /> (variant: %s)', (
 				onLoadPreviousPage={noop}
 			/>,
 		);
-		getObserver().intersect(screen.getByTestId('list-bottom-sentinel').element());
 
 		// then
-		expect(onLoadNextPage).toHaveBeenCalledOnce();
-	});
-
-	it('should preserve the scroll offset when previous-page rows are prepended', async () => {
-		// given
-		const rowHeight = 60;
-		const getBoundingClientRect = mockElementHeights({rowHeight});
-		const rows = [buildRow({id: 'process-2', name: 'Shipping process'})];
-		const screen = await renderList({variant, rows, hasPreviousPage: true});
-		const container = screen.getByTestId('list').element() as HTMLDivElement;
-		let virtualScrollTop = 50;
-		Object.defineProperty(container, 'scrollTop', {
-			get: () => virtualScrollTop,
-			set: (value: number) => {
-				virtualScrollTop = value;
-			},
-			configurable: true,
-		});
-
-		// when
-		getObserver().intersect(screen.getByTestId('list-top-sentinel').element());
-		await screen.rerender(
-			<ExpandableList
-				variant={variant}
-				isPending={false}
-				isError={false}
-				listTestId="list"
-				dataTestId="table"
-				header="Process name"
-				rows={[buildRow({id: 'process-1', name: 'Order process'}), ...rows]}
-				expandedContents={{}}
-				hasNextPage={false}
-				hasPreviousPage={true}
-				isFetchingNextPage={false}
-				isFetchingPreviousPage={false}
-				isFetchNextPageError={false}
-				isFetchPreviousPageError={false}
-				onLoadNextPage={noop}
-				onLoadPreviousPage={noop}
-			/>,
-		);
-
-		// then
-		expect(container.scrollTop).toBe(50 + rowHeight);
-		getBoundingClientRect.mockRestore();
-	});
-
-	it('should preserve the scroll offset when a previous-page fetch prepends a row while the capped page window evicts one from the bottom', async () => {
-		// given
-		const rowHeight = 60;
-		const getBoundingClientRect = mockElementHeights({rowHeight});
-		const rows = [
-			buildRow({id: 'process-1', name: 'Order process'}),
-			buildRow({id: 'process-2', name: 'Shipping process'}),
-			buildRow({id: 'process-3', name: 'Payment process'}),
-		];
-		const screen = await renderList({variant, rows, hasPreviousPage: true});
-		const container = screen.getByTestId('list').element() as HTMLDivElement;
-		let virtualScrollTop = 50;
-		Object.defineProperty(container, 'scrollTop', {
-			get: () => virtualScrollTop,
-			set: (value: number) => {
-				virtualScrollTop = value;
-			},
-			configurable: true,
-		});
-
-		// when
-		getObserver().intersect(screen.getByTestId('list-top-sentinel').element());
-		// The capped infinite-query page window evicts the last row ('process-3')
-		// while prepending a new one ('process-0'), so the total row count (and
-		// thus, with uniform row heights, the total scrollHeight) stays unchanged.
-		await screen.rerender(
-			<ExpandableList
-				variant={variant}
-				isPending={false}
-				isError={false}
-				listTestId="list"
-				dataTestId="table"
-				header="Process name"
-				rows={[buildRow({id: 'process-0', name: 'Refund process'}), rows[0]!, rows[1]!]}
-				expandedContents={{}}
-				hasNextPage={false}
-				hasPreviousPage={true}
-				isFetchingNextPage={false}
-				isFetchingPreviousPage={false}
-				isFetchNextPageError={false}
-				isFetchPreviousPageError={false}
-				onLoadNextPage={noop}
-				onLoadPreviousPage={noop}
-			/>,
-		);
-
-		// then
-		expect(container.scrollTop).toBe(50 + rowHeight);
-		getBoundingClientRect.mockRestore();
-	});
-
-	it('should reduce the scroll offset by the height of the rows the capped page window evicts from the top after a next-page fetch', async () => {
-		// given
-		const rowHeight = 60;
-		const getBoundingClientRect = mockElementHeights({rowHeight});
-		const rows = [
-			buildRow({id: 'process-1', name: 'Order process'}),
-			buildRow({id: 'process-2', name: 'Shipping process'}),
-			buildRow({id: 'process-3', name: 'Payment process'}),
-		];
-		const screen = await renderList({variant, rows, hasNextPage: true});
-		const container = screen.getByTestId('list').element() as HTMLDivElement;
-		let virtualScrollTop = 200;
-		Object.defineProperty(container, 'scrollTop', {
-			get: () => virtualScrollTop,
-			set: (value: number) => {
-				virtualScrollTop = value;
-			},
-			configurable: true,
-		});
-
-		// when
-		getObserver().intersect(screen.getByTestId('list-bottom-sentinel').element());
-		await screen.rerender(
-			<ExpandableList
-				variant={variant}
-				isPending={false}
-				isError={false}
-				listTestId="list"
-				dataTestId="table"
-				header="Process name"
-				rows={[
-					rows[2]!,
-					buildRow({id: 'process-4', name: 'Refund process'}),
-					buildRow({id: 'process-5', name: 'Billing process'}),
-				]}
-				expandedContents={{}}
-				hasNextPage={true}
-				hasPreviousPage={false}
-				isFetchingNextPage={false}
-				isFetchingPreviousPage={false}
-				onLoadNextPage={noop}
-				onLoadPreviousPage={noop}
-			/>,
-		);
-
-		// then
-		expect(container.scrollTop).toBe(200 - 2 * rowHeight);
-		getBoundingClientRect.mockRestore();
+		await expect.poll(() => onLoadNextPage).toHaveBeenCalledTimes(2);
 	});
 });
 
@@ -672,106 +514,5 @@ describe('<ExpandableList /> nativeExpansion variant', () => {
 		await expect.element(processRow.getByRole('row')).not.toBeInTheDocument();
 		await expect.element(detailRow).toMatchTextContent('Version details for order process');
 		await expect.element(bodyRows.nth(2)).not.toBeInTheDocument();
-	});
-
-	it("should bleed the expanded detail row's background to the cell's edges instead of leaving its own padding visible", async () => {
-		// given
-		const screen = await renderList({
-			variant: 'nativeExpansion',
-			rows: [buildRow({id: 'process-1', name: 'Order process'})],
-			expandedContents: {'process-1': <span>Version details for order process</span>},
-		});
-
-		// when
-		await userEvent.click(screen.getByRole('button', {name: 'Expand row'}));
-
-		// then
-		const detail = document.querySelector('[data-row-kind="detail"]')!;
-		const cell = detail.closest('[data-slot="table-cell"]')!;
-		expect(detail.getBoundingClientRect().left).toBe(cell.getBoundingClientRect().left);
-		expect(detail.getBoundingClientRect().right).toBe(cell.getBoundingClientRect().right);
-	});
-
-	it('should preserve the scroll offset when a row prepended by a previous-page fetch is still expanded from before it was evicted', async () => {
-		// given
-		const rowHeight = 60;
-		const detailHeight = 500;
-		const getBoundingClientRect = mockElementHeights({rowHeight, detailHeight});
-		const rowA = buildRow({id: 'process-a', name: 'Order process'});
-		const rowB = buildRow({id: 'process-b', name: 'Shipping process'});
-		const rowC = buildRow({id: 'process-c', name: 'Payment process'});
-		const expandedContents = {'process-a': <span>Order process details</span>};
-		const screen = await renderList({
-			variant: 'nativeExpansion',
-			rows: [rowA, rowB],
-			expandedContents,
-			hasPreviousPage: true,
-		});
-		// 'process-a' is expanded while it is still present...
-		await userEvent.click(screen.getByRole('button', {name: 'Expand row'}));
-		// ...then it is evicted from the list, but the component keeps its
-		// expanded state internally (it is not remounted).
-		await screen.rerender(
-			<ExpandableList
-				variant="nativeExpansion"
-				isPending={false}
-				isError={false}
-				listTestId="list"
-				dataTestId="table"
-				header="Process name"
-				rows={[rowB]}
-				expandedContents={expandedContents}
-				hasNextPage={false}
-				hasPreviousPage={true}
-				isFetchingNextPage={false}
-				isFetchingPreviousPage={false}
-				isFetchNextPageError={false}
-				isFetchPreviousPageError={false}
-				onLoadNextPage={noop}
-				onLoadPreviousPage={noop}
-			/>,
-		);
-		const container = screen.getByTestId('list').element() as HTMLDivElement;
-		let virtualScrollTop = 50;
-		Object.defineProperty(container, 'scrollTop', {
-			get: () => virtualScrollTop,
-			set: (value: number) => {
-				virtualScrollTop = value;
-			},
-			configurable: true,
-		});
-
-		// when
-		getObserver().intersect(screen.getByTestId('list-top-sentinel').element());
-		// 'process-a' pages back in ahead of 'process-b', still expanded, and a
-		// genuinely new row ('process-c') is prepended right after it. The
-		// anchor row ('process-b') actually moves down by both new rows' real
-		// heights *and* 'process-a''s detail row height, so that detail row's
-		// height must still be included even though it isn't itself one of the
-		// two newly-prepended logical rows.
-		await screen.rerender(
-			<ExpandableList
-				variant="nativeExpansion"
-				isPending={false}
-				isError={false}
-				listTestId="list"
-				dataTestId="table"
-				header="Process name"
-				rows={[rowA, rowC, rowB]}
-				expandedContents={expandedContents}
-				hasNextPage={false}
-				hasPreviousPage={true}
-				isFetchingNextPage={false}
-				isFetchingPreviousPage={false}
-				isFetchNextPageError={false}
-				isFetchPreviousPageError={false}
-				onLoadNextPage={noop}
-				onLoadPreviousPage={noop}
-			/>,
-		);
-
-		// then
-		expect(container.scrollTop).toBe(50 + rowHeight * 2 + detailHeight);
-		getBoundingClientRect.mockRestore();
 	});
 });

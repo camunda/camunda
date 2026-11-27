@@ -61,6 +61,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
@@ -418,6 +419,44 @@ class SecretStoreConfigurationTest {
         .isEmpty();
   }
 
+  @Test
+  void shouldKeepTheCacheMetersOfATenantWhoseStoresAreReplaced(@TempDir final Path secretsRoot)
+      throws IOException {
+    // given a tenant that has resolved a secret through its cache
+    final var tenantASecrets = Files.createDirectory(secretsRoot.resolve("tenanta"));
+    Files.writeString(tenantASecrets.resolve("token"), "a");
+    final var resolver =
+        resolverFor(
+            Map.of(
+                "camunda.physical-tenants.tenanta.secrets.stores.file.default.path",
+                tenantASecrets.toString(),
+                "camunda.physical-tenants.tenanta.security.initialization.default-roles.admin.users[0]",
+                "tenanta-admin",
+                "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.index-prefix",
+                "tenanta"));
+    final var backend = new SimpleMeterRegistry();
+    final var clusterRegistry = new CompositeMeterRegistry();
+    clusterRegistry.add(backend);
+    final var registries = CONFIG.secretStoreRegistries(resolver, CLOCK_SERVICE, clusterRegistry);
+    registries
+        .forPhysicalTenant("tenanta")
+        .getStores()
+        .get(SecretStoreRegistry.DEFAULT_STORE_ID)
+        .resolve(Set.of("token"));
+
+    // when its stores are replaced, twice
+    registries.put("tenanta", resolver.forPhysicalTenant("tenanta").getSecrets());
+    registries.put("tenanta", resolver.forPhysicalTenant("tenanta").getSecrets());
+    registries
+        .forPhysicalTenant("tenanta")
+        .getStores()
+        .get(SecretStoreRegistry.DEFAULT_STORE_ID)
+        .resolve(Set.of("token"));
+
+    // then the cache meters belong to the new cache
+    assertThat(cacheMisses(backend, "tenanta")).isOne();
+  }
+
   private static double cacheMisses(
       final MeterRegistry meterRegistry, final String physicalTenantId) {
     return meterRegistry
@@ -747,6 +786,68 @@ class SecretStoreConfigurationTest {
               AzureKeyVaultSecretStore.fromConfig(
                   any(), eq(SecretStoreRegistry.DEFAULT_STORE_ID), any(), any()));
     }
+  }
+
+  @Test
+  void shouldKeepTheMetersAStoreRegistersWhenItIsBuiltWhenItsStoresAreReplaced() {
+    // given a tenant whose store publishes its own meters as it is built
+    final var resolver =
+        resolverFor(tenantWithAzureStore("pt1", "vault-url", "https://pt1.vault.azure.net"));
+    final var backend = new SimpleMeterRegistry();
+    final var clusterRegistry = new CompositeMeterRegistry();
+    clusterRegistry.add(backend);
+    azureStores
+        .when(() -> AzureKeyVaultSecretStore.fromConfig(any(), any(), any(), any()))
+        .thenAnswer(
+            invocation -> {
+              Counter.builder(SecretStoreMetricsDoc.SIGNIN_FAILURES.getName())
+                  .tag(SecretStoreKeyNames.STORE.asString(), invocation.<String>getArgument(1))
+                  .tag(SecretStoreKeyNames.STORE_TYPE.asString(), "azure")
+                  .register(invocation.<MeterRegistry>getArgument(3));
+              return azureStore();
+            });
+    final var registries = CONFIG.secretStoreRegistries(resolver, CLOCK_SERVICE, clusterRegistry);
+
+    // when its stores are replaced, twice
+    registries.put("pt1", resolver.forPhysicalTenant("pt1").getSecrets());
+    registries.put("pt1", resolver.forPhysicalTenant("pt1").getSecrets());
+
+    // then
+    assertThat(signInFailureTenants(backend)).containsExactly("pt1");
+  }
+
+  @Test
+  void shouldKeepTheMetersOfTheCurrentStoresWhenTheReplacementFailsToBuild() {
+    // given a tenant whose store publishes its own meters as it is built, and fails the second time
+    final var resolver =
+        resolverFor(tenantWithAzureStore("pt1", "vault-url", "https://pt1.vault.azure.net"));
+    final var backend = new SimpleMeterRegistry();
+    final var clusterRegistry = new CompositeMeterRegistry();
+    clusterRegistry.add(backend);
+    final var builds = new AtomicInteger();
+    azureStores
+        .when(() -> AzureKeyVaultSecretStore.fromConfig(any(), any(), any(), any()))
+        .thenAnswer(
+            invocation -> {
+              Counter.builder(SecretStoreMetricsDoc.SIGNIN_FAILURES.getName())
+                  .tag(SecretStoreKeyNames.STORE.asString(), invocation.<String>getArgument(1))
+                  .tag(SecretStoreKeyNames.STORE_TYPE.asString(), "azure")
+                  .register(invocation.<MeterRegistry>getArgument(3));
+              if (builds.incrementAndGet() > 1) {
+                throw new IllegalStateException("failed to build");
+              }
+              return azureStore();
+            });
+    final var registries = CONFIG.secretStoreRegistries(resolver, CLOCK_SERVICE, clusterRegistry);
+    final var registry = registries.forPhysicalTenant("pt1");
+
+    // when its stores are replaced by ones that fail to build, after publishing their meters
+    assertThatThrownBy(() -> registries.put("pt1", resolver.forPhysicalTenant("pt1").getSecrets()))
+        .isInstanceOf(IllegalStateException.class);
+
+    // then
+    assertThat(registries.forPhysicalTenant("pt1")).isSameAs(registry);
+    assertThat(signInFailureTenants(backend)).containsExactly("pt1");
   }
 
   private static List<String> signInFailureTenants(final MeterRegistry meterRegistry) {

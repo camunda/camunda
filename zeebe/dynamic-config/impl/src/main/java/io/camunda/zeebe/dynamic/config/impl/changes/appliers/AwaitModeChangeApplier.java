@@ -22,13 +22,12 @@ import java.util.Set;
 import java.util.function.UnaryOperator;
 
 /**
- * New-model applier for {@code PartitionGroupOperation.AwaitModeChangeOperation}, operating on a
- * single named {@link PartitionGroupConfiguration}. Mirrors the legacy {@code
- * AwaitModeChangeApplier} in {@code changes/}, which this does not replace or modify. Waits for a
- * member's partition manager to finish starting in the target {@link Mode}. Writes {@link
- * PartitionState.State#RECOVERING} or {@link PartitionState.State#ACTIVE} for the subset of this
- * member's partitions that {@link ModeChangeExecutor#awaitModeApplied(Mode)} confirms transitioned;
- * partitions outside that subset (e.g. unhealthy ones) keep their prior state.
+ * Applier for {@code PartitionGroupOperation.AwaitModeChangeOperation}, operating on a single named
+ * {@link PartitionGroupConfiguration}. Waits for a member's partition manager to finish starting in
+ * the target {@link Mode}. Writes {@link PartitionState.State#RECOVERING} or {@link
+ * PartitionState.State#ACTIVE} for the subset of this member's partitions that {@link
+ * ModeChangeExecutor#awaitModeApplied(Mode)} confirms transitioned; partitions outside that subset
+ * (e.g. unhealthy ones) keep their prior state.
  */
 public final class AwaitModeChangeApplier implements PartitionGroupConfigurationChangeApplier {
 

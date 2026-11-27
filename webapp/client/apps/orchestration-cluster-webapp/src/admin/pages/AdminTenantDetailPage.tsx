@@ -118,6 +118,7 @@ const AdminTenantDetailPage: React.FC<AdminTenantDetailPageProps> = ({
 							tab: tab as TenantTab,
 							page: undefined,
 							pageSize: undefined,
+							sortField: undefined,
 							sortOrder: undefined,
 						})
 					}

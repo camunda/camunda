@@ -59,10 +59,10 @@ import io.camunda.zeebe.dynamic.config.impl.changes.NoopPartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.impl.changes.PartitionGroupConfigurationChangeAppliersImpl;
 import io.camunda.zeebe.dynamic.config.impl.metrics.TopologyManagerMetrics;
 import io.camunda.zeebe.dynamic.config.impl.serializer.ProtoBufSerializer;
+import io.camunda.zeebe.dynamic.config.impl.transformers.TestChangePlan;
 import io.camunda.zeebe.dynamic.config.impl.util.RequestValidatorRegistry;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.BrokerState;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
@@ -76,7 +76,6 @@ import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberRemoveO
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.PostScalingOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.PreScalingOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.UpdatePartitionDistributorConfigOperation;
-import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.RoundRobinConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
@@ -102,6 +101,7 @@ import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlanStatus;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
+import io.camunda.zeebe.dynamic.config.util.DefaultTenantConfiguration;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
@@ -139,7 +139,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
   protected ClusterConfigurationManagementRequestSender clientApi;
   protected final DynamicPartitionConfig partitionConfig = DynamicPartitionConfig.init();
   protected ClusterConfigurationManagerImpl manager;
-  private final ClusterConfiguration initialTopology;
+  private final DefaultTenantConfiguration initialTopology;
   private final TestConcurrencyControl executor = new TestConcurrencyControl();
   private final Function<Integer, MemberId> memberFactory;
   private ClusterConfigurationRequestServer requestServer;
@@ -155,9 +155,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
     coordinatorId = memberFactory.apply(0);
     // the physical coordinator node is always coordinatorId, so the recorded topology's
     // coordinator member must be the same id for requests to route to the started node
-    initialTopology =
-        ClusterConfiguration.init()
-            .addMember(coordinatorId, MemberState.initializeAsActive(Map.of()));
+    initialTopology = DefaultTenantConfiguration.init().addMember(coordinatorId);
   }
 
   @BeforeEach
@@ -329,10 +327,8 @@ abstract class ClusterConfigurationManagementApiTestBase {
   }
 
   /** Seeds the manager's configuration, as if a coordinator's gossip round had produced it. */
-  protected final void setCurrentTopology(final ClusterConfiguration topology) {
-    manager
-        .updateMultiConfiguration(ignored -> CurrentClusterConfiguration.fromLegacy(topology))
-        .join();
+  protected final void setCurrentTopology(final DefaultTenantConfiguration topology) {
+    manager.updateMultiConfiguration(ignored -> topology.configuration()).join();
   }
 
   /**
@@ -354,8 +350,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
   @Test
   void shouldGetCurrentTopology() {
     // given
-    final var expectedTopology =
-        initialTopology.addMember(memberFactory.apply(1), MemberState.initializeAsActive(Map.of()));
+    final var expectedTopology = initialTopology.addMember(memberFactory.apply(1));
     setCurrentTopology(expectedTopology);
 
     // when
@@ -363,8 +358,8 @@ abstract class ClusterConfigurationManagementApiTestBase {
 
     // then — member-key equality alone would miss a lifecycle-state or per-member metadata
     // regression, so every member's state is checked too; whole-object equality against
-    // CurrentClusterConfiguration.fromLegacy(expectedTopology) isn't possible here because the
-    // real coordinator bumps its own version counters on every update
+    // expectedTopology isn't possible here because the real coordinator bumps its own version
+    // counters on every update
     assertThat(topology.get().globalConfiguration().members())
         .containsOnlyKeys(coordinatorId, memberFactory.apply(1))
         .allSatisfy(
@@ -381,16 +376,14 @@ abstract class ClusterConfigurationManagementApiTestBase {
 
     // then
     final var expected = new MemberJoinOperation(memberFactory.apply(1));
-    assertThat(changeStatus.legacyResponse().plannedChanges()).containsExactly(expected);
+    assertThat(TestChangePlan.flatten(changeStatus.phases())).containsExactly(expected);
   }
 
   @Test
   void shouldRemoveMembers() {
     // given
     setCurrentTopology(
-        initialTopology
-            .addMember(memberFactory.apply(1), MemberState.initializeAsActive(Map.of()))
-            .addMember(memberFactory.apply(2), MemberState.initializeAsActive(Map.of())));
+        initialTopology.addMember(memberFactory.apply(1)).addMember(memberFactory.apply(2)));
     final var request =
         new RemoveMembersRequest(Set.of(memberFactory.apply(1), memberFactory.apply(2)), false);
 
@@ -402,7 +395,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
         List.of(
             new MemberLeaveOperation(memberFactory.apply(1)),
             new MemberLeaveOperation(memberFactory.apply(2)));
-    assertThat(changeStatus.legacyResponse().plannedChanges()).containsExactlyElementsOf(expected);
+    assertThat(TestChangePlan.flatten(changeStatus.phases())).containsExactlyElementsOf(expected);
   }
 
   @Test
@@ -412,7 +405,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
         initialTopology
             .updateMember(
                 coordinatorId, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
-            .addMember(memberFactory.apply(1), MemberState.initializeAsActive(Map.of())));
+            .addMember(memberFactory.apply(1)));
     final var request =
         new JoinPartitionRequest(memberFactory.apply(1), 1, 3, Optional.empty(), false);
 
@@ -420,7 +413,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
     final var changeStatus = clientApi.joinPartition(request).join().get();
 
     // then
-    assertThat(changeStatus.legacyResponse().plannedChanges())
+    assertThat(TestChangePlan.flatten(changeStatus.phases()))
         .containsExactly(
             new PartitionJoinOperation(memberFactory.apply(1), 1, 3, true),
             new PartitionPromoteOperation(memberFactory.apply(1), 1));
@@ -435,9 +428,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
             .updateMember(
                 coordinatorId, m -> m.addPartition(1, PartitionState.active(2, partitionConfig)))
             .addMember(
-                memberFactory.apply(1),
-                MemberState.initializeAsActive(
-                    Map.of(1, PartitionState.active(1, partitionConfig)))));
+                memberFactory.apply(1), Map.of(1, PartitionState.active(1, partitionConfig))));
     final var request =
         new LeavePartitionRequest(memberFactory.apply(1), 1, Optional.empty(), false);
 
@@ -445,7 +436,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
     final var changeStatus = clientApi.leavePartition(request).join().get();
 
     // then
-    assertThat(changeStatus.legacyResponse().plannedChanges())
+    assertThat(TestChangePlan.flatten(changeStatus.phases()))
         .containsExactly(
             new PartitionDemoteOperation(memberFactory.apply(1), 1),
             new PartitionLeaveOperation(memberFactory.apply(1), 1, 1));
@@ -456,7 +447,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
     // given
     final var request =
         new BrokerScaleRequest(Set.of(memberFactory.apply(0), memberFactory.apply(1)), false);
-    final ClusterConfiguration currentTopology =
+    final DefaultTenantConfiguration currentTopology =
         initialTopology
             .updateMember(
                 memberFactory.apply(0),
@@ -471,7 +462,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
     final var changeStatus = clientApi.scaleMembers(request).join().get();
 
     // then
-    assertThat(changeStatus.legacyResponse().plannedChanges())
+    assertThat(TestChangePlan.flatten(changeStatus.phases()))
         .containsExactly(
             new PreScalingOperation(
                 memberFactory.apply(0), Set.of(memberFactory.apply(0), memberFactory.apply(1))),
@@ -490,7 +481,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
     final var request =
         new BrokerScaleRequest(
             Set.of(memberFactory.apply(0), memberFactory.apply(1)), Optional.of(2), false);
-    final ClusterConfiguration currentTopology =
+    final DefaultTenantConfiguration currentTopology =
         initialTopology
             .updateMember(
                 memberFactory.apply(0),
@@ -505,7 +496,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
     final var changeStatus = clientApi.scaleMembers(request).join().get();
 
     // then
-    assertThat(changeStatus.legacyResponse().plannedChanges())
+    assertThat(TestChangePlan.flatten(changeStatus.phases()))
         .hasSize(8)
         .startsWith(
             new PreScalingOperation(
@@ -529,7 +520,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
     final var request =
         new BrokerScaleRequest(
             Set.of(memberFactory.apply(0), memberFactory.apply(1)), Optional.of(0), false);
-    final ClusterConfiguration currentTopology =
+    final DefaultTenantConfiguration currentTopology =
         initialTopology
             .updateMember(
                 memberFactory.apply(0),
@@ -557,7 +548,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
     final var request =
         new BrokerScaleRequest(
             Set.of(memberFactory.apply(0), memberFactory.apply(1)), Optional.of(1), false);
-    final ClusterConfiguration currentTopology =
+    final DefaultTenantConfiguration currentTopology =
         initialTopology
             .updateMember(
                 memberFactory.apply(0),
@@ -565,7 +556,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
             .updateMember(
                 memberFactory.apply(0),
                 m -> m.addPartition(2, PartitionState.active(1, partitionConfig)))
-            .addMember(memberFactory.apply(1), MemberState.initializeAsActive(Map.of()))
+            .addMember(memberFactory.apply(1))
             .updateMember(
                 memberFactory.apply(1),
                 m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
@@ -579,7 +570,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
     final var changeStatus = clientApi.scaleMembers(request).join().get();
 
     // then
-    assertThat(changeStatus.legacyResponse().plannedChanges())
+    assertThat(TestChangePlan.flatten(changeStatus.phases()))
         .containsExactlyInAnyOrder(
             new PartitionDemoteOperation(memberFactory.apply(0), 2),
             new PartitionLeaveOperation(memberFactory.apply(0), 2, 1),
@@ -594,12 +585,12 @@ abstract class ClusterConfigurationManagementApiTestBase {
     // given
     final var request =
         new BrokerScaleRequest(Set.of(memberFactory.apply(0), memberFactory.apply(2)), false);
-    final ClusterConfiguration currentTopology =
-        ClusterConfiguration.init()
-            .addMember(memberFactory.apply(0), MemberState.initializeAsActive(Map.of()))
-            .addMember(memberFactory.apply(1), MemberState.initializeAsActive(Map.of()))
-            .addMember(memberFactory.apply(2), MemberState.initializeAsActive(Map.of()))
-            .addMember(memberFactory.apply(3), MemberState.initializeAsActive(Map.of()))
+    final DefaultTenantConfiguration currentTopology =
+        DefaultTenantConfiguration.init()
+            .addMember(memberFactory.apply(0))
+            .addMember(memberFactory.apply(1))
+            .addMember(memberFactory.apply(2))
+            .addMember(memberFactory.apply(3))
             .updateMember(
                 memberFactory.apply(0),
                 m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
@@ -618,7 +609,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
     final var changeStatus = clientApi.forceScaleDown(request).join().get();
 
     // then
-    assertThat(changeStatus.legacyResponse().plannedChanges())
+    assertThat(TestChangePlan.flatten(changeStatus.phases()))
         .containsExactlyInAnyOrder(
             new PartitionForceReconfigureOperation(
                 memberFactory.apply(0), 1, Set.of(memberFactory.apply(0))),
@@ -646,7 +637,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
             .updateMember(
                 memberFactory.apply(0),
                 m -> m.addPartition(2, PartitionState.active(1, partitionConfig)));
-    final ClusterConfiguration currentTopology =
+    final DefaultTenantConfiguration currentTopology =
         Optional.ofNullable(coordinatorId.zone())
             .map(
                 zone ->
@@ -662,7 +653,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
     EitherAssert.assertThat(changeStatus).isRight();
 
     // then
-    assertThat(changeStatus.get().legacyResponse().plannedChanges())
+    assertThat(TestChangePlan.flatten(changeStatus.get().phases()))
         .containsExactly(
             new PreScalingOperation(
                 memberFactory.apply(0), Set.of(memberFactory.apply(0), memberFactory.apply(1))),
@@ -685,7 +676,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
     final var request =
         new ClusterPatchRequest(
             Set.of(memberFactory.apply(1)), Set.of(), Optional.of(3), Optional.empty(), false);
-    final ClusterConfiguration currentTopology =
+    final DefaultTenantConfiguration currentTopology =
         initialTopology
             .updateMember(
                 memberFactory.apply(0),
@@ -701,7 +692,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
     final var changeStatus = clientApi.patchCluster(request).join().get();
 
     // then
-    assertThat(changeStatus.legacyResponse().plannedChanges())
+    assertThat(TestChangePlan.flatten(changeStatus.phases()))
         .containsExactly(
             new PreScalingOperation(
                 memberFactory.apply(0), Set.of(memberFactory.apply(0), memberFactory.apply(1))),
@@ -724,12 +715,12 @@ abstract class ClusterConfigurationManagementApiTestBase {
     final var request =
         new ForceRemoveBrokersRequest(
             Set.of(memberFactory.apply(1), memberFactory.apply(3)), false);
-    final ClusterConfiguration currentTopology =
-        ClusterConfiguration.init()
-            .addMember(memberFactory.apply(0), MemberState.initializeAsActive(Map.of()))
-            .addMember(memberFactory.apply(1), MemberState.initializeAsActive(Map.of()))
-            .addMember(memberFactory.apply(2), MemberState.initializeAsActive(Map.of()))
-            .addMember(memberFactory.apply(3), MemberState.initializeAsActive(Map.of()))
+    final DefaultTenantConfiguration currentTopology =
+        DefaultTenantConfiguration.init()
+            .addMember(memberFactory.apply(0))
+            .addMember(memberFactory.apply(1))
+            .addMember(memberFactory.apply(2))
+            .addMember(memberFactory.apply(3))
             .updateMember(
                 memberFactory.apply(0),
                 m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
@@ -748,7 +739,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
     final var changeStatus = clientApi.forceRemoveBrokers(request).join().get();
 
     // then
-    assertThat(changeStatus.legacyResponse().plannedChanges())
+    assertThat(TestChangePlan.flatten(changeStatus.phases()))
         .containsExactlyInAnyOrder(
             new PartitionForceReconfigureOperation(
                 memberFactory.apply(0), 1, Set.of(memberFactory.apply(0))),
@@ -769,12 +760,12 @@ abstract class ClusterConfigurationManagementApiTestBase {
     final var zoneB0 = MemberId.from("zone-b", 0);
     final var zoneB1 = MemberId.from("zone-b", 1);
     final var currentTopology =
-        ClusterConfiguration.init()
-            .addMember(memberFactory.apply(0), MemberState.initializeAsActive(Map.of()))
-            .addMember(zoneA0, MemberState.initializeAsActive(Map.of()))
-            .addMember(zoneA1, MemberState.initializeAsActive(Map.of()))
-            .addMember(zoneB0, MemberState.initializeAsActive(Map.of()))
-            .addMember(zoneB1, MemberState.initializeAsActive(Map.of()))
+        DefaultTenantConfiguration.init()
+            .addMember(memberFactory.apply(0))
+            .addMember(zoneA0)
+            .addMember(zoneA1)
+            .addMember(zoneB0)
+            .addMember(zoneB1)
             .updateMember(zoneB0, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
             .updateMember(zoneA0, m -> m.addPartition(1, PartitionState.active(2, partitionConfig)))
             .updateMember(zoneB1, m -> m.addPartition(2, PartitionState.active(1, partitionConfig)))
@@ -789,7 +780,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
     final var changeStatus = clientApi.removeZone(request).join().get();
 
     // then
-    assertThat(changeStatus.legacyResponse().plannedChanges())
+    assertThat(TestChangePlan.flatten(changeStatus.phases()))
         .containsExactlyInAnyOrder(
             new PartitionForceReconfigureOperation(zoneB0, 1, Set.of(zoneB0)),
             new PartitionForceReconfigureOperation(zoneB1, 2, Set.of(zoneB1)),
@@ -809,9 +800,9 @@ abstract class ClusterConfigurationManagementApiTestBase {
     // migration, with a zone-aware distribution config persisted but brokers not yet re-tagged.
     final var zoneB0 = MemberId.from("zone-b", 0);
     final var currentTopology =
-        ClusterConfiguration.init()
-            .addMember(memberFactory.apply(0), MemberState.initializeAsActive(Map.of()))
-            .addMember(memberFactory.apply(1), MemberState.initializeAsActive(Map.of()))
+        DefaultTenantConfiguration.init()
+            .addMember(memberFactory.apply(0))
+            .addMember(memberFactory.apply(1))
             .updateMember(
                 memberFactory.apply(0),
                 m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
@@ -827,9 +818,9 @@ abstract class ClusterConfigurationManagementApiTestBase {
     final var changeStatus = clientApi.addZone(request).join().get();
 
     // then
-    assertThat(changeStatus.legacyResponse().plannedChanges())
+    assertThat(TestChangePlan.flatten(changeStatus.phases()))
         .contains(new MemberJoinOperation(zoneB0));
-    assertThat(changeStatus.legacyResponse().plannedChanges())
+    assertThat(TestChangePlan.flatten(changeStatus.phases()))
         .filteredOn(UpdatePartitionDistributorConfigOperation.class::isInstance)
         .extracting(op -> ((UpdatePartitionDistributorConfigOperation) op).config())
         .containsExactly(
@@ -857,7 +848,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
     final var changeStatus = clientApi.disableExporter(request).join().get();
 
     // then
-    assertThat(changeStatus.legacyResponse().plannedChanges())
+    assertThat(TestChangePlan.flatten(changeStatus.phases()))
         .containsExactly(
             new PartitionDisableExporterOperation(memberFactory.apply(0), 1, exporterId));
   }
@@ -919,7 +910,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
     final var changeStatus = clientApi.deleteExporter(request).join().get();
 
     // then
-    assertThat(changeStatus.legacyResponse().plannedChanges())
+    assertThat(TestChangePlan.flatten(changeStatus.phases()))
         .containsExactly(
             new PartitionDeleteExporterOperation(memberFactory.apply(0), 1, exporterId));
   }
@@ -945,7 +936,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
     final var changeStatus = clientApi.enableExporter(request).join().get();
 
     // then
-    assertThat(changeStatus.legacyResponse().plannedChanges())
+    assertThat(TestChangePlan.flatten(changeStatus.phases()))
         .containsExactly(
             new PartitionEnableExporterOperation(
                 memberFactory.apply(0), 1, exporterId, Optional.empty()));
@@ -971,14 +962,11 @@ abstract class ClusterConfigurationManagementApiTestBase {
   @Test
   void shouldValidateRestoreWhenClusterRecovering() {
     // given — the coordinator must host a partition: recovery mode lives on BrokerPartitionState,
-    // so a partitionless member is not in the default group and its mode would not survive the
-    // round-trip through toLegacyDefault
+    // so it is only recorded for a member of the default group
     setCurrentTopology(
-        ClusterConfiguration.init()
-            .addMember(
-                coordinatorId,
-                MemberState.initializeAsActive(Map.of(1, PartitionState.active(1, partitionConfig)))
-                    .toRecovering()));
+        DefaultTenantConfiguration.init()
+            .addMember(coordinatorId, Map.of(1, PartitionState.active(1, partitionConfig)))
+            .updateMember(coordinatorId, m -> m.setMode(Mode.RECOVERING)));
     final var request =
         new RestoreRequest(
             PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
@@ -999,11 +987,9 @@ abstract class ClusterConfigurationManagementApiTestBase {
     // coordinator's simulateOperations() path (dryRun=true) instead of applyOperations(): the
     // plan is validated/simulated against the real appliers but never actually applied
     setCurrentTopology(
-        ClusterConfiguration.init()
-            .addMember(
-                coordinatorId,
-                MemberState.initializeAsActive(Map.of(1, PartitionState.active(1, partitionConfig)))
-                    .toRecovering()));
+        DefaultTenantConfiguration.init()
+            .addMember(coordinatorId, Map.of(1, PartitionState.active(1, partitionConfig)))
+            .updateMember(coordinatorId, m -> m.setMode(Mode.RECOVERING)));
     final var request =
         new RestoreRequest(
             PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
@@ -1014,7 +1000,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
     // when
     final var result = clientApi.restore(request).join();
 
-    // then — accepted, because toLegacyDefault projects the coordinator back to RECOVERING
+    // then — accepted, because the coordinator is recovering the default tenant
     EitherAssert.assertThat(result).isRight();
   }
 
@@ -1050,8 +1036,8 @@ abstract class ClusterConfigurationManagementApiTestBase {
     // given
     setCurrentTopology(
         initialTopology
-            .addMember(memberFactory.apply(1), MemberState.initializeAsActive(Map.of()))
-            .addMember(memberFactory.apply(2), MemberState.initializeAsActive(Map.of()))
+            .addMember(memberFactory.apply(1))
+            .addMember(memberFactory.apply(2))
             .updateMember(
                 memberFactory.apply(0),
                 m -> m.addPartition(1, PartitionState.active(2, partitionConfig)))
@@ -1077,12 +1063,22 @@ abstract class ClusterConfigurationManagementApiTestBase {
 
     // then
     final var currentConfiguration =
-        changeStatus.legacyResponse().currentConfiguration().values().stream()
-            .map(MemberState::partitions)
+        changeStatus
+            .currentConfiguration()
+            .partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP)
+            .members()
+            .values()
+            .stream()
+            .map(BrokerPartitionState::partitions)
             .collect(Collectors.toSet());
     final var expectedConfiguration =
-        changeStatus.legacyResponse().expectedConfiguration().values().stream()
-            .map(MemberState::partitions)
+        changeStatus
+            .expectedConfiguration()
+            .partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP)
+            .members()
+            .values()
+            .stream()
+            .map(BrokerPartitionState::partitions)
             .collect(Collectors.toSet());
 
     assertThat(currentConfiguration).containsExactlyElementsOf(expectedConfiguration);
@@ -1114,7 +1110,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
     final var otherMember = memberFactory.apply(1);
     setCurrentTopology(
         initialTopology
-            .addMember(otherMember, MemberState.initializeAsActive(Map.of()))
+            .addMember(otherMember)
             .updateMember(
                 coordinatorId, m -> m.addPartition(1, PartitionState.active(1, partitionConfig))));
     manager
@@ -1143,11 +1139,8 @@ abstract class ClusterConfigurationManagementApiTestBase {
   void shouldApplyModeChangeEndToEndForLocalMember() {
     // given — the coordinator is active and processing in the default group
     setCurrentTopology(
-        ClusterConfiguration.init()
-            .addMember(
-                coordinatorId,
-                MemberState.initializeAsActive(
-                    Map.of(1, PartitionState.active(1, partitionConfig)))));
+        DefaultTenantConfiguration.init()
+            .addMember(coordinatorId, Map.of(1, PartitionState.active(1, partitionConfig))));
 
     // when — switch to recovery mode
     clientApi
@@ -1220,11 +1213,8 @@ abstract class ClusterConfigurationManagementApiTestBase {
   void shouldApplyExportingStateChangeEndToEndForLocalMember() {
     // given — the coordinator is active and exporting in the default group
     setCurrentTopology(
-        ClusterConfiguration.init()
-            .addMember(
-                coordinatorId,
-                MemberState.initializeAsActive(
-                    Map.of(1, PartitionState.active(1, partitionConfig)))));
+        DefaultTenantConfiguration.init()
+            .addMember(coordinatorId, Map.of(1, PartitionState.active(1, partitionConfig))));
 
     // when — pause exporting
     clientApi
@@ -1350,7 +1340,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
     // then — the request is answered with a plan at all, which is the regression: validation
     // simulates every phase through the same appliers the manager uses, so a plan means
     // MemberLeaveApplier no longer refuses the leave
-    final var expected = changeStatus.response().expectedConfiguration();
+    final var expected = changeStatus.expectedConfiguration();
     assertThat(expected.getMembers()).doesNotContain(removedMember);
     assertThat(expected.partitionGroup(TENANT_B).members())
         .describedAs("tenant-b's partition is reassigned to a retained broker, not dropped")
@@ -1358,7 +1348,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
         .doesNotContainKey(removedMember);
 
     // and the partitions move before the member leaves, not after
-    final var phases = changeStatus.response().phases();
+    final var phases = changeStatus.phases();
     assertThat(phases).hasSize(3);
     assertThat(phases.get(1))
         .asInstanceOf(type(PartitionGroupPhase.class))
@@ -1402,7 +1392,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
 
     // then — it replicates tenant-b's partition 1, and the default tenant's identically numbered
     // partition is left alone
-    final var expected = changeStatus.response().expectedConfiguration();
+    final var expected = changeStatus.expectedConfiguration();
     assertThat(expected.partitionGroup(TENANT_B).members()).containsKey(joiningMember);
     assertThat(expected.partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP).members())
         .doesNotContainKey(joiningMember);
@@ -1428,7 +1418,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
             .get();
 
     // then — it stops replicating tenant-b's partition 1 and keeps the default tenant's
-    final var expected = changeStatus.response().expectedConfiguration();
+    final var expected = changeStatus.expectedConfiguration();
     assertThat(expected.partitionGroup(TENANT_B).members()).doesNotContainKey(leavingMember);
     assertThat(expected.partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP).members())
         .containsKey(leavingMember);
@@ -1491,16 +1481,13 @@ abstract class ClusterConfigurationManagementApiTestBase {
    */
   private void wireTwoTenantsSharingPartitionOne(
       final Set<MemberId> replicas, final MemberId idleMember) {
-    var topology = initialTopology.addMember(idleMember, MemberState.initializeAsActive(Map.of()));
+    var topology = initialTopology.addMember(idleMember);
     for (final var replica : replicas) {
       topology =
           topology.hasMember(replica)
               ? topology.updateMember(
                   replica, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
-              : topology.addMember(
-                  replica,
-                  MemberState.initializeAsActive(
-                      Map.of(1, PartitionState.active(1, partitionConfig))));
+              : topology.addMember(replica, Map.of(1, PartitionState.active(1, partitionConfig)));
     }
     setCurrentTopology(topology);
     manager.registerPartitionGroupChangeAppliers(
@@ -1553,8 +1540,8 @@ abstract class ClusterConfigurationManagementApiTestBase {
         initialTopology
             .updateMember(
                 coordinatorId, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
-            .addMember(memberFactory.apply(1), MemberState.initializeAsActive(Map.of()))
-            .addMember(lastMember, MemberState.initializeAsActive(Map.of())));
+            .addMember(memberFactory.apply(1))
+            .addMember(lastMember));
     manager.registerPartitionGroupChangeAppliers(
         TENANT_B,
         new PartitionGroupConfigurationChangeAppliersImpl(
@@ -1592,11 +1579,8 @@ abstract class ClusterConfigurationManagementApiTestBase {
    */
   private void wireTwoPhysicalTenants() {
     final var topology =
-        ClusterConfiguration.init()
-            .addMember(
-                coordinatorId,
-                MemberState.initializeAsActive(
-                    Map.of(1, PartitionState.active(1, partitionConfig))));
+        DefaultTenantConfiguration.init()
+            .addMember(coordinatorId, Map.of(1, PartitionState.active(1, partitionConfig)));
     setCurrentTopology(
         Optional.ofNullable(coordinatorId.zone())
             .map(
@@ -1771,7 +1755,7 @@ abstract class ClusterConfigurationManagementApiTestBase {
             .get();
 
     // then
-    assertThat(response.legacyResponse().plannedChanges())
+    assertThat(TestChangePlan.flatten(response.phases()))
         .containsExactly(new UpdateRoutingState(coordinatorId, Optional.of(routingState)));
   }
 

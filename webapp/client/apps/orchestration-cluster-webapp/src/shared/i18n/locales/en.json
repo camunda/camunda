@@ -86,6 +86,28 @@
 		"admin": {
 			"configuredIdPatternInvalidError": "Must be at most 256 characters and match the ID pattern configured for this cluster: {{pattern}}",
 			"adminPanelNavAria": "Admin navigation",
+			"setup": {
+				"title": "Create admin user",
+				"username": "Username",
+				"usernamePlaceholder": "Enter username",
+				"usernameRequired": "Username is required",
+				"password": "Password",
+				"passwordPlaceholder": "Enter password",
+				"passwordRequirements": "Password must be at least 6 characters long and include at least one number.",
+				"passwordRequired": "Password is required",
+				"confirmPassword": "Confirm password",
+				"confirmPasswordPlaceholder": "Confirm password",
+				"confirmPasswordRequired": "Confirm password is required",
+				"passwordsDoNotMatch": "Passwords do not match",
+				"name": "Full name",
+				"namePlaceholder": "Enter full name",
+				"email": "Email",
+				"emailPlaceholder": "Enter email",
+				"emailInvalid": "Please enter a valid email",
+				"submit": "Create user",
+				"submitting": "Creating user",
+				"genericError": "An error occurred while creating the admin user. Please try again."
+			},
 			"headerNavItemUsers": "Users",
 			"headerNavItemGroups": "Groups",
 			"headerNavItemRoles": "Roles",
@@ -632,6 +654,12 @@
 				"createTenant": "Create tenant",
 				"editTenant": "Edit",
 				"deleteTenant": "Delete",
+				"tenantCreatedTitle": "Tenant created",
+				"tenantCreatedDescription": "“{{name}}” was created successfully.",
+				"nextStepHeading": "Next step: assign entities to your new tenant",
+				"gotItButton": "Got it",
+				"connectorRoleInfo": "Assign the “connector” role to this tenant to automatically assign all clients with the same role.",
+				"connectorRoleInfoLink": "Learn more about tenants",
 				"addTenantModalTitle": "Create tenant",
 				"editTenantModalTitle": "Edit tenant",
 				"deleteTenantModalTitle": "Delete tenant",
@@ -663,6 +691,8 @@
 				"roleNameColumn": "Name",
 				"mappingRuleIdColumn": "Mapping rule ID",
 				"mappingRuleNameColumn": "Name",
+				"mappingRuleClaimNameColumn": "Claim name",
+				"mappingRuleClaimValueColumn": "Claim value",
 				"clientIdColumn": "Client ID",
 				"members": {
 					"candidatesLoadError": "Options could not be loaded",
@@ -751,6 +781,31 @@
 			"tasksPanelLabel": "Tasks side panel",
 			"headerNavItemTasks": "Tasks",
 			"headerNavItemProcesses": "Processes",
+			"headerNavItemCases": "Cases",
+			"casesTitle": "Cases",
+			"casesOpenCount_one": "{{count}} open case",
+			"casesOpenCount_other": "{{count}} open cases",
+			"casesSearchLabel": "Search by business ID",
+			"casesClearSearch": "Clear search",
+			"casesColumnCase": "Case",
+			"casesColumnBusinessId": "Business ID",
+			"casesColumnStarted": "Started",
+			"casesColumnStatus": "Status",
+			"casesStartedRelativeLabel": "Started",
+			"casesStartedAbsoluteLabel": "Started on",
+			"casesStatusActive": "Active",
+			"casesStatusIncident": "Incident",
+			"casesStatusSuspended": "Suspended",
+			"casesStatusCompleted": "Completed",
+			"casesStatusTerminated": "Terminated",
+			"casesCaseLinkLabel": "{{title}}, {{businessId}}",
+			"casesNoOpenCasesHeading": "No open cases",
+			"casesNoOpenCasesDescription": "Cases that you can work on appear here.",
+			"casesNoMatchingCasesHeading": "No matching cases",
+			"casesNoMatchingCasesDescription": "No open case has a business ID that contains \"{{search}}\".",
+			"casesPageOutOfRangeHeading": "No cases on this page",
+			"casesPageOutOfRangeDescription": "The list may have fewer cases than when this link was saved.",
+			"casesGoToFirstPage": "Go to the first page",
 			"taskPanelNavAria": "Tasklist navigation",
 			"headerThemeLabel": "Theme",
 			"headerThemeSystem": "System",
@@ -1193,7 +1248,11 @@
 						"operationState": "Operation state",
 						"operationStateLoading": "Loading operation states",
 						"emptyMessage": "No instances match these filters",
-						"emptyAdditionalInfo": "To see results, select at least one instance state"
+						"emptyAdditionalInfo": "To see results, select at least one instance state",
+						"emptyFilteredDescription": "Change the filters or clear them to see more instances.",
+						"emptyNoStateHeading": "Select an instance state",
+						"emptyDefaultHeading": "No running instances yet",
+						"emptyDefaultDescription": "Instances appear here once a process starts. To see finished instances, select them in the filters."
 					},
 					"toolbar": {
 						"selectAll": "Select all instances",
@@ -1205,7 +1264,7 @@
 						"ariaLabel": "Diagram panel",
 						"multipleTenantsSelected": "Process \"{{name}}\" exists in more than one tenant",
 						"multipleVersionsSelected": "There is more than one version selected for process \"{{name}}\"",
-						"noProcessSelected": "There is no process selected",
+						"noProcessSelected": "Select a process",
 						"selectProcessInFilters": "To see a diagram, select a process in the filters panel",
 						"selectSingleTenant": "To see a diagram, select a single tenant",
 						"selectSingleVersion": "To see a diagram, select a single version"
@@ -1213,6 +1272,11 @@
 					"diagramHeader": {
 						"copyButtonDescription": "Process ID / click to copy",
 						"copyButtonTitle": "Copy process ID: {{id}}"
+					},
+					"migration": {
+						"noElementsHeading": "No elements to map",
+						"noElementsDescription": "The source process has no mappable elements or sequence flows. Exit the migration and select a different process.",
+						"selectTargetDescription": "Choose a target to see its diagram and map the source elements."
 					}
 				},
 				"migration": {
@@ -1609,7 +1673,7 @@
 						"selectSingleVersion": "To see a decision table or a literal expression, select a single version",
 						"multipleTenantsSelected": "Decision \"{{name}}\" exists in more than one tenant",
 						"selectSingleTenant": "To see a decision table or a literal expression, select a single tenant",
-						"noDecisionSelected": "There is no decision selected",
+						"noDecisionSelected": "Select a decision",
 						"selectDecisionInFilters": "To see a decision table or a literal expression, select a decision in the filters panel"
 					},
 					"filters": {
@@ -1712,7 +1776,11 @@
 					"variablesPanel": {
 						"tabsLabel": "Variable panel tabs",
 						"inputsAndOutputs": "Inputs and outputs",
-						"loadingResult": "Loading result"
+						"loadingResult": "Loading result",
+						"noResultHeading": "No result available",
+						"noInputHeading": "No input available",
+						"noOutputHeading": "No output available",
+						"evaluationFailedDescription": "The evaluation failed. Check the failure message above and the decision definition."
 					},
 					"forbidden": {
 						"heading": "You do not have permission to view this information"
@@ -1728,6 +1796,52 @@
 				"ds": {
 					"forbidden": {
 						"heading": "You do not have permission to view this information"
+					},
+					"incidents": {
+						"noMatchesHeading": "No incidents match these error types",
+						"noMatchesDescription": "Clear the error type filter to see all incidents.",
+						"emptyHeading": "No open incidents",
+						"emptyDescription": "Incidents appear here when an element in this instance fails.",
+						"noElementIncidentsHeading": "No incidents on this element",
+						"noElementIncidentsDescription": "Select another element, or clear the selection to see all incidents."
+					},
+					"operationsLog": {
+						"multiInstanceHeading": "Select a single element instance",
+						"noInstancesHeading": "This element has not run yet",
+						"noInstancesDescription": "Operations appear here once the element runs. Select another element in the instance history.",
+						"emptyHeading": "No operations yet",
+						"emptyDescription": "Operations on this instance, such as retries or variable changes, appear here.",
+						"noMatchesHeading": "No operations match these filters",
+						"noMatchesDescription": "Change the operation type or entity type filter to see more operations."
+					},
+					"listeners": {
+						"emptyAllHeading": "No listeners on this element",
+						"emptyTaskHeading": "No user task listeners on this element",
+						"emptyExecutionHeading": "No execution listeners on this element",
+						"emptyDescription": "Select another element in the diagram to see its listeners."
+					},
+					"variables": {
+						"emptyHeading": "This element has no variables",
+						"emptyDescription": "Variables appear here once the element sets them. Select another element to see its variables.",
+						"multiInstanceDescription": "To view the variables, select one element instance in the instance history.",
+						"noSearchResultsHeading": "No variables match your search",
+						"noSearchResultsDescription": "Change or clear the search term to see more variables.",
+						"noDocumentsHeading": "No document variables yet",
+						"noDocumentsDescription": "Document variables appear here once the instance receives documents."
+					},
+					"mappings": {
+						"noInputHeading": "No input mappings defined",
+						"noInputDescription": "Define input mappings on this element in the process model to map variables into its scope.",
+						"noOutputHeading": "No output mappings defined",
+						"noOutputDescription": "Define output mappings on this element in the process model to map variables out of its scope."
+					},
+					"details": {
+						"noElementHeading": "No element selected",
+						"noElementDescription": "Select an element in the diagram to see its details.",
+						"multiInstanceDescription": "To view the details, select one element instance in the instance history."
+					},
+					"diagram": {
+						"noDiagramDescription": "The process definition has no diagram to display. Check the model in Modeler."
 					}
 				},
 				"history": {
@@ -2284,6 +2398,12 @@
 				},
 				"notifications": {
 					"fetchFailed": "Couldn't fetch audit logs"
+				},
+				"ds": {
+					"emptyState": {
+						"noResultsTitle": "No operations match these filters",
+						"noResultsDescription": "Change the filters or clear them to see more operations."
+					}
 				}
 			},
 			"batchOperations": {
@@ -2314,7 +2434,11 @@
 				"pageSelectLabel_one": "Page of {{count}} page",
 				"pageSelectLabel_other": "Page of {{count}} pages",
 				"pageText": "page {{page}}",
-				"pageOf": "Page {{page}} of {{count}}"
+				"pageOf": "Page {{page}} of {{count}}",
+				"ds": {
+					"emptyHeading": "No batch operations yet",
+					"emptyDescription": "Select instances on the Processes or Decisions page and apply an action to start a batch operation."
+				}
 			},
 			"batchOperation": {
 				"title": "Batch Operations",
@@ -2358,7 +2482,9 @@
 						"tableLabel": "Batch operation items",
 						"expandFailure": "Show failure details",
 						"collapseFailure": "Hide failure details",
-						"itemStatusPrefix": "Item status"
+						"itemStatusPrefix": "Item status",
+						"emptyHeading": "No items yet",
+						"emptyDescription": "Items appear here as the batch operation processes them."
 					}
 				},
 				"actions": {
@@ -2668,7 +2794,8 @@
 						"deleteTitle": "Delete instance {{processInstanceKey}}",
 						"suspendTitle": "Suspend instance {{processInstanceKey}}",
 						"resumeTitle": "Resume instance {{processInstanceKey}}"
-					}
+					},
+					"clearFilters": "Clear filters"
 				}
 			}
 		}

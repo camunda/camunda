@@ -150,8 +150,8 @@ public class ConditionalEvaluationEvaluateProcessor
               storageOrdinal);
 
       if (activated) {
-        // Only report instances that were actually started; a draining definition is skipped and
-        // must not appear in the EVALUATED event or the response.
+        // Only report instances that were actually started; a suspended or draining definition is
+        // skipped and must not appear in the EVALUATED event or the response.
         record.addStartedProcessInstance(
             match.processDefinitionKey(), processInstanceKey, storageOrdinal);
       }

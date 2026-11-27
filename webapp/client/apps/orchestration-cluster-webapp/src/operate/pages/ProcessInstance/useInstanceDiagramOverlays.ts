@@ -182,12 +182,21 @@ function useInstanceDiagramOverlays({
 			];
 		});
 
-		const agentOverlays: OverlayData[] = Array.from(agentByElement.entries()).flatMap(([elementId, payload]) => [
-			{elementId, type: 'instance-agent-status', position: {top: -32, left: 0}, payload},
-			{elementId, type: 'instance-agent-shine', position: {top: 0, left: 0}, payload},
-		]);
+		const agentEntries = Array.from(agentByElement.entries());
+		const agentShineOverlays: OverlayData[] = agentEntries.map(([elementId, payload]) => ({
+			elementId,
+			type: 'instance-agent-shine',
+			position: {top: 0, left: 0},
+			payload,
+		}));
+		const agentStatusOverlays: OverlayData[] = agentEntries.map(([elementId, payload]) => ({
+			elementId,
+			type: 'instance-agent-status',
+			position: {top: -32, left: 0},
+			payload,
+		}));
 
-		return [...stateOverlays, ...waitingOverlays, ...agentOverlays];
+		return [...agentShineOverlays, ...stateOverlays, ...waitingOverlays, ...agentStatusOverlays];
 	}, [
 		statistics,
 		waitStates,

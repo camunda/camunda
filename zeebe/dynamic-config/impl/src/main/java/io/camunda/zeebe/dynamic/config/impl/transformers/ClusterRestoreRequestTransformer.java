@@ -25,12 +25,12 @@ import java.util.Optional;
 /**
  * Restores one or every physical tenant of the cluster, as requested through the cluster-admin API.
  *
- * <p>{@link #phases(CurrentClusterConfiguration)} is the entry point the new-model coordinator
- * actually drives: each named physical tenant is restored from its own {@link
- * PartitionGroupConfiguration}, exactly like the same restore submitted through that tenant's own
- * API, and the resulting plans are combined into one {@link PartitionGroupPhase} so every named
- * tenant restores in parallel. A cluster-wide request — one naming every physical tenant of the
- * cluster — restores them all this way in a single change.
+ * <p>{@link #phases(CurrentClusterConfiguration)} is the entry point the coordinator actually
+ * drives: each named physical tenant is restored from its own {@link PartitionGroupConfiguration},
+ * exactly like the same restore submitted through that tenant's own API, and the resulting plans
+ * are combined into one {@link PartitionGroupPhase} so every named tenant restores in parallel. A
+ * cluster-wide request — one naming every physical tenant of the cluster — restores them all this
+ * way in a single change.
  *
  * <p>A request naming no physical tenant at all plans nothing, rather than being rejected: there is
  * no tenant whose partitions it could restore.

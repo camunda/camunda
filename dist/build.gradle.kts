@@ -141,6 +141,7 @@ val startupPrograms =
     "backup-webapps" to "io.camunda.application.StandaloneBackupManager",
     "camunda" to "io.camunda.application.StandaloneCamunda",
     "cdbg" to "io.camunda.debug.cli.Main",
+    "es9-migrator" to "io.camunda.migration.es9.Es9MigratorApp",
   )
 
 val generateDistReadme =
@@ -352,6 +353,8 @@ dependencies {
   implementation(project(":dynamic-node-id-provider"))
   implementation(project(":zeebe-broker"))
   implementation(project(":zeebe-broker-client"))
+  implementation(project(":zeebe-workflow-engine"))
+  implementation(project(":zeebe-workflow-engine-api"))
   implementation(project(":zeebe-gateway"))
   implementation(project(":zeebe-gateway-grpc"))
   implementation(project(":zeebe-restore-standalone"))
@@ -453,6 +456,8 @@ dependencies {
   implementation(project(":zeebe-transport"))
   implementation(libs.io.micrometer.micrometer.commons)
   implementation(libs.io.micrometer.micrometer.core)
+  implementation(libs.io.opentelemetry.opentelemetry.api)
+  implementation(libs.io.opentelemetry.opentelemetry.context)
   implementation(libs.io.micrometer.micrometer.observation)
   implementation(libs.org.springframework.boot.spring.boot.micrometer.observation)
   implementation(libs.org.springframework.boot.spring.boot.starter.web) {
@@ -462,6 +467,8 @@ dependencies {
     exclude(group = "org.springframework.boot", module = "spring-boot-starter-logging")
   }
   implementation(libs.io.micrometer.micrometer.registry.prometheus)
+  implementation("io.prometheus:prometheus-metrics-tracer-common")
+  implementation(libs.io.micrometer.micrometer.registry.otlp)
   implementation(libs.org.springframework.spring.beans)
   implementation(libs.org.springframework.spring.core)
   implementation(libs.org.springframework.spring.context)
@@ -483,15 +490,21 @@ dependencies {
   implementation(project(":zeebe-protocol-impl"))
   implementation(libs.io.netty.netty.transport)
   implementation(project(":debug-cli"))
+  implementation(project(":es9-index-migrator"))
   implementation(libs.org.apache.commons.commons.lang3)
   implementation(libs.org.apache.httpcomponents.client5.httpclient5)
   implementation(libs.org.apache.httpcomponents.core5.httpcore5)
   implementation(libs.com.zaxxer.hikaricp)
-  runtimeOnly(libs.io.micrometer.micrometer.registry.otlp)
-  runtimeOnly("org.springframework.boot:spring-boot-opentelemetry")
+  runtimeOnly("org.springframework.boot:spring-boot-starter-opentelemetry") {
+    // Match Maven / analytics-exporter: use the JDK HTTP sender instead of OkHttp.
+    exclude(group = "io.opentelemetry", module = "opentelemetry-exporter-sender-okhttp")
+  }
   runtimeOnly(libs.org.bouncycastle.bcpkix.jdk18on)
   runtimeOnly(libs.org.bouncycastle.bcprov.jdk18on)
   testImplementation(libs.org.apache.logging.log4j.log4j.core.test)
+  testImplementation(libs.com.azure.azure.core)
+  testImplementation(libs.com.azure.azure.identity)
+  testImplementation(libs.io.projectreactor.reactor.core)
   testImplementation(project(":zeebe-test-util"))
   testImplementation(libs.org.mockito.mockito.core)
   testImplementation(libs.com.tngtech.archunit.archunit)

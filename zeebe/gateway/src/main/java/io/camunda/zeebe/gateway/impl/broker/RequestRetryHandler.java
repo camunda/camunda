@@ -18,6 +18,8 @@ import io.camunda.zeebe.broker.client.api.RequestRetriesExhaustedException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.protocol.record.ErrorCode;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.context.Context;
 import java.net.ConnectException;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -134,9 +136,24 @@ public final class RequestRetryHandler {
       return;
     }
 
+    // Retries run on the broker client's actor thread, which has no OTel context. Capture the
+    // caller's context once so retry attempts stay under the same gateway span.
+    final var traceContext = Span.current().getSpanContext().isSampled() ? Context.current() : null;
+    final var tracedSender =
+        traceContext == null
+            ? requestSender
+            : (Function<
+                    BrokerRequest<BrokerResponseT>,
+                    CompletableFuture<BrokerResponse<BrokerResponseT>>>)
+                r -> {
+                  try (final var ignored = traceContext.makeCurrent()) {
+                    return requestSender.apply(r);
+                  }
+                };
+
     sendRequestWithRetry(
         request,
-        requestSender,
+        tracedSender,
         topology.getPartitionsCount(),
         new HashSet<>(),
         responseConsumer,

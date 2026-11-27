@@ -8,18 +8,18 @@
 
 import {useId, useState} from 'react';
 import {useTranslation} from 'react-i18next';
-import {Alert, Link, Spinner} from '@camunda/design-system';
+import {Alert, EmptyState, Link, Skeleton} from '@camunda/design-system';
+import {ArrowRightLeft} from '@camunda/design-system/icons';
 import {StructuredList} from '#/operate/shared/StructuredList/shadcn.components/StructuredList';
 import {TruncatedText} from '#/operate/shared/TruncatedText/shadcn.components/TruncatedText';
-import {ErrorMessage} from '#/operate/shared/ErrorMessage/shadcn.components/ErrorMessage';
-import {CenteredContent} from '#/operate/shared/CenteredContent/shadcn.components/CenteredContent';
-import {EmptyMessage} from '#/operate/shared/EmptyMessage/shadcn.components/EmptyMessage';
 import {useDiagramXml} from '#/operate/pages/Processes/useDiagramXml';
 import {getMappings, type MappingType} from '../getMappings';
 import {isMappingsHelperBannerHidden, setMappingsHelperBannerHidden} from '../inputOutputMappingsPreference';
 import {useProcessInstanceElementSelection} from '../useProcessInstanceElementSelection';
 import {useProcessInstancePage} from '../useProcessInstancePage';
+import {DataLoadErrorAlert} from '#/operate/shared/DataLoadErrorAlert/shadcn.components/DataLoadErrorAlert';
 
+const SKELETON_ROWS = [0, 1, 2];
 const DOCUMENTATION_URL = 'https://docs.camunda.io/docs/components/concepts/variables/#inputoutput-variable-mappings';
 
 const InfoBanner: React.FC<{type: MappingType; onClose: () => void}> = ({type, onClose}) => {
@@ -61,7 +61,7 @@ const InputOutputMappings: React.FC<{type: MappingType; elementId: string}> = ({
 	const {t} = useTranslation();
 	const {processInstance} = useProcessInstancePage();
 	const [isInfoBannerVisible, setIsInfoBannerVisible] = useState(() => !isMappingsHelperBannerHidden(type));
-	const {data, isError, isPending} = useDiagramXml(processInstance.processDefinitionKey);
+	const {data, isError, isPending, refetch} = useDiagramXml(processInstance.processDefinitionKey);
 	const businessObject = data?.businessObjects[elementId];
 	const mappings = businessObject === undefined ? [] : getMappings(businessObject, type);
 	const isInput = type === 'Input';
@@ -74,18 +74,29 @@ const InputOutputMappings: React.FC<{type: MappingType; elementId: string}> = ({
 				</div>
 			)}
 			{isPending ? (
-				<CenteredContent>
-					<Spinner size="default" accessibleLabel={t('operate.processInstance.mappings.loading')} />
-				</CenteredContent>
-			) : isError ? (
-				<div className="m-auto">
-					<ErrorMessage />
+				<div className="flex flex-col gap-2 px-4" aria-busy="true">
+					<span className="sr-only">{t('operate.processInstance.mappings.loading')}</span>
+					{SKELETON_ROWS.map((row) => (
+						<Skeleton key={row} aria-hidden="true" className="h-8 w-full" />
+					))}
 				</div>
+			) : isError ? (
+				<DataLoadErrorAlert className="py-0" onRetry={() => void refetch()} />
 			) : mappings.length === 0 ? (
 				<div className="m-auto">
-					<EmptyMessage
-						message={t(
-							isInput ? 'operate.processInstance.mappings.noInput' : 'operate.processInstance.mappings.noOutput',
+					<EmptyState
+						size="sm"
+						headingLevel={3}
+						icon={<ArrowRightLeft aria-hidden />}
+						heading={t(
+							isInput
+								? 'operate.processInstance.ds.mappings.noInputHeading'
+								: 'operate.processInstance.ds.mappings.noOutputHeading',
+						)}
+						description={t(
+							isInput
+								? 'operate.processInstance.ds.mappings.noInputDescription'
+								: 'operate.processInstance.ds.mappings.noOutputDescription',
 						)}
 					/>
 				</div>
@@ -121,20 +132,21 @@ const InputOutputMappings: React.FC<{type: MappingType; elementId: string}> = ({
 };
 
 function useMappingsElementId() {
-	const {selectedElementId, resolvedElementInstance, isFetchingElementError} = useProcessInstanceElementSelection();
+	const {selectedElementId, resolvedElementInstance, isFetchingElementError, refetchElement} =
+		useProcessInstanceElementSelection();
 
-	return {elementId: selectedElementId ?? resolvedElementInstance?.elementId, hasError: isFetchingElementError};
+	return {
+		elementId: selectedElementId ?? resolvedElementInstance?.elementId,
+		hasError: isFetchingElementError,
+		refetchElement,
+	};
 }
 
 const MappingsTab: React.FC<{type: MappingType}> = ({type}) => {
-	const {elementId, hasError} = useMappingsElementId();
+	const {elementId, hasError, refetchElement} = useMappingsElementId();
 
 	if (hasError) {
-		return (
-			<div className="m-auto">
-				<ErrorMessage />
-			</div>
-		);
+		return <DataLoadErrorAlert onRetry={() => void refetchElement()} />;
 	}
 
 	return elementId === undefined ? null : <InputOutputMappings type={type} elementId={elementId} />;

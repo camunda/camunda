@@ -105,6 +105,7 @@ data.primary-storage.rocks-db.memory-minimum
 data.primary-storage.versioned-directory-retention-count
 data.secondary-storage.rdbms.max-varchar-field-length
 license.key
+processing.engine.caches.deployment-cache-ttl
 processing.engine.caches.process-cache-soft-values
 security.authentication.catch-all-unhandled-paths-enabled
 security.authentication.method
@@ -151,6 +152,7 @@ security.transport-layer-security.cluster.certificate-private-key-path
 security.transport-layer-security.cluster.enabled
 security.transport-layer-security.cluster.key-store.file-path
 security.transport-layer-security.cluster.key-store.password
+system.actor-pool.enabled
 system.actor.idle.max-park-period
 system.actor.idle.max-spins
 system.actor.idle.max-yields

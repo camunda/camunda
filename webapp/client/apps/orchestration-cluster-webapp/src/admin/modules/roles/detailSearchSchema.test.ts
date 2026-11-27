@@ -35,4 +35,19 @@ describe('getRoleMembersRequestBody', () => {
 	it('should offset by the requested page and size', () => {
 		expect(getRoleMembersRequestBody({page: 3, pageSize: 50}, 'users').page).toEqual({from: 100, limit: 50});
 	});
+
+	it('should sort groups by group ID without applying the username filter', () => {
+		expect(getRoleMembersRequestBody({sortField: 'groupId', sortOrder: 'DESC', search: 'jane'}, 'groups')).toEqual({
+			page: {from: 0, limit: 20},
+			sort: [{field: 'groupId', order: 'DESC'}],
+		});
+	});
+
+	it('should combine the username filter with the sort', () => {
+		expect(getRoleMembersRequestBody({sortField: 'username', search: 'jane'}, 'users')).toEqual({
+			page: {from: 0, limit: 20},
+			sort: [{field: 'username', order: 'ASC'}],
+			filter: {username: {$like: '*jane*'}},
+		});
+	});
 });

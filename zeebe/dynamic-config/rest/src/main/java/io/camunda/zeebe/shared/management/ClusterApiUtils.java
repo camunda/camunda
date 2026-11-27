@@ -15,13 +15,11 @@ import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.MessagingException.NoSuchMemberException;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
-import io.camunda.zeebe.dynamic.config.state.ChangePlan;
-import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
-import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.CompletedOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CompletedPhasedChange;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.DependencyChangePlan;
+import io.camunda.zeebe.dynamic.config.state.DependencyChangePlan.CompletedOperation;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
@@ -31,7 +29,6 @@ import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberRemoveO
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.PostScalingOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.PreScalingOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.UpdatePartitionDistributorConfigOperation;
-import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.FixedConfig;
@@ -126,6 +123,7 @@ final class ClusterApiUtils {
   private static final OffsetDateTime MIN_PARSER_COMPLIANT_DATE =
       OffsetDateTime.parse("0000-01-01T00:00:00Z");
   private static final String MESSAGE_CORRELATION_STRATEGY_HASH_MOD = "HashMod";
+  private static final long UNINITIALIZED_TOPOLOGY_VERSION = -1;
 
   private ClusterApiUtils() {
     throw new IllegalStateException("Utility class");
@@ -301,8 +299,8 @@ final class ClusterApiUtils {
    * whichever sub-config (global or physical tenant) the currently active phase targets: phases
    * before {@code currentPhaseIndex} are fully done, phases after it are entirely untouched, but
    * the active phase's own operations may be partially done already — activating a phase copies its
-   * operations into the target sub-config's {@link ClusterChangePlan}, which independently tracks
-   * which of those operations have completed so far, and when.
+   * operations into the target sub-config's {@link DependencyChangePlan}, which independently
+   * tracks which of those operations have completed so far, and when.
    */
   private static ChangeProgress progressOf(
       final CurrentClusterConfiguration configuration, final PhasedChangePlan plan) {
@@ -359,14 +357,14 @@ final class ClusterApiUtils {
   /**
    * Splits one sub-config's share of the active phase's operations between {@code completed} and
    * {@code pending}. {@code subConfigPlan} is absent when the phase hasn't actually been activated
-   * into the sub-config yet (e.g. a plan reconstructed via {@link
-   * CurrentClusterConfiguration#fromLegacy}, which builds the pending plan at phase 0 without
-   * activating it) — in that case nothing has completed yet, so the whole phase is still pending.
+   * into the sub-config yet (e.g. a restored plan before {@link
+   * CurrentClusterConfiguration#activatePendingPhase()}) — in that case nothing has completed yet,
+   * so the whole phase is still pending.
    */
   private static void splitSubConfigOperations(
       final @Nullable String physicalTenantId,
       final List<? extends ClusterConfigurationChangeOperation> phaseOperations,
-      final Optional<? extends ChangePlan> subConfigPlan,
+      final Optional<DependencyChangePlan> subConfigPlan,
       final List<CompletedOperationProgress> completed,
       final List<Operation> pending) {
     if (subConfigPlan.isEmpty()) {
@@ -407,32 +405,12 @@ final class ClusterApiUtils {
 
   private static PlannedOperationsResponse mapResponseType(
       final ClusterConfigurationChangeResponse response) {
-    // response.response() is absent when the responding peer hasn't populated the new
-    // multi-partition-group data (e.g. a peer still running old code); fall back to the
-    // legacy data in that case.
-    final var multiConfigResponse = response.response();
-    final List<Operation> operations =
-        multiConfigResponse == null
-            ? mapOperations(response.legacyResponse().plannedChanges())
-            : mapPhaseOperations(multiConfigResponse.phases());
-    final List<BrokerState> currentTopology =
-        multiConfigResponse == null
-            ? mapBrokerStates(response.legacyResponse().currentConfiguration())
-            : mapBrokerStatesFromPhysicalTenantsConfig(multiConfigResponse.currentConfiguration());
-    final List<BrokerState> expectedTopology =
-        multiConfigResponse == null
-            ? mapBrokerStates(response.legacyResponse().expectedConfiguration())
-            : mapBrokerStatesFromPhysicalTenantsConfig(multiConfigResponse.expectedConfiguration());
     return new PlannedOperationsResponse()
         .changeId(response.changeId())
-        .currentTopology(currentTopology)
-        .expectedTopology(expectedTopology)
-        .plannedChanges(operations);
-  }
-
-  private static List<Operation> mapOperations(
-      final List<ClusterConfigurationChangeOperation> operations) {
-    return mapOperations(null, operations);
+        .currentTopology(mapBrokerStatesFromPhysicalTenantsConfig(response.currentConfiguration()))
+        .expectedTopology(
+            mapBrokerStatesFromPhysicalTenantsConfig(response.expectedConfiguration()))
+        .plannedChanges(mapPhaseOperations(response.phases()));
   }
 
   private static List<Operation> mapOperations(
@@ -591,27 +569,13 @@ final class ClusterApiUtils {
     return convertedOperation;
   }
 
-  private static List<BrokerState> mapBrokerStates(
-      final SortedMap<MemberId, MemberState> topology) {
-    return topology.entrySet().stream()
-        .map(
-            entry ->
-                new BrokerState()
-                    .id(brokerIdValue(entry.getKey()))
-                    .state(mapBrokerState(entry.getValue().state()))
-                    .lastUpdatedAt(mapInstantToDateTime(entry.getValue().lastUpdated()))
-                    .version(entry.getValue().version())
-                    .partitions(mapPartitionStates(entry.getValue().partitions())))
-        .toList();
-  }
-
   /**
-   * Flattens the new multi-partition-group model into the flat {@code BrokerState} list expected by
-   * the REST response: every broker in {@code brokers} is included (broker lifecycle has no tenant
-   * dimension, so this is always the global configuration's full membership), and each broker's
-   * partitions from every physical tenant group in {@code groupsInView} it participates in are
-   * merged onto that one broker entry, tagged with their owning tenant. A broker replicating
-   * nothing in {@code groupsInView} gets an empty partition list.
+   * Flattens the multi-partition-group configuration into the flat {@code BrokerState} list
+   * expected by the REST response: every broker in {@code brokers} is included (broker lifecycle
+   * has no tenant dimension, so this is always the global configuration's full membership), and
+   * each broker's partitions from every physical tenant group in {@code groupsInView} it
+   * participates in are merged onto that one broker entry, tagged with their owning tenant. A
+   * broker replicating nothing in {@code groupsInView} gets an empty partition list.
    *
    * <p>{@code groupsInView} is deliberately a parameter rather than derived from the configuration
    * the {@code brokers} came from: it is the subset of partition groups the request is scoped to,
@@ -645,14 +609,13 @@ final class ClusterApiUtils {
 
   /**
    * Maps one broker, merging its partitions across {@code partitionGroups}. {@code version} is
-   * reported only while those cover at most one physical tenant: it is then the same fold the
-   * legacy {@link CurrentClusterConfiguration#toLegacy} projection applies (see {@code
-   * toLegacyMemberState}), so a consumer watching {@code brokers[].version} for change detection
-   * still sees partition-state changes and not only broker-lifecycle ones — the two counters are
-   * independent, and a partition join bumps the group's without touching the broker's. Across more
-   * than one tenant that maximum is no longer the version of anything, so it is left absent. {@code
-   * lastUpdatedAt} is folded either way, where it keeps meaning "something about this broker last
-   * changed at this time".
+   * reported only while those cover at most one physical tenant: it is then the higher of the
+   * broker's lifecycle version and its partition-state version, so a consumer watching {@code
+   * brokers[].version} for change detection still sees partition-state changes and not only
+   * broker-lifecycle ones — the two counters are independent, and a partition join bumps the
+   * group's without touching the broker's. Across more than one tenant that maximum is no longer
+   * the version of anything, so it is left absent. {@code lastUpdatedAt} is folded either way,
+   * where it keeps meaning "something about this broker last changed at this time".
    */
   private static BrokerState mapBrokerStateFromPhysicalTenantsConfig(
       final MemberId memberId,
@@ -724,24 +687,8 @@ final class ClusterApiUtils {
         : timestamp.atOffset(ZoneOffset.UTC);
   }
 
-  private static BrokerStateCode mapBrokerState(final MemberState.State state) {
-    return switch (state) {
-      case ACTIVE -> BrokerStateCode.ACTIVE;
-      case JOINING -> BrokerStateCode.JOINING;
-      case LEAVING -> BrokerStateCode.LEAVING;
-      case LEFT -> BrokerStateCode.LEFT;
-      case UNINITIALIZED -> BrokerStateCode.UNKNOWN;
-      case RECOVERING -> BrokerStateCode.RECOVERING;
-    };
-  }
-
   private static List<PartitionState> mapPartitionStates(
-      final SortedMap<Integer, io.camunda.zeebe.dynamic.config.state.PartitionState> partitions) {
-    return mapPartitionStates(null, partitions);
-  }
-
-  private static List<PartitionState> mapPartitionStates(
-      final @Nullable String physicalTenantId,
+      final String physicalTenantId,
       final SortedMap<Integer, io.camunda.zeebe.dynamic.config.state.PartitionState> partitions) {
     return partitions.entrySet().stream()
         .map(
@@ -822,14 +769,13 @@ final class ClusterApiUtils {
    * <ul>
    *   <li>at most one group in view (an unscoped request against a single-tenant cluster, a request
    *       scoped to one physical tenant, or an uninitialized configuration with zero groups):
-   *       {@code version} is populated from {@link CurrentClusterConfiguration#toLegacy}'s
-   *       cluster-wide projection as the higher of the global and this one group's version; {@code
-   *       lastChange} and {@code pendingChange} both come from the {@link PhasedChangeState} so
-   *       that they share one id space with each other and with the change endpoints — {@code
-   *       lastChange} always reflects the cluster-wide change history regardless of which group is
-   *       in view, and {@code pendingChange} is the pending plan that touches this group, whether
-   *       cluster-wide or group-scoped; only {@code routing} is genuinely this one group's own
-   *       state.
+   *       {@code version} is the higher of the global and this one group's version, or {@code -1}
+   *       while the configuration is uninitialized; {@code lastChange} and {@code pendingChange}
+   *       both come from the {@link PhasedChangeState} so that they share one id space with each
+   *       other and with the change endpoints — {@code lastChange} always reflects the cluster-wide
+   *       change history regardless of which group is in view, and {@code pendingChange} is the
+   *       pending plan that touches this group, whether cluster-wide or group-scoped; only {@code
+   *       routing} is genuinely this one group's own state.
    *   <li>more than one group in view (an unscoped request against a multi-tenant cluster): none of
    *       {@code version}, {@code lastChange}, {@code pendingChange} or {@code routing} are
    *       populated at the top level — reporting any one group's routing state there would
@@ -851,7 +797,7 @@ final class ClusterApiUtils {
     // by construction (see CurrentClusterConfiguration.uninitialized()/init()), so a requested
     // tenant is then legitimately absent - fall back to an empty view rather than NPE-ing on
     // configuration.partitionGroup's @Nullable result; this lands in the at-most-one-group branch
-    // below and yields the uninitialized toLegacy(DEFAULT_GROUP) projection.
+    // below and reports the uninitialized version.
     final Map<String, PartitionGroupConfiguration> groupsInView;
     if (physicalTenant == null) {
       groupsInView = configuration.partitionGroups();
@@ -869,17 +815,18 @@ final class ClusterApiUtils {
 
     if (singleTenantShape) {
       final String groupId =
-          groupsInView.isEmpty()
-              ? CurrentClusterConfiguration.DEFAULT_GROUP
-              : groupsInView.keySet().iterator().next();
-      final var legacy = configuration.toLegacy(groupId);
-      response.version(legacy.version());
-      legacy
-          .routingState()
+          groupsInView.keySet().stream()
+              .findFirst()
+              .orElse(CurrentClusterConfiguration.DEFAULT_GROUP);
+      response.version(
+          configuration.isUninitialized()
+              ? UNINITIALIZED_TOPOLOGY_VERSION
+              : configuration.versionOf(groupId));
+      Optional.ofNullable(groupsInView.get(groupId))
+          .flatMap(PartitionGroupConfiguration::routingState)
           .ifPresent(routingState -> response.routing(mapRoutingState(routingState)));
-      // change ids must come from the phased change state, not the legacy projection: the legacy
-      // pendingChanges is whichever sub-config plan is executing the active phase, and sub-config
-      // plan ids are counted independently of phased plan ids (and of each other). See
+      // change ids must come from the phased change state, not from a sub-config's pending plan:
+      // sub-config plan ids are counted independently of phased plan ids (and of each other). See
       // mapPendingChange.
       configuration
           .phasedChangeState()
@@ -1091,16 +1038,23 @@ final class ClusterApiUtils {
     return tenantsInView.stream()
         .flatMap(
             tenant ->
-                aggregateExporterState(configuration.toLegacy(tenant)).stream()
+                aggregateGroupExporterState(configuration, tenant).stream()
                     .map(status -> status.physicalTenant(tenant)))
         .toList();
   }
 
-  static List<ExporterStatus> aggregateExporterState(
-      final ClusterConfiguration clusterConfiguration) {
+  private static List<ExporterStatus> aggregateGroupExporterState(
+      final CurrentClusterConfiguration configuration, final String groupId) {
+    final var group = configuration.partitionGroup(groupId);
+    if (group == null) {
+      return List.of();
+    }
+
+    final var pendingChanges = configuration.pendingChangesOf(groupId);
+
     // Map of ExporterId => List of ExporterState (each item corresponds to a partition)
     final var exporters =
-        clusterConfiguration.members().values().stream()
+        group.members().values().stream()
             .flatMap(
                 m ->
                     m.partitions().values().stream()
@@ -1120,8 +1074,7 @@ final class ClusterApiUtils {
                 e.getValue().stream()
                     .distinct()
                     .map(s -> transformState(e.getKey(), s))
-                    .reduce(
-                        (status, other) -> reduceExporterState(status, other, clusterConfiguration))
+                    .reduce((status, other) -> reduceExporterState(status, other, pendingChanges))
                     .orElse(
                         // This case would never happen, as we are reducing a non-empty stream
                         new ExporterStatus()
@@ -1133,14 +1086,13 @@ final class ClusterApiUtils {
   private static ExporterStatus reduceExporterState(
       final ExporterStatus status,
       final ExporterStatus other,
-      final ClusterConfiguration clusterConfiguration) {
+      final Optional<DependencyChangePlan> pendingChanges) {
     if (requireNonNull(status.getStatus(), "status must be set").equals(other.getStatus())
-        && !clusterConfiguration.hasPendingChanges()) {
+        && pendingChanges.isEmpty()) {
       return status;
     }
 
-    return clusterConfiguration
-        .pendingChanges()
+    return pendingChanges
         .flatMap(
             p ->
                 p.pendingOperations().stream()

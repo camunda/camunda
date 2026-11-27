@@ -1,46 +1,46 @@
 ---
 name: operate-frontend
-description: Use for any Operate frontend work — the target pod at webapp/client/apps/orchestration-cluster-webapp/src/operate/ and the legacy client at operate/client/. Covers routing, data fetching, state, styling, testing, forms and conventions in both. For porting a page from legacy to target, use frontend-operate-migrator.
+description: Use for any Operate frontend work in the orchestration cluster webapp — code under webapp/client/apps/orchestration-cluster-webapp/src/operate/ and its routes. Covers scope, routing, data fetching, writes, state, styling, i18n and how Operate unit tests are written.
 ---
 
 # Operate Frontend
 
-Operate's frontend lives in two codebases while the migration runs:
+Operate lives in `webapp/client/apps/orchestration-cluster-webapp/src/operate/`. React 19, TanStack
+Router + Query, `bpmn-js` / `dmn-js` for diagrams, Monaco (`@monaco-editor/react`) for JSON.
 
-- **Target** — `webapp/client/apps/orchestration-cluster-webapp/src/operate/` (~240 files). All new
-  work goes here. React 19, TanStack Router + Query, Carbon, styled-components (temporary).
-- **Legacy** — `operate/client/` (~1200 files). Bug fixes, small adjustments and maintenance only.
-  React 19, React Router 7, TanStack Query 5, MobX 7, Carbon, styled-components, React Final Form.
-  Winding down; don't add architecture.
+This skill records Operate-specific choices and overrides. For everything else read the canonical
+guides under `docs/monorepo-docs/frontend/`, starting with `orchestration-cluster-webapp.md` for
+app-wide layout and boundaries.
 
-Both render BPMN/DMN with `bpmn-js` / `dmn-js` and edit JSON with Monaco (`@monaco-editor/react`).
-The target rules follow. For legacy work, read [references/legacy.md](references/legacy.md); for a
-migration, read both and use [frontend-operate-migrator](../frontend-operate-migrator/SKILL.md).
+## Scope
 
-For target unit tests, follow [frontend-unit-test](../frontend-unit-test/SKILL.md). For other target
-concerns, read the relevant canonical guide under `docs/monorepo-docs/frontend/`. For app-wide
-layout and boundaries, start with `docs/monorepo-docs/frontend/orchestration-cluster-webapp.md`.
-The rules below record Operate-specific choices and overrides.
+Change only Operate code: `src/operate/**`, the Operate routes, and Operate tests. `src/shared/**`
+and the shared test modules affect every pod: when a task seems to need a change there, name the
+file and ask before editing it.
+
+Do what the task asks and nothing next to it. Report other problems you find; do not fix them.
 
 ## Project structure
 
-**Target:** routes in `src/routes/_carbon/_auth/operate/`, pages and their query/search contracts in
+Routes in `src/routes/_carbon/_auth/operate/`, pages and their query/search contracts in
 `src/operate/`, cross-pod primitives in `src/shared/`. Dependencies flow **routes → operate →
 shared**: feature code must not import route files, shared code must not import feature code. Define
-shared route/feature schemas in the feature. Never import across the legacy app boundary.
+shared route/feature schemas in the feature.
 
 Pages are directories named after their primary export — `Dashboard/Dashboard.tsx`, not
 `DashboardPage`.
 
 ## Routing
 
-**Target:** TanStack file-based routes under `src/routes/_carbon/_auth/operate/`. Route IDs include
-`/_carbon/_auth`; browser URLs stay `/operate/...`. Do not introduce historical `/_auth/operate/...`
-IDs. The guard, Dashboard and Processes list already exist — inspect before adding or splitting.
-`beforeLoad` is for auth/guards only; `loader` prefetches data. Route files are thin: they wire a
-page component and own `loader`, `pendingComponent`, `errorComponent`.
+TanStack file-based routes. Route IDs include `/_carbon/_auth`; browser URLs stay `/operate/...`.
+Do not introduce `/_auth/operate/...` IDs. Inspect the existing routes before adding or splitting
+one. `beforeLoad` is for auth/guards only; `loader` prefetches data. Route files are thin: they wire
+a page component and own `loader`, `pendingComponent`, `errorComponent`.
 
-## URL as state (target)
+Use typed router links, not hard-coded path strings. Regenerate `routeTree.gen.ts`; never hand-merge
+it.
+
+## URL as state
 
 Follow `docs/monorepo-docs/frontend/development-process/creating-a-new-page.md`: entity identity goes
 in path params, shareable view state in validated search params, and ephemeral UI state locally.
@@ -49,10 +49,10 @@ Cover duplicate definition IDs across tenants and browser back/forward.
 
 ## Data fetching
 
-**Target:** endpoint factories in `#/shared/http/endpoints.ts`. Operate-only query options live
-**beside the owning feature** in `<feature>.queries.ts` or a local hook; only cross-app query options
-belong in `#/shared/http/queries.ts`. Do not add Operate-specific polling, aggregation or
-multi-page fetching to the shared registry.
+Endpoint factories live in `#/shared/http/endpoints.ts`. Operate-only query options live **beside
+the owning feature** in `<feature>.queries.ts` or a local hook; only cross-app query options belong
+in `#/shared/http/queries.ts`. Do not add Operate-specific polling, aggregation or multi-page
+fetching to the shared registry.
 
 | Concern                      | Where it goes                                                                                           |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------- |
@@ -70,7 +70,11 @@ Suspense queries throw initial errors without data, but a failed refetch can ret
 handle those explicitly. Where a panel needs independent loading and recovery, use a granular
 boundary or `useQuery`. See `docs/monorepo-docs/frontend/data-loading.md`.
 
-## Writes (target)
+Preserve each endpoint's pagination contract: keep the paginated table for offset-based pages
+rather than converting it to infinite scroll. Honor eventual-consistency metadata, keep
+authorization server-driven, and cover multi-tenancy.
+
+## Writes
 
 Use direct `request()` handlers for simple writes, and XState machines for accepted/pending
 lifecycles. This is an Operate rule; it does not change other pods' write patterns.
@@ -80,9 +84,7 @@ lifecycles. This is an Operate rule; it does not change other pods' write patter
 - **Write with a lifecycle** (API returns 202 and the resource passes through pending states): model
   it as an XState machine (`setup` + `fromPromise` actors) taking `queryClient` as input — optimistic
   update via `setQueryData` with rollback, poll via `fetchQuery` until the resource leaves the
-  transitional state, then invalidate affected lists. Behavior reference:
-  `tasklist/modules/task-details/taskCompletionMachine.ts` (the machine's shape, not Tasklist's route
-  tree or design-system wrappers).
+  transitional state, then invalidate affected lists.
 
 Operate's batch operations follow this lifecycle. Distinguish **starting** a new batch (returns a
 key) from suspend/resume/cancel of an **existing** one (bodyless response — don't parse JSON from an
@@ -90,106 +92,103 @@ empty body). Never put write logic in `queries.ts`; it stays a read-only registr
 
 ## State management
 
-**Target:** URL search params own shareable state, `useState` owns ephemeral UI, and TanStack Query
-owns server data. Reuse shared session, theme, and notification modules rather than porting stores.
-Complex pending state may use a local reducer or MobX when simpler state is insufficient.
+URL search params own shareable state, `useState` owns ephemeral UI, and TanStack Query owns server
+data. Reuse the shared session, theme, and notification modules rather than adding stores. Complex
+pending state may use a local reducer or MobX when simpler state is insufficient.
 
 ## Styling
 
-**Target:** `styled-components` and Carbon are kept **temporarily** for the legacy-to-unified
-migration. This is a compatibility step, not the target design system and not a frontend-wide
-default — the Camunda design system replaces it later via
-[design-system-migrator](../design-system-migrator/SKILL.md). Reuse existing Carbon components;
-custom JSX is a last resort at this stage. Tasklist's design-system migration runs independently —
-never apply these Carbon rules there.
+Operate is moving from Carbon and `styled-components` to the Camunda design system through
+[design-system-migrator](../design-system-migrator/SKILL.md). The design-system variant of a
+component lives in a `shadcn.components/` folder next to the Carbon one, and is served from
+`src/routes/_shadcn/_auth/operate-preview/`.
+
+- In design-system components use design-system tokens and `Text`. In Carbon components keep Carbon
+  primitives and tokens. Never use raw colors.
+- Reuse an existing component before writing custom JSX.
 
 ## Component structure
 
-**Both:** named exports only, never `export default`. No code comments — if something needs one,
-rewrite the code. Prefer declarative and functional (`const`, `map`/`filter`/`reduce`); a local
+Named exports only, never `export default`. One file, one primary export, filename matches it; a
+colocated query module may export both its `queryOptions` and its `use*` hook. No code comments — if
+something needs one, rewrite the code. Prefer `const` and `map`/`filter`/`reduce`; a local
 `let`/`for` is fine for tight data aggregation where it reads clearer (see
 `useRunningInstancesCount.ts`).
 
-**Target:** one file, one primary export, filename matches it. A colocated query module may export
-both its `queryOptions` and its `use*` hook.
+Make a prop required when the caller must pass it; don't add placeholder fallbacks. Give every
+spinner and status an accessible name, and use one persistent live region instead of mounting a
+`role="status"` per update.
 
-## i18n (target)
+## i18n
 
 Operate strings go under `operate.*` inside the shared `translation` namespace in
-`src/shared/i18n/locales/`, used as `t('operate.dashboard.title')`. Add all four locales (en/de/fr/es)
-— LLM-translate de/fr/es and note "LLM-translated — not yet verified by native speakers" in the PR
-description.
+`src/shared/i18n/locales/`, used as `t('operate.dashboard.title')`. Every key must exist in all four
+locales (en/de/fr/es).
 
-## Testing
+## Forms and feature flags
 
-**Target:** follow [frontend-unit-test](../frontend-unit-test/SKILL.md). Put reusable response data in
-`shared-test-modules/api-mocks/` factories rather than constructing large literals in tests.
+Follow `docs/monorepo-docs/frontend/forms.md` and
+`docs/monorepo-docs/frontend/development-process/working-on-large-feature.md`. Before starting a
+feature, read `docs/monorepo-docs/frontend/development-process/before-starting.md`.
 
-## Review pitfalls (target)
+## Unit tests
 
-Recurring review findings from the Process Instance design-system migration. Check your diff
-against this list before requesting review.
+[frontend-unit-test](../frontend-unit-test/SKILL.md) explains the tooling: rendering, locators, the
+`worker` fixture and the shared endpoint mocks. The rules below say what an Operate test may do.
+Where they are stricter than that skill, they win.
 
-**Code**
+**Test what the user sees and does.** A test that follows the user survives a refactor; a test that
+follows the code breaks on one and can pass while the screen is wrong.
 
-- Never use raw colors. In shadcn components use design-system tokens and `Text`; in Carbon
-  components keep Carbon primitives and tokens.
-- Make a prop required when the caller must pass it. Don't add placeholder fallbacks.
-- Don't add test-only `data-testid` attributes. Give elements an accessible name, role, or label.
-- Give every spinner and status an accessible name. Use one persistent live region instead of
-  mounting a `role="status"` per update. Mark non-interactive tree nodes as disabled.
-- Use typed router links, not hard-coded path strings.
+- Find elements by role, label or text. No new test ids. When a native control has no accessible
+  name, give it one that reads correctly for a screen-reader user. Never put `aria-label` on a
+  generic element such as a `div`: that is invalid ARIA. Leave existing test ids alone unless the
+  task is about them; a test id is the last resort for an element with no role and no accessible
+  name.
+- Act with `userEvent`. Reach a page state by clicking the link, row or tab, not by calling the
+  router.
+- Assert rendered output, and the URL after navigation. Do not assert on a store, the query client,
+  a request count, a class name or layout geometry.
 
-**Tests**
+**Do not mock our own code.** No `vi.mock`, no spies on Operate or shared modules.
 
-- Don't branch in tests. No `if` or `throw` guards; split the test or use `it.each`.
-- Match an accessible name exactly when another name contains it (`{name: 'Diagram', exact: true}`).
-  Substring matches fail Playwright strict mode.
-- Don't disable axe rules wholesale. Scope scans with `include` or `exclude`, and link an issue for
-  any temporary exclusion.
-- After a redirect, assert rendered content, not only the URL. Cover error, forbidden, empty, retry,
-  keyboard, and paging paths.
-- Every `operate.*` key must exist in all four locales. Enforce it with a key-existence test rather
-  than relying on untyped `t()` strings.
+- HTTP is the only thing a test replaces, through the shared endpoint mocks passed to
+  `worker.use()`. For a different response later in the test, call `worker.use()` again right before
+  the action that needs it.
+- A browser API the test cannot reach, such as `navigator.clipboard`, may be spied on.
+- `vi.fn()` is for a callback prop of the component under test.
+- To check what a mutation sends, give the endpoint mock a `schema` with the exact expected values
+  (`.extend()`, `z.literal()`), a `successResponse` and a `failureResponse`. A wrong payload then
+  gets the failure response and the assertion on the screen fails. Do not record or count requests.
 
-**Stacks and CI**
+**Make the test deterministic.** A test must pass every time or fail every time, without retries.
 
-- Regenerate `routeTree.gen.ts` instead of hand-merging it. A PR that conflicts with `main` gets no
-  merge ref, so full CI never starts. Check `gh pr view <n> --json mergeable`.
-- Run the Playwright integration and a11y tests locally (after `npm run build`) before pushing.
-  Take Linux visual baselines from CI actuals, not from macOS.
-- Give each PR fresh light and dark screenshots, with a Carbon comparison where one exists, and
-  refresh them after visual changes.
-- Push review fixes to a published PR as fast-forward commits. Rewrite history only when the base
-  diverged or the user authorizes it. Before any reset, save the fixes and unrelated changes, then
-  rebase `--onto` the new base and push with `--force-with-lease`.
+- Never wait on real time: no sleep, `waitFor`, `vi.waitFor` or raised timeout. For a pending state
+  use `delay: 'infinite'`: with fake timers on, `expect.element` and waiting actions advance the
+  clock themselves, so a finite `delay` is never held pending. Fake timers advanced by the test are
+  for a real debounce, backoff or poll the test must fast-forward.
+- Assert on the DOM only through `expect.element` on a locator, which retries
+  (`await expect.element(locator).toHaveLength(n)` counts). Do not assert on a resolved node
+  (`.element()`, `.elements()` in a plain `expect(...)`, `querySelector`, `closest`) and do not call
+  DOM methods on one (`.click()`, `.focus()`). To hand a node to an external API use
+  `await locator.findElement()`.
+- `expect.element` and `userEvent` wait up to the test deadline, `expect.poll` and `vi.waitFor` only
+  1000 ms. This holds only while the browser provider sets no `actionTimeout`.
+- Before asserting that something is absent, assert something visible that proves the UI rendered.
+  A component that is expected to render nothing has no such anchor; that test stands as it is.
+- Mock every request the test triggers. An unhandled request is a failure.
+- A fix removes the cause of a failure. Never add a retry or a `try/catch`.
 
-## Forms
+**Keep tests small and honest.**
 
-**Target:** follow `docs/monorepo-docs/frontend/forms.md`.
-
-## Before building a target feature
-
-Read `docs/monorepo-docs/frontend/development-process/before-starting.md`. Preserve each endpoint's
-pagination contract and legacy UX: keep the existing paginated table for offset-based pages rather
-than converting it to infinite scroll. Honor eventual-consistency metadata, keep authorization
-server-driven, and cover multi-tenancy. Verify imports are declared dependencies and inspect
-`tsconfig.browser.json` before adding global types.
-
-## Feature flags (target)
-
-Follow `docs/monorepo-docs/frontend/development-process/working-on-large-feature.md`.
-
-## Validation
-
-For tracked non-migration work, follow
-[operate-engineering-loop](../operate-engineering-loop/SKILL.md). For legacy-to-unified migrations,
-follow the independent [frontend-operate-migrator](../frontend-operate-migrator/SKILL.md) workflow.
-Both include their own validation and PR-review loop; this skill owns coding conventions only.
+- No logic in a test: no `if`, ternary or `??` that picks an action or an expected value. Split the
+  test, or put the expected values in the `it.for` case table.
+- After writing or changing an assertion, break the behaviour once by hand and see the test fail.
+- A test that repeats the coverage of another is deleted, not rewritten.
+- Change a test file only where the task requires it.
 
 ## Boundaries
 
-**Target — don't introduce:** `/_auth/operate/...` route IDs, Operate-specific policy in
-`#/shared/http/queries.ts`, per-consumer copies of shared logic, imports across the legacy app
-boundary, or Mixpanel tracking (the app has none — when porting a callback that mixes tracking with
-behavior, keep the behavior and drop the tracking).
+Don't introduce: `/_auth/operate/...` route IDs, Operate-specific policy in
+`#/shared/http/queries.ts`, per-consumer copies of shared logic, or Mixpanel tracking (the app has
+none).

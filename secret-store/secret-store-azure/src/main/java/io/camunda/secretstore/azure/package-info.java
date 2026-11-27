@@ -17,7 +17,19 @@
  * by {@code managedIdentityClientId}), workload identity, or a service principal supplied through
  * the standard {@code AZURE_*} environment variables; no credential is accepted in the store's
  * configuration. {@code authorityHost} selects the Microsoft Entra authority for sovereign clouds.
- * {@code maxRetries}, {@code callTimeout} and {@code attemptTimeout} bound each call to the vault.
+ * {@code callTimeout} bounds each read of the vault, retries and signing in included, and {@code
+ * attemptTimeout} each HTTP attempt to the vault within it, and connecting to sign in. Only
+ * throttling (408, 429), server errors (500, 502, 503, 504), network errors and timeouts are
+ * retried, at most {@code maxRetries} times, with a jittered backoff; a rejected sign-in is not
+ * retried, and the waits between retries, backoff and {@code Retry-After} alike, must fit in half
+ * of {@code callTimeout}, or the vault's answer is reported rather than waited out.
+ *
+ * <p>A missing secret is reported as not found, a 403 as access denied (with one WARN per store
+ * naming the role the identity may lack) and a 400 as an invalid reference. A 403 from the vault's
+ * firewall or private-endpoint rules, a failed sign-in, any other answer, or no answer within
+ * {@code callTimeout} makes the store unavailable. A message carries Key Vault's own status, error
+ * code and message when the vault answered, and the network error otherwise, see {@link
+ * io.camunda.secretstore.azure.AzureKeyVaultSecretStore}.
  *
  * <p>Developer logins (Azure CLI, IDEs, PowerShell, Azure Developer CLI) are never used, see {@link
  * io.camunda.secretstore.azure.AzureCredentialChain}.

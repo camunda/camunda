@@ -20,10 +20,8 @@ import io.camunda.zeebe.dynamic.config.impl.gossip.ClusterConfigurationGossiper;
 import io.camunda.zeebe.dynamic.config.impl.metrics.TopologyMetrics;
 import io.camunda.zeebe.dynamic.config.impl.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.BrokerState;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
-import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.scheduler.Actor;
@@ -86,9 +84,10 @@ final class GatewayClusterConfigurationServiceTest {
     startGateway(clusterNodes.get(1));
 
     final var brokerConfiguration =
-        CurrentClusterConfiguration.fromLegacy(
-            ClusterConfiguration.init()
-                .addMember(broker1.id(), MemberState.initializeAsActive(Map.of())));
+        CurrentClusterConfiguration.init()
+            .updateGlobalConfiguration(
+                global -> global.addMember(broker1.id(), BrokerState.initializeAsActive()))
+            .initPartitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP);
 
     final var received = new AtomicReference<CurrentClusterConfiguration>();
     gateway.addUpdateListener(
@@ -133,9 +132,7 @@ final class GatewayClusterConfigurationServiceTest {
             Map.of("tenanta", tenantGroup),
             PhasedChangeState.empty());
 
-    // when — broker1 gossips the new-model configuration; it must reach broker3 relayed through
-    // the gateway (before this fix, the gateway never populated field 2 at all, so it could only
-    // ever relay a lossy single-group legacy projection)
+    // when — broker1 gossips its configuration; it must reach broker3 relayed through the gateway
     broker1.setCurrentClusterConfiguration(brokerConfiguration);
 
     // then

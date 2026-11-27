@@ -107,6 +107,76 @@ public final class ElementInstanceStateTest {
   }
 
   @Test
+  public void shouldReturnInstanceState() {
+    // given
+    elementInstanceState.newInstance(
+        100, createProcessInstanceRecord(), ProcessInstanceIntent.ELEMENT_ACTIVATED);
+
+    // when
+    final var state = elementInstanceState.getInstanceState(100);
+
+    // then
+    assertThat(state).isEqualTo(ProcessInstanceIntent.ELEMENT_ACTIVATED);
+  }
+
+  @Test
+  public void shouldReturnUpdatedInstanceState() {
+    // given
+    elementInstanceState.newInstance(
+        100, createProcessInstanceRecord(), ProcessInstanceIntent.ELEMENT_ACTIVATED);
+    elementInstanceState.updateInstance(
+        100, instance -> instance.setState(ProcessInstanceIntent.ELEMENT_COMPLETING));
+
+    // when
+    final var state = elementInstanceState.getInstanceState(100);
+
+    // then
+    assertThat(state).isEqualTo(ProcessInstanceIntent.ELEMENT_COMPLETING);
+  }
+
+  @Test
+  public void shouldReturnNullStateForMissingInstance() {
+    // given - one instance that was removed, one that never existed
+    elementInstanceState.newInstance(
+        100, createProcessInstanceRecord(), ProcessInstanceIntent.ELEMENT_ACTIVATED);
+    elementInstanceState.removeInstance(100);
+
+    // when - then
+    assertThat(elementInstanceState.getInstanceState(100)).isNull();
+    assertThat(elementInstanceState.getInstanceState(999)).isNull();
+  }
+
+  @Test
+  public void shouldReturnNullStateForNoInstanceKey() {
+    // given - a row stored under -1, which a real lookup would find
+    elementInstanceState.newInstance(
+        -1, createProcessInstanceRecord(), ProcessInstanceIntent.ELEMENT_ACTIVATED);
+
+    // when
+    final var state = elementInstanceState.getInstanceState(-1L);
+
+    // then - null despite the stored row means the lookup was skipped
+    assertThat(state).isNull();
+  }
+
+  @Test
+  public void shouldNotChangePreviouslyReadInstanceWhenReadingState() {
+    // given
+    elementInstanceState.newInstance(
+        100, createProcessInstanceRecord(), ProcessInstanceIntent.ELEMENT_ACTIVATED);
+    elementInstanceState.newInstance(
+        101, createProcessInstanceRecord(), ProcessInstanceIntent.ELEMENT_COMPLETING);
+    final ElementInstance instance = elementInstanceState.getInstance(100);
+
+    // when
+    elementInstanceState.getInstanceState(101);
+
+    // then
+    assertThat(instance.getKey()).isEqualTo(100);
+    assertThat(instance.getState()).isEqualTo(ProcessInstanceIntent.ELEMENT_ACTIVATED);
+  }
+
+  @Test
   public void shouldFindChildInstance() {
     // given
     final ProcessInstanceRecord processInstanceRecord = createProcessInstanceRecord();

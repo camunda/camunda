@@ -1,4 +1,4 @@
-# Unified CI for Operate. Runs backend unit tests, front end unit tests, and checks if operate can build
+# Unified CI for Operate. Runs backend unit tests and front end checks/tests.
 # test location: /operate, /operate/client
 # called by: ci.yml
 # type: CI
@@ -77,49 +77,6 @@ jobs:
       suiteName: ${{ matrix.suiteName }}
       owner: ${{ matrix.owner }}
       use-shared-distball: ${{ inputs.use-shared-distball }}
-
-  # Checks to see if Operate can properly build itself
-  build-operate-backend:
-    if: inputs.runBeTests
-    name: "Build Back End"
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    permissions:
-      id-token: write # Vault JWT login
-    env:
-      BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
-      TEST_TYPE: Build
-    steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@08f6922ee1aeb45b5270ff62ce582fa7d85428a1 # main
-      - name: Checkout repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - name: Print metadata
-        uses: ./.github/actions/print-metadata
-      - uses: ./.github/actions/setup-build
-        name: Build setup
-        with:
-          java-distribution: temurin
-          maven-cache-key-modifier: operate
-          vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
-          vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
-          vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
-          minimus: true
-      - name: Build Maven
-        run: |
-          ./mvnw clean install -B -T1C -P -docker,skipFrontendBuild -DskipTests -DskipChecks
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
-          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
-          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   fe-unit-tests:
     if: inputs.runFeTests

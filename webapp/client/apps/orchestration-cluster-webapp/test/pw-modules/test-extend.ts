@@ -14,6 +14,7 @@ import AxeBuilder from '@axe-core/playwright';
 import {LoginPage} from '#/pages/Login.page';
 import {TasklistIndexPage} from '#/pages/tasklist/TasklistIndex.page';
 import {TasklistProcessesPage} from '#/pages/tasklist/TasklistProcesses.page';
+import {TasklistCasesPage} from '#/pages/tasklist/TasklistCases.page';
 import {TaskDetailPage} from '#/pages/tasklist/TaskDetail.page';
 import {OperateIndexPage} from '#/pages/operate/OperateIndex.page';
 import {OperatePreviewPage} from '#/pages/operate/OperatePreview.page';
@@ -30,6 +31,7 @@ import {OperateDecisionInstancePage} from '#/pages/operate/OperateDecisionInstan
 import {OperateOperationsLogPage} from '#/pages/operate/OperateOperationsLog.page';
 import {AdminIndexPage} from '#/pages/admin/AdminIndex.page';
 import {AdminLoginPage} from '#/pages/admin/AdminLogin.page';
+import {AdminSetupPage} from '#/pages/admin/AdminSetup.page';
 import {AdminMcpProcessesPage} from '#/pages/admin/AdminMcpProcesses.page';
 import {AdminOperationsLogPage} from '#/pages/admin/AdminOperationsLog.page';
 import {AdminMappingRulesPage} from '#/pages/admin/AdminMappingRules.page';
@@ -51,12 +53,14 @@ import {TasklistLoginPage} from '#/pages/tasklist/TasklistLogin.page';
 
 type Fixtures = {
 	handlers: Array<AnyHandler>;
+	isProcessInstanceHelperHidden: boolean;
 	network: NetworkFixture;
 	makeAxeBuilder: () => AxeBuilder;
 	loginPage: LoginPage;
 	tasklistLoginPage: TasklistLoginPage;
 	tasklistIndexPage: TasklistIndexPage;
 	tasklistProcessesPage: TasklistProcessesPage;
+	tasklistCasesPage: TasklistCasesPage;
 	taskDetailPage: TaskDetailPage;
 	operateIndexPage: OperateIndexPage;
 	operatePreviewPage: OperatePreviewPage;
@@ -73,6 +77,7 @@ type Fixtures = {
 	operateOperationsLogPage: OperateOperationsLogPage;
 	adminIndexPage: AdminIndexPage;
 	adminLoginPage: AdminLoginPage;
+	adminSetupPage: AdminSetupPage;
 	adminMcpProcessesPage: AdminMcpProcessesPage;
 	adminOperationsLogPage: AdminOperationsLogPage;
 	adminMappingRulesPage: AdminMappingRulesPage;
@@ -93,10 +98,6 @@ type Fixtures = {
 };
 
 const test = base.extend<Fixtures>({
-	page: async ({page}, use) => {
-		await page.addInitScript(() => localStorage.setItem('operate.hideProcessInstanceHelperModal', 'true'));
-		await use(page);
-	},
 	makeAxeBuilder: async ({page}, use) => {
 		const makeAxeBuilder = () => new AxeBuilder({page});
 		await use(makeAxeBuilder);
@@ -112,6 +113,9 @@ const test = base.extend<Fixtures>({
 	},
 	tasklistProcessesPage: async ({page}, use) => {
 		await use(new TasklistProcessesPage(page));
+	},
+	tasklistCasesPage: async ({page}, use) => {
+		await use(new TasklistCasesPage(page));
 	},
 	taskDetailPage: async ({page}, use) => {
 		await use(new TaskDetailPage(page));
@@ -160,6 +164,9 @@ const test = base.extend<Fixtures>({
 	},
 	adminLoginPage: async ({page}, use) => {
 		await use(new AdminLoginPage(page));
+	},
+	adminSetupPage: async ({page}, use) => {
+		await use(new AdminSetupPage(page));
 	},
 	adminMcpProcessesPage: async ({page}, use) => {
 		await use(new AdminMcpProcessesPage(page));
@@ -213,6 +220,13 @@ const test = base.extend<Fixtures>({
 		await use(new ComponentAccessDeniedPage(page));
 	},
 	handlers: [[], {option: true}],
+	isProcessInstanceHelperHidden: [true, {option: true}],
+	page: async ({page, isProcessInstanceHelperHidden}, use) => {
+		if (isProcessInstanceHelperHidden) {
+			await page.addInitScript(() => localStorage.setItem('operate.hideProcessInstanceHelperModal', 'true'));
+		}
+		await use(page);
+	},
 	network: [
 		async ({context, handlers, baseURL}, use) => {
 			const appOrigin = baseURL === undefined ? undefined : new URL(baseURL).origin;

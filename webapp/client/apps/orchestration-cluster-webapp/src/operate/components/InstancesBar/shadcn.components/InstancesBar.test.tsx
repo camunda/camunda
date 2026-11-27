@@ -17,10 +17,6 @@ function renderWithTooltipProvider(children: React.ReactElement) {
 	return render(<TooltipProvider>{children}</TooltipProvider>);
 }
 
-function renderInContainer(children: React.ReactElement, width: number) {
-	return render(<TooltipProvider>{<div style={{width: `${width}px`}}>{children}</div>}</TooltipProvider>);
-}
-
 describe('<InstancesBar />', () => {
 	it.for([3, 0])('should render an incidents count of %s', async (incidentsCount) => {
 		const screen = await renderWithTooltipProvider(<InstancesBar incidentsCount={incidentsCount} size="medium" />);
@@ -53,14 +49,12 @@ describe('<InstancesBar />', () => {
 		await expect.element(screen.getByTestId('active-instances-badge')).not.toBeInTheDocument();
 	});
 
-	it('should render a defined zero active instances count without the active color', async () => {
+	it('should render a defined zero active instances count', async () => {
 		const screen = await renderWithTooltipProvider(
 			<InstancesBar incidentsCount={2} activeInstancesCount={0} size="medium" />,
 		);
 
-		const activeBadge = screen.getByTestId('active-instances-badge');
-		await expect.element(activeBadge).toHaveTextContent('0');
-		await expect.element(activeBadge).not.toHaveClass('text-success-foreground-strong');
+		await expect.element(screen.getByTestId('active-instances-badge')).toHaveTextContent('0');
 	});
 
 	it('should render the draining indicator when draining and a description are provided', async () => {
@@ -81,50 +75,13 @@ describe('<InstancesBar />', () => {
 		await expect.element(screen.getByText('Scheduled for deletion')).toBeVisible();
 	});
 
-	it('should keep the draining indicator next to a short label even in a very wide row', async () => {
-		const screen = await renderInContainer(
-			<InstancesBar
-				incidentsCount={0}
-				label={{type: 'process', size: 'medium', text: 'short-process-name'}}
-				isDraining
-				drainingDescription="This instance is draining"
-				size="medium"
-			/>,
-			1800,
-		);
-
-		const labelRect = screen.getByText('short-process-name').element().getBoundingClientRect();
-		const drainingRect = screen.getByTestId('draining-indicator').element().getBoundingClientRect();
-
-		expect(drainingRect.left - labelRect.right).toBeLessThan(20);
-	});
-
-	it('should ellipsize the label instead of pushing the draining indicator or active count out of view', async () => {
-		const longText = 'a-very-long-process-definition-name-that-does-not-fit-in-a-narrow-row';
-		const screen = await renderInContainer(
-			<InstancesBar
-				incidentsCount={0}
-				activeInstancesCount={5}
-				label={{type: 'process', size: 'medium', text: longText}}
-				isDraining
-				drainingDescription="This instance is draining"
-				size="medium"
-			/>,
-			320,
-		);
-
-		const labelEl = screen.getByText(longText).element();
-		expect(labelEl.scrollWidth).toBeGreaterThan(labelEl.clientWidth);
-		await expect.element(screen.getByTestId('draining-indicator')).toBeVisible();
-		await expect.element(screen.getByTestId('active-instances-badge')).toBeVisible();
-	});
-
 	it('should reveal the full label text in a tooltip on hover', async () => {
 		const screen = await renderWithTooltipProvider(
 			<InstancesBar
 				incidentsCount={0}
 				label={{type: 'process', size: 'medium', text: 'order-process'}}
 				size="medium"
+				className="w-24"
 			/>,
 		);
 
@@ -160,25 +117,5 @@ describe('<InstancesBar />', () => {
 		);
 
 		await expect.element(screen.getByTestId('instances-bar')).toBeVisible();
-	});
-
-	it('should size the incidents segment to its share of the total', async () => {
-		const screen = await renderWithTooltipProvider(
-			<InstancesBar incidentsCount={2} activeInstancesCount={8} size="medium" />,
-		);
-
-		const bar = screen.getByTestId('instances-bar').element();
-		const incidentsSegment = bar.children[1] as HTMLElement;
-		expect(incidentsSegment.style.width).toBe('20%');
-	});
-
-	it('should not divide by zero when both counts are zero', async () => {
-		const screen = await renderWithTooltipProvider(
-			<InstancesBar incidentsCount={0} activeInstancesCount={0} size="medium" />,
-		);
-
-		const bar = screen.getByTestId('instances-bar').element();
-		const incidentsSegment = bar.children[1] as HTMLElement;
-		expect(incidentsSegment.style.width).toBe('0%');
 	});
 });

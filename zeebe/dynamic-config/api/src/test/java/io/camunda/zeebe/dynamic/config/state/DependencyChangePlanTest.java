@@ -11,8 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.CompletedOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
+import io.camunda.zeebe.dynamic.config.state.DependencyChangePlan.CompletedOperation;
+import io.camunda.zeebe.dynamic.config.state.DependencyChangePlan.Status;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.OperationGraph.PlannedOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
@@ -281,6 +281,24 @@ final class DependencyChangePlanTest {
       assertThat(byOne).isEqualTo(byAnother);
       assertThat(byOne.completedAt()).isEqualTo(plan.completed().get(second));
     }
+
+    @Test
+    void shouldReportOnePlusTheCompletedOperationsAsVersion() {
+      // given — the version is what the cluster change version gauge reports
+      final var builder = OperationGraph.builder();
+      final var first = builder.add(op(0, 1));
+      final var second = builder.add(op(1, 1));
+      var plan = DependencyChangePlan.init(PLAN_ID, builder.build());
+
+      // when / then — it starts at 1 and counts each completed operation once
+      assertThat(plan.version()).isEqualTo(1);
+      plan = plan.completeOperation(first);
+      assertThat(plan.version()).isEqualTo(2);
+      plan = plan.completeOperation(first);
+      assertThat(plan.version()).isEqualTo(2);
+      plan = plan.completeOperation(second);
+      assertThat(plan.version()).isEqualTo(3);
+    }
   }
 
   @Nested
@@ -416,51 +434,6 @@ final class DependencyChangePlanTest {
 
   @Nested
   class GraphValidation {
-
-    @Test
-    void shouldFlattenIntoDependencyOrderRatherThanIdOrder() {
-      // given — a graph whose ids run against its edges: operation 0 waits for operation 1. The
-      // builder cannot produce this (it only lets an operation depend on ids already issued), but a
-      // graph decoded from the wire carries whatever ids the sender wrote.
-      final var operations = new TreeMap<OperationId, PlannedOperation>();
-      operations.put(
-          OperationId.of(0),
-          new PlannedOperation(
-              new UpdateIncarnationNumberOperation(member(0)),
-              new java.util.TreeSet<>(Set.of(OperationId.of(1)))));
-      operations.put(
-          OperationId.of(1),
-          new PlannedOperation(
-              new UpdateIncarnationNumberOperation(member(1)), new java.util.TreeSet<>()));
-      final var plan = DependencyChangePlan.init(PLAN_ID, OperationGraph.of(operations));
-
-      // when / then — the queue a broker without the graph model executes head-first must respect
-      // the edge. Id order would run operation 0 before the operation it waits for.
-      assertThat(ClusterChangePlan.flatten(plan).pendingOperations())
-          .containsExactly(
-              new UpdateIncarnationNumberOperation(member(1)),
-              new UpdateIncarnationNumberOperation(member(0)));
-    }
-
-    @Test
-    void shouldOrderOnlyWhatIsOutstandingWhenFlattening() {
-      // given — a chain whose first operation has completed, so its edge no longer constrains
-      final var builder = OperationGraph.builder();
-      final var first = builder.add(new UpdateIncarnationNumberOperation(member(0)));
-      builder.add(new UpdateIncarnationNumberOperation(member(1)), Set.of(first));
-      final var plan =
-          new DependencyChangePlan(
-              PLAN_ID,
-              Status.IN_PROGRESS,
-              Instant.EPOCH,
-              builder.build(),
-              new TreeMap<>(Map.of(first, Instant.EPOCH)));
-
-      // when / then — a completed dependency is already satisfied, so the remaining operation is
-      // runnable and appears alone
-      assertThat(ClusterChangePlan.flatten(plan).pendingOperations())
-          .containsExactly(new UpdateIncarnationNumberOperation(member(1)));
-    }
 
     @Test
     void shouldDefaultAnOperationsTargetToTheEnclosingSubConfiguration() {

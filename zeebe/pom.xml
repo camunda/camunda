@@ -25,6 +25,7 @@
     <module>bpmn-model</module>
     <module>logstreams</module>
     <module>stream-platform</module>
+    <module>engine-api</module>
     <module>engine</module>
     <module>transport</module>
     <module>util</module>
@@ -40,6 +41,7 @@
     <module>exporter-api</module>
     <module>exporter-common</module>
     <module>exporter-config-support</module>
+    <module>cluster-behavior</module>
     <module>exporter-filter</module>
     <module>exporter-test</module>
     <module>protocol-asserts</module>

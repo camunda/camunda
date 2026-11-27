@@ -11,12 +11,11 @@ import {cn} from '#/shared/cn';
 import {useMemo} from 'react';
 import {useTranslation} from 'react-i18next';
 import {createLink} from '@tanstack/react-router';
-import {Alert, Button, Link} from '@camunda/design-system';
+import {Alert, Button, EmptyState, Link} from '@camunda/design-system';
+import {ListChecks} from '@camunda/design-system/icons';
 import type {BatchOperationItem, BatchOperationType} from '@camunda/camunda-api-zod-schemas/8.11';
 import {PaginatedSortableTable} from '#/operate/shared/PaginatedSortableTable/shadcn.components/PaginatedSortableTable';
 import {PanelHeader} from '#/operate/shared/PanelHeader/shadcn.components/PanelHeader';
-import {EmptyMessage} from '#/operate/shared/EmptyMessage/shadcn.components/EmptyMessage';
-import {ErrorMessage} from '#/operate/shared/ErrorMessage/shadcn.components/ErrorMessage';
 import {formatDate} from '../utils';
 import {useBatchOperationItems} from '../useBatchOperationItems';
 import {ItemKeyCell} from './ItemKeyCell';
@@ -28,8 +27,6 @@ type Props = {
 };
 
 const TABLE_CONTAINER_CLASSES = [
-	'[&_[data-slot=table-container]]:rounded-none! [&_[data-slot=table-container]]:border-0! [&_[data-slot=table-container]]:shadow-none!',
-	'[&_[data-slot=data-table]>div.rounded-xl]:rounded-none! [&_[data-slot=data-table]>div.rounded-xl]:border-0!',
 	'[&_tr:has([data-item-outcome=failed])>td:first-child]:[box-shadow:inset_3px_0_0_var(--danger-border-strong)]',
 	'[&_tr:has([data-item-outcome=failed])+tr[data-slot=data-table-expansion-row]>td:first-child]:[box-shadow:inset_3px_0_0_var(--danger-border-strong)]',
 	'[&_tr:has([data-item-outcome=completed])>td:first-child]:[box-shadow:inset_3px_0_0_var(--success-border-strong)]',
@@ -193,10 +190,16 @@ const BatchItemsTable: React.FC<Props> = ({batchOperationKey, batchOperationType
 							{retryButton}
 						</Alert>
 					) : (
-						<div role="alert" className="flex flex-col items-start gap-4 p-4">
-							<ErrorMessage additionalInfo={t('operate.batchOperation.itemsTable.retryHint')} />
-							{retryButton}
-						</div>
+						<Alert
+							variant="destructive"
+							title={t('operate.shared.errorMessage.message')}
+							description={t('operate.batchOperation.itemsTable.retryHint')}
+							className="rounded-none border-x-0"
+						>
+							<Button variant="secondary" size="sm" loading={isFetching} onClick={() => void refetch()}>
+								{t('errorGenericErrorPageButtonLabel')}
+							</Button>
+						</Alert>
 					)}
 					<div role="status" className={cn('text-sm', isFetching && 'px-4 pb-4')}>
 						{isFetching ? t('operate.batchOperation.itemsTable.retrying') : null}
@@ -229,7 +232,13 @@ const BatchItemsTable: React.FC<Props> = ({batchOperationKey, batchOperationType
 						}
 						emptyState={
 							isError || status === 'pending' ? undefined : (
-								<EmptyMessage message={t('operate.batchOperation.itemsTable.emptyMessage')} />
+								<EmptyState
+									size="sm"
+									headingLevel={3}
+									icon={<ListChecks aria-hidden />}
+									heading={t('operate.batchOperation.ds.itemsTable.emptyHeading')}
+									description={t('operate.batchOperation.ds.itemsTable.emptyDescription')}
+								/>
 							)
 						}
 						pagination={{
@@ -241,6 +250,7 @@ const BatchItemsTable: React.FC<Props> = ({batchOperationKey, batchOperationType
 							fetchPreviousPage,
 							fetchNextPage,
 						}}
+						borderless
 						className={TABLE_CONTAINER_CLASSES}
 						data-testid="batch-items-table"
 					/>

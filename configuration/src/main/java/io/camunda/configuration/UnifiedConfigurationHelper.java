@@ -8,6 +8,7 @@
 package io.camunda.configuration;
 
 import io.camunda.exporter.config.ExporterConfiguration;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -560,8 +561,9 @@ public class UnifiedConfigurationHelper {
         // the operator typed the key. Two consequences for whoever revisits this: a unified
         // property explicitly set to an empty value now yields the legacy value instead of failing,
         // and a unified property whose default differs from the legacy value still fails, because a
-        // default is a value. Widening that second case would change what a legacy-only deployment
-        // gets for every property that has a default, so it is left as a product decision.
+        // default is a value. That second case fails on purpose: a stale legacy key must not
+        // silently switch the database, retention or TLS settings (see #62923). The error message
+        // tells the operator how to fix it.
         LOGGER.warn(
             "No value is set for '{}', so the value configured in the legacy properties {} is used"
                 + " instead. Those legacy properties are no longer supported and should be removed"
@@ -573,14 +575,44 @@ public class UnifiedConfigurationHelper {
       }
 
       final String errorMessage =
-          String.format(
-              "Ambiguous configuration. The value %s=%s conflicts with the values '%s' from the legacy properties %s",
-              newProperty,
-              displayValue(newValue, isSensitiveData),
-              displayValue(legacyValue, isSensitiveData),
-              String.join(", ", legacyProperties));
+          newConfigPresent(newProperty, expectedType)
+              ? String.format(
+                  "Ambiguous configuration. The value %s=%s conflicts with the values '%s' from the legacy properties %s",
+                  newProperty,
+                  displayValue(newValue, isSensitiveData),
+                  displayValue(legacyValue, isSensitiveData),
+                  String.join(", ", legacyProperties))
+              : String.format(
+                  "Ambiguous configuration. The legacy properties %s set '%s', which conflicts with the default '%s' of '%s'. %s, or remove the legacy properties %s.",
+                  String.join(", ", legacyProperties),
+                  displayValue(legacyValue, isSensitiveData),
+                  displayValue(newValue, isSensitiveData),
+                  newProperty,
+                  legacyValueHint(newProperty, legacyValue, isSensitiveData),
+                  String.join(", ", legacyProperties));
       throw new UnifiedConfigurationException(errorMessage);
     }
+  }
+
+  private static String legacyValueHint(
+      final String newProperty, final Object legacyValue, final boolean isSensitiveData) {
+    if (!isSensitiveData && isScalar(legacyValue)) {
+      return "Set " + newProperty + "=" + legacyValue;
+    }
+    return "Set " + newProperty + " to the value of the legacy properties";
+  }
+
+  /**
+   * True for values whose {@code toString()} is a valid property value, so the error message can
+   * say "Set x=value". Maps, lists and config objects get "Set x to the value of the legacy
+   * properties" instead, since {@code {a=1}} is not a valid property value.
+   */
+  private static boolean isScalar(final Object value) {
+    return value instanceof CharSequence
+        || value instanceof Number
+        || value instanceof Boolean
+        || value instanceof Enum<?>
+        || value instanceof Duration;
   }
 
   private static <T> T backwardsCompatibilitySupported(

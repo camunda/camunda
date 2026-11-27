@@ -1,11 +1,11 @@
 ---
 name: gradle-run-build
-description: Use when compiling, testing, or packaging the monorepo with ./gradlew. Not for editing the Gradle build (use gradle-build-parity).
+description: Use when compiling, testing, or packaging the monorepo with gradle. Not for editing the Gradle build (use gradle-build-parity).
 ---
 
 # Running the Gradle build
 
-The Gradle build is experimental; Maven stays authoritative. Full reference:
+Gradle and Maven are expected to behave the same; Maven is used for releasing. Full reference:
 [`gradle/README.md`](../../../gradle/README.md) — read it when this skill is not enough, and
 update both together. Run everything from the repo root.
 

@@ -8,7 +8,16 @@
 
 import {OPERATE_BASE} from '#/shared/operateBase';
 import {useMemo, useState} from 'react';
-import {Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from '@camunda/design-system';
+import {
+	Button,
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from '@camunda/design-system';
 import {
 	ArrowRightLeft,
 	Ban,
@@ -38,8 +47,6 @@ import {getPreviewInstanceMigrationLocation} from '#/operate/pages/Processes/ins
 import {ModificationHelperModal} from '#/operate/pages/ProcessInstance/shadcn.components/ModificationHelperModal';
 import {COLLAPSED_LAYOUT_QUERY} from '../../shadcn.components/collapsedLayoutQuery';
 import {processInstanceHeaderOperationMachine, type HeaderAction} from '../processInstanceHeaderOperationMachine';
-
-const getRootInstancePath = (rootInstanceId: string) => `${OPERATE_BASE}/processes/${rootInstanceId}`;
 
 const ICONS = {retry: RotateCcw, cancel: Ban, delete: Trash2, suspend: CirclePause, resume: CirclePlay};
 
@@ -256,16 +263,26 @@ const ProcessInstanceOperations: React.FC = () => {
 				})
 			)}
 			{!(isCollapsed && isRunning) && canModify && (
-				<Button variant="ghost" size="sm" title={modifyTitle} aria-label={modifyTitle} onClick={openModification}>
-					<Wrench aria-hidden="true" data-icon="inline-start" />
-					{modifyLabel}
-				</Button>
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<Button variant="ghost" size="sm" aria-label={modifyTitle} onClick={openModification}>
+							<Wrench aria-hidden="true" data-icon="inline-start" />
+							{modifyLabel}
+						</Button>
+					</TooltipTrigger>
+					<TooltipContent>{modifyTitle}</TooltipContent>
+				</Tooltip>
 			)}
 			{!(isCollapsed && isRunning) && canMigrate && (
-				<Button variant="ghost" size="sm" title={migrateTitle} aria-label={migrateTitle} onClick={openMigration}>
-					<ArrowRightLeft aria-hidden="true" data-icon="inline-start" />
-					{migrateLabel}
-				</Button>
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<Button variant="ghost" size="sm" aria-label={migrateTitle} onClick={openMigration}>
+							<ArrowRightLeft aria-hidden="true" data-icon="inline-start" />
+							{migrateLabel}
+						</Button>
+					</TooltipTrigger>
+					<TooltipContent>{migrateTitle}</TooltipContent>
+				</Tooltip>
 			)}
 			{isModificationHelperOpen && state === 'ACTIVE' && (
 				<ModificationHelperModal
@@ -291,7 +308,6 @@ const ProcessInstanceOperations: React.FC = () => {
 				<CancelConfirmationModal
 					processInstanceKey={processInstanceKey}
 					open
-					getRootInstancePath={getRootInstancePath}
 					onCancel={() => setConfirmation(null)}
 					onConfirm={() => {
 						setConfirmation(null);

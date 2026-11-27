@@ -25,6 +25,6 @@ public final class PolicyUpdateChunkAppendedApplier
 
   @Override
   public void applyState(final long key, final PolicyUpdateRecord value) {
-    policyUpdateState.bufferChunk(value);
+    policyUpdateState.bufferChunk(key, value);
   }
 }

@@ -228,6 +228,11 @@ test.describe('AI agent details', () => {
     await expect(
       modal.getByTestId('tool-call-output').getByText('"trackingNumber"'),
     ).toBeVisible();
+    const outputEditor = modal
+      .getByLabel('Output', {exact: true})
+      .getByRole('textbox');
+    await outputEditor.focus();
+    await expect(outputEditor).toBeFocused();
     await processInstancePage.previewEditor.hideCaret();
 
     await expect(page).toHaveScreenshot();

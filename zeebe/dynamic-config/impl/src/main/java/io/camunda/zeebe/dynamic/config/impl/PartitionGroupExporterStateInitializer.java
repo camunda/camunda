@@ -53,8 +53,7 @@ import org.slf4j.LoggerFactory;
  * has completed, so no version bump races the write — but it costs a broker crash during a
  * disaster-recovery restore, reported as suspected data loss.
  */
-public class PartitionGroupExporterStateInitializer
-    implements ClusterConfigurationModifier<CurrentClusterConfiguration> {
+public class PartitionGroupExporterStateInitializer implements ClusterConfigurationModifier {
 
   private static final Logger LOGGER =
       LoggerFactory.getLogger(PartitionGroupExporterStateInitializer.class);

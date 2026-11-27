@@ -6,11 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {LoaderCircle} from '@camunda/design-system/icons';
+import {EmptyState} from '@camunda/design-system';
+import {CircleAlert, LoaderCircle} from '@camunda/design-system/icons';
 import {useTranslation} from 'react-i18next';
-import {EmptyMessage} from '#/operate/shared/EmptyMessage/shadcn.components/EmptyMessage';
 import {RichTextEditor} from '#/operate/shared/Editors/shadcn.components/RichTextEditor';
-import {ErrorMessage} from '#/operate/shared/ErrorMessage/shadcn.components/ErrorMessage';
+import {DataLoadErrorAlert} from '#/operate/shared/DataLoadErrorAlert/shadcn.components/DataLoadErrorAlert';
 import {useDecisionInstance} from '../decisionInstance.queries';
 
 type Props = {
@@ -28,9 +28,15 @@ const Result: React.FC<Props> = ({query}) => {
 					<span className="sr-only">{t('operate.decisionInstance.ds.variablesPanel.loadingResult')}</span>
 				</div>
 			)}
-			{query.isError && <ErrorMessage />}
+			{query.isError && <DataLoadErrorAlert onRetry={() => void query.refetch()} />}
 			{query.isSuccess && query.data.state === 'FAILED' && (
-				<EmptyMessage message={t('operate.decisionInstance.variablesPanel.noResult')} />
+				<EmptyState
+					size="sm"
+					headingLevel={3}
+					icon={<CircleAlert aria-hidden />}
+					heading={t('operate.decisionInstance.ds.variablesPanel.noResultHeading')}
+					description={t('operate.decisionInstance.ds.variablesPanel.evaluationFailedDescription')}
+				/>
 			)}
 			{query.isSuccess && query.data.state !== 'FAILED' && (
 				<div data-testid="results-json-viewer" className="h-full w-full">

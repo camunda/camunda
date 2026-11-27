@@ -104,6 +104,16 @@ When a test needs identifiers (process IDs, tenant IDs, usernames, resource keys
 identifier per test (or per test class) instead of reusing a constant, so tests cannot interfere with
 each other — collisions are a common source of flakiness.
 
+#### Don'ts: depend on the order of test classes
+
+Surefire and failsafe start the test classes that took longest in the previous run first
+(`runOrder=balanced` in `parent/pom.xml`), so the order changes between runs and differs between CI
+and your machine. Forks are reused, so a class that leaves static state, system properties or
+shared resources behind can break whichever class runs next in the same JVM. If a test only fails
+alongside others, pin the order with `-Dsurefire.runOrder=filesystem` (or
+`-Dfailsafe.runOrder=filesystem`) and run the suspected classes in one JVM with
+`-Dtest=ClassA,ClassB -DforkCount=1`.
+
 #### Do's: fix the root cause of a race, don't just retry around it
 
 When a test is flaky because of a timing/ordering race, prefer fixing the underlying synchronization

@@ -31,12 +31,11 @@ import io.camunda.zeebe.dynamic.config.impl.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.impl.transformers.ClusterPatchRequestTransformer;
 import io.camunda.zeebe.dynamic.config.impl.transformers.ForceRemoveBrokersRequestTransformer;
 import io.camunda.zeebe.dynamic.config.impl.transformers.RemovePhysicalTenantRequestTransformer;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
-import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
+import io.camunda.zeebe.dynamic.config.util.DefaultTenantConfiguration;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -137,7 +136,7 @@ final class PhysicalTenantDisabledRemovalTest {
                 new ClusterPatchRequestTransformer(
                     Set.of(), Set.of(BARE_2), Optional.empty(), Optional.empty()))
             .join()
-            .finalMultiConfiguration();
+            .finalConfiguration();
 
     // then — the tenant's partition has moved to the retained brokers and broker 2 has left
     assertThat(replicasOf(configuration, TENANT_A))
@@ -164,7 +163,7 @@ final class PhysicalTenantDisabledRemovalTest {
                 new ClusterPatchRequestTransformer(
                     Set.of(), Set.of(BARE_2), Optional.empty(), Optional.empty()))
             .join()
-            .finalMultiConfiguration();
+            .finalConfiguration();
 
     // then — the broker is gone, and the discarded tenant's old assignment is cleared rather than
     // carried forward: only the tombstone itself remains
@@ -310,7 +309,7 @@ final class PhysicalTenantDisabledRemovalTest {
    * reason the removal can fail.
    */
   private CurrentClusterConfiguration twoTenants() {
-    final var base = CurrentClusterConfiguration.fromLegacy(cluster(Set.of(BARE_0, BARE_1)));
+    final var base = cluster(Set.of(BARE_0, BARE_1)).configuration();
     return new CurrentClusterConfiguration(
         base.version(),
         base.globalConfiguration(),
@@ -318,8 +317,7 @@ final class PhysicalTenantDisabledRemovalTest {
             DEFAULT_GROUP,
             base.partitionGroup(DEFAULT_GROUP),
             TENANT_A,
-            CurrentClusterConfiguration.fromLegacy(cluster(Set.of(BARE_1, BARE_2)))
-                .partitionGroup(DEFAULT_GROUP)),
+            cluster(Set.of(BARE_1, BARE_2)).configuration().partitionGroup(DEFAULT_GROUP)),
         base.phasedChangeState());
   }
 
@@ -327,10 +325,10 @@ final class PhysicalTenantDisabledRemovalTest {
    * A three-broker cluster in which {@code replicas} replicate partition 1. The member set is
    * cluster-wide, so it is the same for both tenants however their partitions are placed.
    */
-  private ClusterConfiguration cluster(final Set<MemberId> replicas) {
-    var topology = ClusterConfiguration.init();
+  private DefaultTenantConfiguration cluster(final Set<MemberId> replicas) {
+    var topology = DefaultTenantConfiguration.init();
     for (final var member : Set.of(BARE_0, BARE_1, BARE_2)) {
-      topology = topology.addMember(member, MemberState.initializeAsActive(Map.of()));
+      topology = topology.addMember(member);
     }
     var priority = replicas.size();
     for (final var replica : replicas) {

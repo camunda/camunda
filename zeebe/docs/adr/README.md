@@ -26,8 +26,9 @@ process-execution data path). These are module-scoped decisions; see the
 
 ### 8.11
 
-|                              ADR                               |                                                        Decision                                                         |
-|----------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------|
-| [0014](0014-811-hub-managed-identity-policy-updates.md)        | Hub policy updates applied as versioned identity state on partition 1, committed by a distributed switch                |
-| [0015](0015-811-process-definition-suspension-distribution.md) | Process definition suspension decided once on partition 1, distributed in the `DEPLOYMENT` queue, response doesn't wait |
+|                                ADR                                |                                                          Decision                                                          |
+|-------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
+| [0014](0014-811-hub-managed-identity-policy-updates.md)           | Hub policy updates applied as versioned identity state on partition 1, committed by a distributed switch                   |
+| [0015](0015-811-process-definition-suspension-distribution.md)    | Process definition suspension decided once on partition 1, distributed in the `DEPLOYMENT` queue, response doesn't wait    |
+| [0016](0016-811-physical-tenant-actor-pool-and-cpu-accounting.md) | Dedicated actor pool per physical tenant, created on demand; CPU charged per thread group against a quota budget with debt |
 

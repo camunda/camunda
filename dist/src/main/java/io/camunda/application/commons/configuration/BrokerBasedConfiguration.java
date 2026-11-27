@@ -101,7 +101,13 @@ public class BrokerBasedConfiguration {
             ? properties.getGateway().getThreads().getManagementThreads()
             : 0;
     return new SchedulerConfiguration(
-        cpuThreads, ioThreads, gatewayCpuThreads, metricsEnabled, "Broker", nodeId);
+        cpuThreads,
+        ioThreads,
+        gatewayCpuThreads,
+        metricsEnabled,
+        "Broker",
+        nodeId,
+        threadCfg.getPhysicalTenantActorPool());
   }
 
   /**

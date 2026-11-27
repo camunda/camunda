@@ -9,8 +9,7 @@
 import {useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useIsMutating, useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
-import {Badge, Link, Tooltip, TooltipContent, TooltipTrigger} from '@camunda/design-system';
-import {LoaderCircle} from '@camunda/design-system/icons';
+import {Badge, Link, Spinner, Tooltip, TooltipContent, TooltipTrigger} from '@camunda/design-system';
 import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.11';
 import {DrainingTag} from '#/operate/components/DrainingTag/shadcn.components/DrainingTag';
 import {DangerButton} from '#/operate/shared/OperationItem/shadcn.components/DangerButton';
@@ -73,12 +72,7 @@ const ProcessOperations: React.FC<Props> = ({definition}) => {
 	return (
 		<>
 			<div className="ml-auto flex shrink-0 items-center gap-2 pl-4">
-				{isOperationRunning && (
-					<span role="status" aria-live="polite" className="flex items-center">
-						<LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
-						<span className="sr-only">{t('operate.processes.definitionDeletion.loadingMessage')}</span>
-					</span>
-				)}
+				{isOperationRunning && <Spinner accessibleLabel={t('operate.processes.definitionDeletion.loadingMessage')} />}
 				{isDraining ? (
 					<DrainingTag
 						label={t('operate.dashboard.draining')}

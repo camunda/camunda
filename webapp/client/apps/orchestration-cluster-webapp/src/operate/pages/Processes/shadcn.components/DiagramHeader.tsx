@@ -13,6 +13,7 @@ import {mutedTitle} from '#/operate/shared/mutedTitle';
 import {PanelTitle} from '#/operate/shared/PanelTitle/shadcn.components/PanelTitle';
 import {PanelHeader} from '#/operate/shared/PanelHeader/shadcn.components/PanelHeader';
 import {CopiableContent} from '#/operate/shared/PanelHeader/shadcn.components/CopiableContent';
+import {TruncatedText} from '#/operate/shared/TruncatedText/shadcn.components/TruncatedText';
 import {getProcessDefinitionName} from '../getProcessDefinitionName';
 import type {ProcessDefinitionSelection} from './processDefinitionSelection';
 import {ProcessOperations} from './ProcessOperations';
@@ -47,11 +48,8 @@ const DiagramHeader: React.FC<Props> = ({processDefinitionSelection}) => {
 	return (
 		<header className="flex min-h-12 min-w-0 items-center gap-8 border-b border-border px-4 py-1">
 			<HeaderColumn title={t('operate.processes.diagramHeader.processName')} className="shrink">
-				<PanelTitle
-					titleAttribute={`${t('operate.processes.diagramHeader.processName')}: ${name}`}
-					className="block truncate"
-				>
-					{name}
+				<PanelTitle className="block min-w-0">
+					<TruncatedText text={name} />
 				</PanelTitle>
 			</HeaderColumn>
 			<HeaderColumn title={t('operate.processes.diagramHeader.processId')} className="shrink">

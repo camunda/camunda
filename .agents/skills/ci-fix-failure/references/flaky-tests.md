@@ -15,7 +15,8 @@ and file a tracking issue.
    ```bash
    gh run rerun --failed <run-id> --repo camunda/camunda
    ```
-   Recommend this to the user — don't trigger it yourself.
+   Follow the "Reruns" guardrail in `SKILL.md` to decide whether to trigger it
+   or recommend it. If you trigger it, report the result and link the new attempt.
 
 ## Repo policy
 
@@ -42,7 +43,8 @@ metrics. Any in-test retry change must follow this pattern, not invent its own.
 Likely flake: <Test FQN> — <one-line reason>.
 Existing issue: <link or "none found">.
 Recommended next steps:
-  1. Rerun the failed jobs: gh run rerun --failed <run-id> --repo camunda/camunda
+  1. Rerun the failed jobs (done by me, or recommended, per the rerun guardrail):
+     gh run rerun --failed <run-id> --repo camunda/camunda
   2. If no tracking issue exists, file one with the `create-issue` skill (label kind/flake) and
      assign it to the engineer.
   3. Do NOT disable, @Disabled, or skip the test.

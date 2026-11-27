@@ -106,7 +106,7 @@ final class PhysicalTenantZoneMigrationTest {
   private void migrate(final String zone) {
     final var result =
         coordinator.simulateOperations(new ZoneMigrationRequestTransformer(zone)).join();
-    manager.updateMultiConfiguration(ignored -> result.finalMultiConfiguration()).join();
+    manager.updateMultiConfiguration(ignored -> result.finalConfiguration()).join();
   }
 
   /**

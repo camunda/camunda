@@ -80,6 +80,7 @@ const CopiableContent: React.FC<Props> = ({content, copyButtonDescription, title
 					kind: 'error',
 					title: t('operate.shared.copyButton.copyFailed'),
 					isDismissable: true,
+					autoRemove: false,
 				});
 			});
 	}

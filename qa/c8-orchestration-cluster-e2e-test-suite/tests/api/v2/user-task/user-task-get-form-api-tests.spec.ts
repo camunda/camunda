@@ -22,7 +22,7 @@ import {
 } from '../../../../utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {validateResponseShape} from '../../../../json-body-assertions';
-import {findUserTask} from '@requestHelpers';
+import {findUserTask, lookupUserTaskAndExpectFound} from '@requestHelpers';
 
 /* eslint-disable playwright/expect-expect */
 test.describe.parallel('Get User Task Form Tests', () => {
@@ -109,6 +109,28 @@ test.describe.parallel('Get User Task Form Tests', () => {
       expect(json.formId).toBe('user_task_form');
       expect(json.version).toBe(1);
       expect(json.schema).toBe(expectedSchema);
+    }).toPass(defaultAssertionOptions);
+  });
+
+  test('Get user task form - the form key matches the user task lookup', async ({
+    request,
+  }) => {
+    const userTaskKey = await findUserTask(
+      request,
+      state['processInstanceKey'] as string,
+      'CREATED',
+    );
+    const {formKey} = await lookupUserTaskAndExpectFound(request, userTaskKey);
+
+    await expect(async () => {
+      const res = await request.get(
+        buildUrl('/user-tasks/{userTaskKey}/form', {userTaskKey}),
+        {headers: jsonHeaders()},
+      );
+      await assertStatusCode(res, 200);
+      const json = await res.json();
+      expect(json.formKey).toBe(formKey);
+      expect(json.formId).toBe('user_task_form');
     }).toPass(defaultAssertionOptions);
   });
 

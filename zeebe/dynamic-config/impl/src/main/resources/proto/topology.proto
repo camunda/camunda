@@ -11,9 +11,7 @@ message GossipState {
   CurrentClusterConfiguration currentClusterConfiguration = 2;
 }
 
-// ---- New multi-partition-group configuration model (8.10) ----
-
-// Top-level wrapper for the new configuration model. version is always
+// Top-level wrapper for the cluster configuration. version is always
 // an initial version (0) and reserved for a future root-level fast path.
 message CurrentClusterConfiguration {
   int64 version = 1;
@@ -97,9 +95,8 @@ message BrokerState {
 }
 
 // A broker's partition assignment within a single group. No lifecycle State.
-// mode is the per-broker, per-group operating mode (PROCESSING or RECOVERING,
-// the structural equivalent of the legacy State.RECOVERING), scoped to this
-// group only.
+// mode is the per-broker, per-group operating mode (PROCESSING or RECOVERING),
+// scoped to this group only.
 message BrokerPartitionState {
   int64 version = 1;
   google.protobuf.Timestamp lastUpdated = 2;
@@ -211,20 +208,6 @@ message PartitionGroupChangeOperation {
 
 message SchemaInitializationOperation {}
 
-// Legacy message for cluster configuration. Retained only for decoding a persisted
-// configuration file written before 8.10 (see PersistedCurrentClusterConfiguration's
-// VERSION_LEGACY migration branch); no longer gossiped.
-message ClusterTopology {
-  int64 version = 1;
-  map<string, MemberState> members = 2;
-  CompletedChange lastChange = 3;
-  ClusterChangePlan currentChange = 4;
-  RoutingState routingState = 5;
-  string clusterId = 6;
-  int64 incarnationNumber = 7;
-  PartitionDistributorConfig partitionDistributor = 8;
-}
-
 message RoutingState {
   int64  version = 1;
   repeated sint32 activePartitions = 2 [deprecated=true];
@@ -252,13 +235,6 @@ message MessageCorrelation {
   message HashMod { sint32 partitionCount = 1; }
 }
 
-message MemberState {
-  int64 version = 1;
-  google.protobuf.Timestamp lastUpdated = 2;
-  State state = 3;
-  map<int32, PartitionState> partitions = 4;
-}
-
 message PartitionState {
   State state = 1;
   int32 priority = 2;
@@ -278,55 +254,11 @@ message ExporterState {
   optional string initializedFrom = 3;
 }
 
-message ClusterChangePlan {
-  int64 id = 1;
-  int32 version = 2;
-  ChangeStatus status = 3;
-  google.protobuf.Timestamp startedAt = 4;
-  repeated CompletedTopologyChangeOperation completedOperations = 5;
-  repeated TopologyChangeOperation pendingOperations = 6;
-}
-
 message CompletedChange {
   int64 id = 1;
   ChangeStatus status = 2;
   google.protobuf.Timestamp startedAt = 3;
   google.protobuf.Timestamp completedAt = 4;
-}
-
-message TopologyChangeOperation {
-  string memberId = 1;
-  oneof operation {
-    PartitionJoinOperation partitionJoin = 2;
-    PartitionLeaveOperation partitionLeave = 3;
-    MemberJoinOperation memberJoin = 4;
-    MemberLeaveOperation memberLeave = 5;
-    PartitionReconfigurePriorityOperation partitionReconfigurePriority = 6;
-    PartitionForceReconfigureOperation partitionForceReconfigure = 7;
-    MemberRemoveOperation memberRemove = 8;
-    PartitionDisableExporterOperation partitionDisableExporter = 9;
-    PartitionEnableExporterOperation partitionEnableExporter = 10;
-    PartitionBootstrapOperation partitionBootstrap = 11;
-    StartPartitionScaleUpOperation initiateScaleUpPartitions = 12;
-    DeleteHistoryOperation deleteHistory = 13;
-    AwaitRedistributionCompletion awaitRedistributionCompletion = 14;
-    AwaitRelocationCompletion awaitRelocationCompletion = 15;
-    UpdateRoutingState updateRoutingState = 16;
-    PartitionDeleteExporterOperation partitionDeleteExporter = 17;
-    UpdateIncarnationNumberOperation updateIncarnationNumber = 18;
-    PreScalingOperation preScaling = 19;
-    PostScalingOperation postScaling = 20;
-    UpdatePartitionDistributorConfigOperation updatePartitionDistributorConfig = 21;
-    ModeChangeOperation modeChange = 24;
-    AwaitModeChangeOperation awaitModeChange = 25;
-    ExportingStateChangeOperation exporterStateChange = 26;
-    PartitionPreRestoreOperation partitionPreRestore = 27;
-    PartitionRestoreOperation partitionRestore = 28;
-    RemovePhysicalTenantOperation removePhysicalTenant = 29;
-    PartitionPromoteOperation partitionPromote = 30;
-    PartitionDemoteOperation partitionDemote = 31;
-    SchemaInitializationOperation schemaInitialization = 32;
-  }
 }
 
 message UpdatePartitionDistributorConfigOperation {
@@ -338,11 +270,6 @@ message UpdatePartitionDistributorConfigOperation {
 // PartitionGroupParallelPhase map key that carries this operation, same as every other
 // PartitionGroupChangeOperation.
 message RemovePhysicalTenantOperation {}
-
-message CompletedTopologyChangeOperation {
-  TopologyChangeOperation operation = 1;
-  google.protobuf.Timestamp completedAt = 2;
-}
 
 message PartitionJoinOperation {
   int32 partitionId = 1;

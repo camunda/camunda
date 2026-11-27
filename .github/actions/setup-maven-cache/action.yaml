@@ -14,6 +14,13 @@ inputs:
     description: Whether to use a connection pool for HTTP connections.
     default: "true"
     required: false
+  test-run-order-key-modifier:
+    description: >
+      Tells apart jobs that run different tests but share a workflow, job id, matrix and Maven
+      cache modifier, e.g. one reusable workflow called with different test suites. Jobs with the
+      same value share one set of test run-order statistics, so set it to whatever selects the tests.
+    default: ""
+    required: false
   cache-download-timeout-mins:
     description: >
       Upper bound, in minutes, on how long `actions/cache` may spend downloading a single
@@ -103,7 +110,7 @@ runs:
 
       # Check if PR contains a label to disable the cache
     - name: Check if cache is enabled
-      uses: camunda/infra-global-github-actions/is-cache-enabled@main
+      uses: camunda/infra-global-github-actions/is-cache-enabled@f7e888c5b7d9220bb4a549306c1cbaf798670d0e # is-cache-enabled-1.0.0
       id: is-cache-enabled
 
     - name: Detect branch type
@@ -196,3 +203,44 @@ runs:
 
         echo "maven-cache job=${GITHUB_JOB} modifier=${MODIFIER} branch-type=${BRANCH_TYPE} result=${result}"
         echo "- Maven cache \`${MODIFIER}\` (${BRANCH_TYPE}): **${result}**${MATCHED_KEY:+ (\`${MATCHED_KEY}\`)}" >> "$GITHUB_STEP_SUMMARY"
+
+    # Surefire/failsafe run with `runOrder=balanced` (parent/pom.xml): they start the classes that
+    # took longest last time first, reading per-class run times from `.surefire-*` files in the
+    # module basedirs. Carry those files between runs; without them the order is just the default
+    # filesystem order. The key identifies the job *and* its matrix entry: parallel shards of a job
+    # run different classes into the same file names, so a shared key would let one shard's
+    # statistics overwrite (or block) another's. Like the Maven cache, only main/stable save, and
+    # only when the job succeeded (post step), since a failed or timed-out run may have rewritten
+    # the files with just the classes it got through.
+    - name: Get test run-order cache key
+      id: run-order-key
+      shell: bash
+      env:
+        WORKFLOW: ${{ github.workflow }}
+        MODIFIER: ${{ inputs.maven-cache-key-modifier }}
+        TESTS: ${{ inputs.test-run-order-key-modifier }}
+        MATRIX_JSON: ${{ toJSON(matrix) }}
+      run: |
+        shard=$(printf '%s\n%s\n%s\n%s' "$WORKFLOW" "$MODIFIER" "$TESTS" "$MATRIX_JSON" | sha256sum | cut -c1-16)
+        echo "prefix=${RUNNER_ENVIRONMENT}-${RUNNER_OS}-test-run-order-${GITHUB_JOB}-${shard}-" >> "$GITHUB_OUTPUT"
+
+    - name: Cache test run-order statistics
+      if: ${{ steps.branch-detect.outputs.is-main-or-stable-branch == 'true' }}
+      env:
+        SEGMENT_DOWNLOAD_TIMEOUT_MINS: ${{ inputs.cache-download-timeout-mins }}
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: "**/.surefire-*"
+        key: ${{ steps.run-order-key.outputs.prefix }}${{ github.run_id }}-${{ github.run_attempt }}
+        restore-keys: ${{ steps.run-order-key.outputs.prefix }}
+
+    - name: Restore test run-order statistics
+      if: ${{ steps.branch-detect.outputs.is-main-or-stable-branch == 'false' && steps.is-cache-enabled.outputs.is-cache-enabled == 'true' }}
+      env:
+        SEGMENT_DOWNLOAD_TIMEOUT_MINS: ${{ inputs.cache-download-timeout-mins }}
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        # This has to match the 'Cache test run-order statistics' step above
+        path: "**/.surefire-*"
+        key: ${{ steps.run-order-key.outputs.prefix }}${{ github.run_id }}-${{ github.run_attempt }}
+        restore-keys: ${{ steps.run-order-key.outputs.prefix }}

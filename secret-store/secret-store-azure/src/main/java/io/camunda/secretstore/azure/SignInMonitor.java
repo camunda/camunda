@@ -192,6 +192,11 @@ final class SignInMonitor implements StartupCheck.SignInState, AutoCloseable {
       return failure.getClass().getSimpleName();
     }
     // the chain joins the messages of its unavailable credentials with line breaks
+    return oneLine(message);
+  }
+
+  /** {@code message} with its line breaks, and the blanks around them, replaced by one space. */
+  static String oneLine(final String message) {
     return LINE_BREAKS.matcher(message.strip()).replaceAll(" ");
   }
 

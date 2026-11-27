@@ -306,6 +306,62 @@ public final class TimerSuspensionGateTest {
         .isGreaterThanOrEqualTo(500L);
   }
 
+  @Test
+  public void shouldFireStartTimerWhilePreviouslyStartedInstanceIsSuspended() {
+    // given
+    final String processId = Strings.newRandomValidBpmnId();
+    final long processDefinitionKey =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent("timer-start")
+                    .timerWithCycle("R2/PT10S")
+                    .serviceTask("task", t -> t.zeebeJobType(processId))
+                    .endEvent()
+                    .done())
+            .deploy()
+            .getValue()
+            .getProcessesMetadata()
+            .get(0)
+            .getProcessDefinitionKey();
+    RecordingExporter.timerRecords(TimerIntent.CREATED)
+        .withProcessDefinitionKey(processDefinitionKey)
+        .await();
+    ENGINE.increaseTime(Duration.ofSeconds(11));
+    final long firstInstanceKey =
+        RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
+            .withProcessDefinitionKey(processDefinitionKey)
+            .getFirst()
+            .getValue()
+            .getProcessInstanceKey();
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(firstInstanceKey)
+        .withElementType(BpmnElementType.SERVICE_TASK)
+        .await();
+    ENGINE.processInstance().withInstanceKey(firstInstanceKey).suspend();
+
+    // when
+    ENGINE.increaseTime(Duration.ofSeconds(11));
+
+    // then
+    final var secondTriggered =
+        RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
+            .withProcessDefinitionKey(processDefinitionKey)
+            .skip(1)
+            .getFirst();
+    assertThat(secondTriggered.getValue().getProcessInstanceKey()).isNotEqualTo(firstInstanceKey);
+    assertThat(
+            RecordingExporter.records()
+                .limit(r -> r.getPosition() >= secondTriggered.getPosition())
+                .timerRecords()
+                .withIntent(TimerIntent.SUSPENDED)
+                .withProcessDefinitionKey(processDefinitionKey)
+                .count())
+        .describedAs("the start timer must not be buffered for the suspended instance")
+        .isZero();
+  }
+
   private long bufferedTimerTriggerCount(final long processInstanceKey) {
     return RecordingExporter.records()
         .limitToProcessInstance(processInstanceKey)

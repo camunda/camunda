@@ -89,9 +89,9 @@ public final class RestoreRequestTransformer implements ConfigurationChangeReque
   }
 
   /**
-   * The restore plan for the request's physical tenant on the new model, built from that tenant's
-   * partition group alone. Shared with {@link ClusterRestoreRequestTransformer}, which combines the
-   * plans of several physical tenants into one phase.
+   * The restore plan for the request's physical tenant, built from that tenant's partition group
+   * alone. Shared with {@link ClusterRestoreRequestTransformer}, which combines the plans of
+   * several physical tenants into one phase.
    */
   Either<Exception, OperationGraph> groupGraph(final PartitionGroupConfiguration partitionGroup) {
     if (!isGroupRecovering(partitionGroup)) {

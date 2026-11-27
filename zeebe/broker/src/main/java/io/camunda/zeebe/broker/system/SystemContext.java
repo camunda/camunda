@@ -16,12 +16,7 @@ import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.EngineSecurityConfig;
-import io.camunda.security.validation.AuthorizationValidator;
-import io.camunda.security.validation.GroupValidator;
-import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.security.validation.IdentityInitializationException;
-import io.camunda.security.validation.RoleValidator;
-import io.camunda.security.validation.TenantValidator;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.backup.azure.AzureBackupStore;
 import io.camunda.zeebe.backup.filesystem.FilesystemBackupStore;
@@ -30,11 +25,13 @@ import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.backup.schedule.Schedule.NoneSchedule;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.partitioning.PhysicalTenantActorSchedulers;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
 import io.camunda.zeebe.broker.system.configuration.DiskCfg.FreeSpaceCfg;
 import io.camunda.zeebe.broker.system.configuration.ExperimentalCfg;
+import io.camunda.zeebe.broker.system.configuration.ExportingCfg;
 import io.camunda.zeebe.broker.system.configuration.SecurityCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.AzureBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg;
@@ -49,19 +46,10 @@ import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionC
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
-import io.camunda.zeebe.engine.processing.globallistener.GlobalListenerValidator;
-import io.camunda.zeebe.engine.processing.identity.initialize.AuthorizationConfigurer;
-import io.camunda.zeebe.engine.processing.identity.initialize.GroupConfigurer;
-import io.camunda.zeebe.engine.processing.identity.initialize.RoleConfigurer;
-import io.camunda.zeebe.engine.processing.identity.initialize.TenantConfigurer;
-import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperationChunk;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
+import io.camunda.zeebe.engine.GlobalListenerConfiguration;
+import io.camunda.zeebe.engine.api.EngineFactory;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
-import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
-import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.scheduler.ActorScheduler;
-import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.FeatureFlags;
 import io.camunda.zeebe.util.TlsConfigUtil;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -103,8 +91,8 @@ public final class SystemContext {
           + "'.";
 
   /**
-   * The maximum number of items stored in a single batch operation chunk. This value is limited by
-   * two factors:
+   * The maximum number of items stored in a single batch operation chunk (the engine's {@code
+   * PersistedBatchOperationChunk}). This value is limited by two factors:
    *
    * <ul>
    *   <li>The hard-coded max record size of 4MB in the engine
@@ -119,7 +107,6 @@ public final class SystemContext {
    * </ul>
    *
    * @see ZeebeRocksDbFactory
-   * @see PersistedBatchOperationChunk
    */
   private static final long MAX_CHUNK_SIZE = 3000;
 
@@ -127,6 +114,7 @@ public final class SystemContext {
   private final BrokerCfg brokerCfg;
   private Map<String, String> diagnosticContext;
   private final ActorScheduler scheduler;
+  private final PhysicalTenantActorSchedulers physicalTenantActorSchedulers;
   private final AtomixCluster cluster;
   private final BrokerClient brokerClient;
   private final MeterRegistry meterRegistry;
@@ -139,7 +127,6 @@ public final class SystemContext {
   private final Map<String, IntFunction<Long>> exportedPositionSuppliers;
   private final NodeIdProvider nodeIdProvider;
   private final PhysicalTenantIds physicalTenantIds;
-  private final GlobalListenerValidator globalListenerValidator;
 
   /**
    * Creates a {@code SystemContext} where each physical tenant carries its own {@link
@@ -149,6 +136,7 @@ public final class SystemContext {
       final Duration shutdownTimeout,
       final BrokerCfg brokerCfg,
       final ActorScheduler scheduler,
+      final PhysicalTenantActorSchedulers physicalTenantActorSchedulers,
       final AtomixCluster cluster,
       final BrokerClient brokerClient,
       final MeterRegistry meterRegistry,
@@ -164,6 +152,7 @@ public final class SystemContext {
     this.shutdownTimeout = shutdownTimeout;
     this.brokerCfg = brokerCfg;
     this.scheduler = scheduler;
+    this.physicalTenantActorSchedulers = physicalTenantActorSchedulers;
     this.cluster = cluster;
     this.brokerClient = brokerClient;
     this.meterRegistry = meterRegistry;
@@ -179,7 +168,6 @@ public final class SystemContext {
     this.exportedPositionSuppliers = Map.copyOf(exportedPositionSuppliers);
     this.nodeIdProvider = nodeIdProvider;
     this.physicalTenantIds = physicalTenantIds;
-    globalListenerValidator = new GlobalListenerValidator();
     initSystemContext();
   }
 
@@ -259,6 +247,7 @@ public final class SystemContext {
    */
   private void validatePerTenantConfiguration(final String tenantId, final BrokerCfg tenantCfg) {
     validatePerTenantDataConfig(tenantId, tenantCfg.getData());
+    validateExportingCfg(tenantId, tenantCfg.getExporting(), tenantCfg.getData().getBackup());
     validatePerTenantExperimentalConfigs(
         tenantId, tenantCfg.getCluster(), tenantCfg.getExperimental());
   }
@@ -487,6 +476,21 @@ public final class SystemContext {
     validateBackupSchedulerConfig(tenantId, backup);
   }
 
+  private void validateExportingCfg(
+      final String tenantId, final ExportingCfg exporting, final BackupCfg backup) {
+    if (exporting.exportOnlyBackedUpRecords()
+        && backup.getStore() == BackupCfg.BackupStoreType.NONE) {
+      throw new InvalidConfigurationException(
+          tenantScopedMessage(
+              tenantId,
+              "Exporting is restricted to backed-up records "
+                  + "(camunda.data.export.export-only-backed-up-records), but no backup store is "
+                  + "configured. Set camunda.data.primary-storage.backup.store to one of: "
+                  + "S3, GCS, AZURE, FILESYSTEM"),
+          null);
+    }
+  }
+
   /**
    * Validates the tenant's fixed-partition scheme against the root {@link BrokerCfg}: {@code
    * cluster.partitioning} (the scheme + fixed member list) and {@code cluster.replication-factor}
@@ -585,63 +589,27 @@ public final class SystemContext {
   private void validateInitializationConfig() {
     physicalTenantContexts.forEach(
         (physicalTenantId, ctx) ->
-            validateInitializationConfigForTenant(physicalTenantId, ctx.securityConfig()));
+            validateInitializationConfigForTenant(
+                physicalTenantId, ctx.securityConfig(), ctx.engineFactory()));
   }
 
   private void validateInitializationConfigForTenant(
-      final String physicalTenantId, final EngineSecurityConfig securityConfig) {
-    final IdentifierValidator identifierValidator =
-        new IdentifierValidator(
-            securityConfig.getIdValidationPattern(), securityConfig.getGroupIdValidationPattern());
-    final AuthorizationConfigurer authorizationConfigurer =
-        new AuthorizationConfigurer(new AuthorizationValidator(identifierValidator));
-    final TenantConfigurer tenantConfigurer =
-        new TenantConfigurer(new TenantValidator(identifierValidator));
-    final GroupConfigurer groupConfigurer =
-        new GroupConfigurer(new GroupValidator(identifierValidator));
-    final var roleConfigurer = new RoleConfigurer(new RoleValidator(identifierValidator));
-
-    final Either<List<String>, List<AuthorizationRecord>> configuredAuthorizations =
-        authorizationConfigurer.configureEntities(
-            securityConfig.getInitialization().getAuthorizations());
-    final Either<List<String>, List<TenantRecord>> configuredTenants =
-        tenantConfigurer.configureEntities(securityConfig.getInitialization().getTenants());
-    final Either<List<String>, List<GroupRecord>> configuredGroups =
-        groupConfigurer.configureEntities(securityConfig.getInitialization().getGroups());
-    final Either<List<String>, List<RoleRecord>> configuredRoles =
-        roleConfigurer.configureEntities(securityConfig.getInitialization().getRoles());
-
+      final String physicalTenantId,
+      final EngineSecurityConfig securityConfig,
+      final EngineFactory engineFactory) {
     // TODO: after adding more entity types, change this, so it accounts for all violations all
     //   together.
-    configuredAuthorizations.ifLeft(
-        (violations) -> {
-          throw new IdentityInitializationException(
-              "Cannot initialize configured authorizations for tenant '%s': %n- %s"
-                  .formatted(
-                      physicalTenantId, String.join(System.lineSeparator() + "- ", violations)));
-        });
-    configuredTenants.ifLeft(
-        (violations) -> {
-          throw new IdentityInitializationException(
-              "Cannot initialize configured tenants for tenant '%s': %n- %s"
-                  .formatted(
-                      physicalTenantId, String.join(System.lineSeparator() + "- ", violations)));
-        });
-    configuredRoles.ifLeft(
-        (violations) -> {
-          throw new IdentityInitializationException(
-              "Cannot initialize configured roles for tenant '%s': %n- %s"
-                  .formatted(
-                      physicalTenantId, String.join(System.lineSeparator() + "- ", violations)));
-        });
-
-    configuredGroups.ifLeft(
-        (violations) -> {
-          throw new IdentityInitializationException(
-              "Cannot initialize configured groups for tenant '%s': %n- %s"
-                  .formatted(
-                      physicalTenantId, String.join(System.lineSeparator() + "- ", violations)));
-        });
+    engineFactory
+        .validateIdentityInitialization(securityConfig)
+        .forEach(
+            (entityType, violations) -> {
+              throw new IdentityInitializationException(
+                  "Cannot initialize configured %s for tenant '%s': %n- %s"
+                      .formatted(
+                          entityType,
+                          physicalTenantId,
+                          String.join(System.lineSeparator() + "- ", violations)));
+            });
   }
 
   private void validateNetworkSecurityConfig(final SecurityCfg security) {
@@ -681,7 +649,7 @@ public final class SystemContext {
           listenerCfg.createGlobalListenerConfiguration().toRecord();
 
       // Check if id is present
-      if (globalListenerValidator.idProvided(listenerRecord).isLeft()) {
+      if (listenerRecord.getId().isBlank()) {
         LOG.warn(
             "[physical tenant '{}'] Missing id for global listener; listener will be ignored "
                 + "[{}.type]",
@@ -691,7 +659,7 @@ public final class SystemContext {
       }
 
       // Check if type is present
-      if (globalListenerValidator.typeProvided(listenerRecord).isLeft()) {
+      if (listenerRecord.getType().isBlank()) {
         LOG.warn(
             "[physical tenant '{}'] Missing job type for global listener; listener will be "
                 + "ignored [{}.type]",
@@ -701,7 +669,7 @@ public final class SystemContext {
       }
 
       // Validate event types
-      // Note: the validator is not used directly because autocorrection is attempted here
+      // Note: the engine's validator is not used because autocorrection is attempted here
       final var eventTypes = // consider event types in lowercase for validation
           listenerRecord.getEventTypes().stream().map(String::toLowerCase).toList();
       final boolean containsAllEventsKeyword =
@@ -711,7 +679,7 @@ public final class SystemContext {
           eventTypes.stream()
               .filter( // check if provided event types have valid values
                   eventType -> {
-                    if (globalListenerValidator.isValidEventType(listenerRecord, eventType)) {
+                    if (GlobalListenerConfiguration.VALID_EVENT_TYPES.contains(eventType)) {
                       return true;
                     } else {
                       LOG.warn(
@@ -792,6 +760,10 @@ public final class SystemContext {
       throw new IllegalArgumentException(
           tenantScopedMessage(tenantId, "Backup retention schedule is mandatory, none provided."));
     }
+  }
+
+  public PhysicalTenantActorSchedulers getPhysicalTenantActorSchedulers() {
+    return physicalTenantActorSchedulers;
   }
 
   public ActorScheduler getScheduler() {

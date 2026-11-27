@@ -28,6 +28,10 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.SpanContext;
+import io.opentelemetry.api.trace.TraceFlags;
+import io.opentelemetry.api.trace.TraceState;
 import java.net.ConnectException;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -243,7 +247,49 @@ final class RequestRetryHandlerTest {
     assertThat(groups).containsExactly("tenant-b");
   }
 
-  private static final class TestBrokerClient implements BrokerClient {
+  @Test
+  void shouldPropagateSampledTraceContextAcrossPartitionRetries() {
+    // given - attempt 1 completes asynchronously without the caller's thread-local context
+    final var traceId = "0af7651916cd43dd8448eb211c80319c";
+    final var sampledParent =
+        Span.wrap(
+            SpanContext.create(
+                traceId, "b7ad6b7169203331", TraceFlags.getSampled(), TraceState.getDefault()));
+    final var firstAttempt = new CompletableFuture<BrokerResponse<String>>();
+    final var seenTraceIds = new ArrayList<String>();
+    final var request = new TestBrokerRequest(Optional.empty());
+    final var handler =
+        new RequestRetryHandler(
+            new TestBrokerClient() {
+              @Override
+              @SuppressWarnings("unchecked")
+              public <T> CompletableFuture<BrokerResponse<T>> sendRequest(
+                  final BrokerRequest<T> req) {
+                seenTraceIds.add(Span.current().getSpanContext().getTraceId());
+                if (sendCount.incrementAndGet() == 1) {
+                  return (CompletableFuture<BrokerResponse<T>>) (CompletableFuture<?>) firstAttempt;
+                }
+                return CompletableFuture.completedFuture(
+                    (BrokerResponse<T>) new BrokerResponse<>("ok", req.getPartitionId(), 1));
+              }
+            },
+            topologyManager,
+            new RoundRobinDispatchStrategy(0));
+
+    // when - send under a sampled span, then complete attempt 1 outside that scope
+    final var result = new AtomicReference<String>();
+    try (final var ignored = sampledParent.makeCurrent()) {
+      handler.sendRequest(request, (key, response) -> result.set(response), error -> {});
+    }
+    firstAttempt.complete(
+        new BrokerErrorResponse<>(new BrokerError(ErrorCode.RESOURCE_EXHAUSTED, "backpressure")));
+
+    // then - both attempts ran with the sampled parent context
+    assertThat(result.get()).isEqualTo("ok");
+    assertThat(seenTraceIds).containsExactly(traceId, traceId);
+  }
+
+  private static class TestBrokerClient implements BrokerClient {
     final AtomicInteger sendCount = new AtomicInteger(0);
     final AtomicInteger sendWithRetryCount = new AtomicInteger(0);
     final List<Integer> partitionsHit = new ArrayList<>();

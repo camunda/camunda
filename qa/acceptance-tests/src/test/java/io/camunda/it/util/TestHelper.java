@@ -29,6 +29,7 @@ import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.enums.AgentInstanceStatus;
 import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.client.api.search.enums.IncidentState;
+import io.camunda.client.api.search.enums.ProcessDefinitionState;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.enums.UserTaskState;
 import io.camunda.client.api.search.filter.AgentDefinitionFilter;
@@ -820,6 +821,23 @@ public final class TestHelper {
                   client.newProcessInstanceSearchRequest().filter(filter).execute().items();
               asserter.accept(result);
             });
+  }
+
+  public static void waitForProcessDefinitionState(
+      final CamundaClient client,
+      final long processDefinitionKey,
+      final ProcessDefinitionState state) {
+    await("process definition should be " + state)
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () ->
+                assertThat(
+                        client
+                            .newProcessDefinitionGetRequest(processDefinitionKey)
+                            .execute()
+                            .getState())
+                    .isEqualTo(state));
   }
 
   public static void waitForElementInstances(

@@ -329,7 +329,7 @@ jobs:
       - name: Generate GitHub App Token
         id: github-token
         if: github.event_name == 'schedule' || inputs.dispatch
-        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@405ecc95af077cd030bfe3249511e802fd9e4585 # generate-github-app-token-from-vault-secrets-1.3.1
         with:
           github-app-id-vault-key: GITHUB_APP_ID
           github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
@@ -567,7 +567,7 @@ jobs:
 
       - name: Generate GitHub App Token
         id: github-token
-        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@405ecc95af077cd030bfe3249511e802fd9e4585 # generate-github-app-token-from-vault-secrets-1.3.1
         with:
           github-app-id-vault-key: GITHUB_APP_ID
           github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
@@ -904,7 +904,7 @@ jobs:
 
       - name: Generate GitHub App Token
         id: github-token
-        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@405ecc95af077cd030bfe3249511e802fd9e4585 # generate-github-app-token-from-vault-secrets-1.3.1
         with:
           github-app-id-vault-key: GITHUB_APP_ID
           github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
@@ -1202,7 +1202,7 @@ jobs:
 
       - name: Generate GitHub App Token
         id: github-token
-        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@405ecc95af077cd030bfe3249511e802fd9e4585 # generate-github-app-token-from-vault-secrets-1.3.1
         with:
           github-app-id-vault-key: GITHUB_APP_ID
           github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
@@ -1316,7 +1316,7 @@ jobs:
 
       - name: Generate GitHub App Token
         id: github-token
-        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@405ecc95af077cd030bfe3249511e802fd9e4585 # generate-github-app-token-from-vault-secrets-1.3.1
         with:
           github-app-id-vault-key: GITHUB_APP_ID
           github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
@@ -1776,7 +1776,7 @@ jobs:
 
       - name: Generate GitHub App Token
         id: github-token
-        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@405ecc95af077cd030bfe3249511e802fd9e4585 # generate-github-app-token-from-vault-secrets-1.3.1
         with:
           github-app-id-vault-key: GITHUB_APP_ID
           github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes

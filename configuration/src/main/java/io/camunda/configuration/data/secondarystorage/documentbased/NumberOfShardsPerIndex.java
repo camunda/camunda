@@ -166,6 +166,9 @@ public class NumberOfShardsPerIndex {
   /** Primary shards for the variable index (variable). */
   private @Nullable Integer variable;
 
+  /** Primary shards for the variable history index (variable-history). */
+  private @Nullable Integer variableHistory;
+
   /** Primary shards for the wait state index (wait-state). */
   private @Nullable Integer waitState;
 
@@ -215,6 +218,7 @@ public class NumberOfShardsPerIndex {
     putIfSet(shardsByIndexName, "usage-metric", usageMetric);
     putIfSet(shardsByIndexName, "usage-metric-tu", usageMetricTu);
     putIfSet(shardsByIndexName, "variable", variable);
+    putIfSet(shardsByIndexName, "variable-history", variableHistory);
     putIfSet(shardsByIndexName, "wait-state", waitState);
     return shardsByIndexName;
   }
@@ -545,6 +549,14 @@ public class NumberOfShardsPerIndex {
 
   public void setVariable(final @Nullable Integer variable) {
     this.variable = variable;
+  }
+
+  public @Nullable Integer getVariableHistory() {
+    return variableHistory;
+  }
+
+  public void setVariableHistory(final @Nullable Integer variableHistory) {
+    this.variableHistory = variableHistory;
   }
 
   public @Nullable Integer getWaitState() {

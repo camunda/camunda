@@ -15,7 +15,7 @@ import type {DecisionInstance} from '@camunda/camunda-api-zod-schemas/8.11';
 import {PanelHeader} from '#/operate/shared/PanelHeader/shadcn.components/PanelHeader';
 import {PaginatedSortableTable} from '#/operate/shared/PaginatedSortableTable/shadcn.components/PaginatedSortableTable';
 import {StateIcon} from '#/operate/shared/StateIcon/shadcn.components/StateIcon';
-import {ErrorMessage} from '#/operate/shared/ErrorMessage/shadcn.components/ErrorMessage';
+import {DataLoadErrorAlert} from '#/operate/shared/DataLoadErrorAlert/shadcn.components/DataLoadErrorAlert';
 import {getClientConfig} from '#/shared/config/getClientConfig';
 import {useInstancesSelection} from '#/operate/shared/hooks/useInstancesSelection';
 import {isSpecificTenant} from '#/operate/shared/utils/isSpecificTenant';
@@ -28,11 +28,6 @@ import {useBulkDelete} from './useBulkDelete';
 type Props = {
 	search: DecisionsSearch;
 };
-
-const TABLE_CONTAINER_CLASSES = [
-	'[&_[data-slot=table-container]]:rounded-none! [&_[data-slot=table-container]]:border-0! [&_[data-slot=table-container]]:shadow-none!',
-	'[&_[data-slot=data-table]>div.rounded-xl]:rounded-none! [&_[data-slot=data-table]>div.rounded-xl]:border-0!',
-].join(' ');
 
 const TableLink: React.FC<React.ComponentProps<'a'>> = (props) => <Link {...props} />;
 const ProcessInstanceLink = createLink(TableLink);
@@ -53,6 +48,7 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 		hasNextPage,
 		fetchNextPage,
 		filter,
+		refetch,
 	} = useDecisionInstancesSearch(search);
 
 	const isRefreshing = isFetching && !isFetchingPreviousPage && !isFetchingNextPage;
@@ -166,7 +162,7 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 
 	const emptyState =
 		status === 'error' ? (
-			<ErrorMessage />
+			<DataLoadErrorAlert onRetry={() => void refetch()} />
 		) : (
 			<>
 				<p>{t('operate.decisions.ds.instancesTable.emptyMessage')}</p>
@@ -218,7 +214,7 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 					fetchPreviousPage,
 					fetchNextPage,
 				}}
-				className={TABLE_CONTAINER_CLASSES}
+				borderless
 				data-testid="decision-instances-table"
 			/>
 			<BulkDeleteDialog {...bulkDelete.dialogProps} />

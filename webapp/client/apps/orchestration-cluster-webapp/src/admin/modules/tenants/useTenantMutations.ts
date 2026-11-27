@@ -50,6 +50,15 @@ function useTenantMutations() {
 
 	const searchTenant = (tenantId: string) => queries.queryTenants({filter: {tenantId}, page: {limit: 1}});
 
+	const seedTenant = (tenant: Tenant) => {
+		const {queryKey} = queries.getTenant(tenant.tenantId);
+		queryClient.setQueryData(queryKey, tenant);
+		queryClient.setQueryDefaults(queryKey, {staleTime: Infinity});
+	};
+
+	const releaseTenantSeed = (tenantId: string) =>
+		queryClient.setQueryDefaults(queries.getTenant(tenantId).queryKey, {staleTime: 0});
+
 	const invalidateTenants = () => queryClient.invalidateQueries({queryKey: ['queryTenants']});
 
 	const reconcileTenants = (confirmed: boolean) => {
@@ -78,11 +87,15 @@ function useTenantMutations() {
 				compare: compareTenantsBySort,
 				canInsert: canInsertTenant,
 			});
+			seedTenant(tenant);
 			toast.success(t('admin.tenants.createTenantSuccess'));
 
 			void waitUntilReady(queryClient, searchTenant(tenant.tenantId), {
 				isReady: ({items}) => items.some((item) => item.tenantId === tenant.tenantId),
-			}).then((ready) => reconcileTenants(ready !== undefined));
+			}).then((ready) => {
+				releaseTenantSeed(tenant.tenantId);
+				reconcileTenants(ready !== undefined);
+			});
 		},
 		onError: () => toast.error(t('admin.tenants.createTenantError')),
 	});
@@ -103,7 +116,7 @@ function useTenantMutations() {
 				compare: compareTenantsBySort,
 				canInsert: () => false,
 			});
-			queryClient.setQueryData(queries.getTenant(tenant.tenantId).queryKey, tenant);
+			seedTenant(tenant);
 			toast.success(t('admin.tenants.updateTenantSuccess'));
 
 			void waitUntilReady(queryClient, searchTenant(tenant.tenantId), {
@@ -114,7 +127,10 @@ function useTenantMutations() {
 							item.name === tenant.name &&
 							(item.description ?? '') === (tenant.description ?? ''),
 					),
-			}).then((ready) => reconcileTenants(ready !== undefined));
+			}).then((ready) => {
+				releaseTenantSeed(tenant.tenantId);
+				reconcileTenants(ready !== undefined);
+			});
 		},
 		onError: () => toast.error(t('admin.tenants.updateTenantError')),
 	});

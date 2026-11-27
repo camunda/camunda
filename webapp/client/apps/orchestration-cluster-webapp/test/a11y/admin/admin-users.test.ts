@@ -43,7 +43,8 @@ const DS_DROPDOWN_MENU_HIDES_BACKGROUND_RULES = [
 
 const USERS = [createUser({username: 'jane.doe', name: 'Jane Doe', email: 'jane.doe@example.com'})];
 
-test.beforeEach(({network}) => {
+test.beforeEach(async ({network, adminUsersPage}) => {
+	await adminUsersPage.mockClientConfig();
 	network.use(
 		mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
 		mockSystemConfigurationEndpoint({

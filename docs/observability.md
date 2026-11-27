@@ -40,9 +40,11 @@ Metric are aggregated measurements of application performance and/or behavior. F
 
 [Read more about it here.](./observability/metrics.md)
 
-### Traces
+### [Traces](./observability/tracing.md)
 
 Traces are sampled recordings of events which can be logically sliced into so-called spans. Traces let you follow a specific logical action (e.g. a request, a transaction) across boundaries (e.g. network, processes, threads), allowing you to see where time is spent. They're mostly used for diagnosing performance issues.
+
+[Read more about it here.](./observability/tracing.md)
 
 ### Profiles
 

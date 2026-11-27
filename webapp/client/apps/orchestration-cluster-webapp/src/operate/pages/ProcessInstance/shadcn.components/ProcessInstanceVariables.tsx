@@ -8,8 +8,8 @@
 
 import {useInfiniteQuery} from '@tanstack/react-query';
 import {useTranslation} from 'react-i18next';
-import {Spinner} from '@camunda/design-system';
-import {EmptyMessage} from '#/operate/shared/EmptyMessage/shadcn.components/EmptyMessage';
+import {EmptyState, Spinner} from '@camunda/design-system';
+import {Braces} from '@camunda/design-system/icons';
 import {useProcessInstanceElementSelection} from '../useProcessInstanceElementSelection';
 import {useProcessInstancePage} from '../useProcessInstancePage';
 import {useProcessInstanceModification} from '../useProcessInstanceModification';
@@ -18,37 +18,52 @@ import {variablesQuery} from '../variables.queries';
 import {VariablesError} from './VariablesError';
 import {VariablesForm} from './VariablesForm';
 
-const CenteredMessage: React.FC<{message: string}> = ({message}) => (
+const CenteredMessage: React.FC<{heading: string; description: string}> = ({heading, description}) => (
 	<div className="flex h-full items-center justify-center">
-		<EmptyMessage message={message} />
+		<EmptyState size="sm" headingLevel={3} icon={<Braces aria-hidden />} heading={heading} description={description} />
 	</div>
 );
 
 const ProcessInstanceVariables: React.FC = () => {
 	const {t} = useTranslation();
 	const {processInstanceId} = useProcessInstancePage();
-	const {isFetchingElementError} = useProcessInstanceElementSelection();
+	const {isFetchingElementError, refetchElement} = useProcessInstanceElementSelection();
 	const {isModificationModeEnabled} = useProcessInstanceModification();
 	const {scopeKey, isPlaceholder, hasNoContent, hasMultipleInstances, canQuery} = useVariableScope();
-	const {data, error, isError, isLoading} = useInfiniteQuery(
+	const {data, error, isError, isLoading, refetch} = useInfiniteQuery(
 		variablesQuery({processInstanceKey: processInstanceId, scopeKey: canQuery ? scopeKey : null}),
 	);
 
 	if ((canQuery && isError) || isFetchingElementError) {
-		return <VariablesError error={error} />;
+		return (
+			<VariablesError error={error} onRetry={() => void (isFetchingElementError ? refetchElement() : refetch())} />
+		);
 	}
 
 	if (hasNoContent) {
-		return <CenteredMessage message={t('operate.processInstance.variables.empty')} />;
+		return (
+			<CenteredMessage
+				heading={t('operate.processInstance.ds.variables.emptyHeading')}
+				description={t('operate.processInstance.ds.variables.emptyDescription')}
+			/>
+		);
 	}
 
 	if (hasMultipleInstances) {
-		return <CenteredMessage message={t('operate.processInstance.variables.multiInstance')} />;
+		return (
+			<CenteredMessage
+				heading={t('operate.processInstance.ds.operationsLog.multiInstanceHeading')}
+				description={t('operate.processInstance.ds.variables.multiInstanceDescription')}
+			/>
+		);
 	}
 
 	if (isPlaceholder || (isModificationModeEnabled && scopeKey === null)) {
 		return scopeKey === null ? (
-			<CenteredMessage message={t('operate.processInstance.variables.empty')} />
+			<CenteredMessage
+				heading={t('operate.processInstance.ds.variables.emptyHeading')}
+				description={t('operate.processInstance.ds.variables.emptyDescription')}
+			/>
 		) : (
 			<div className="relative flex h-full flex-col">
 				<VariablesForm key={`${scopeKey}-${isModificationModeEnabled}`} scopeKey={scopeKey} status="empty" />

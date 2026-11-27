@@ -28,13 +28,13 @@ const LIST_KEY: QueryKey = [
 	{sort: [{field: 'username', order: 'ASC'}], page: {from: 0, limit: 20}},
 ];
 
-function setUp(initial: UsersPage) {
+function setUp<T>(initial: T, listKey: QueryKey = LIST_KEY) {
 	const queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});
-	queryClient.setQueryData(LIST_KEY, initial);
+	queryClient.setQueryData(listKey, initial);
 	// Marks the list as active, as the open tab would, without ever refetching it.
 	const observer = new QueryObserver(queryClient, {
-		queryKey: LIST_KEY,
-		queryFn: () => queryClient.getQueryData(LIST_KEY),
+		queryKey: listKey,
+		queryFn: () => queryClient.getQueryData(listKey),
 		staleTime: Infinity,
 	});
 	const unsubscribe = observer.subscribe(() => {});
@@ -71,6 +71,31 @@ describe('useTenantMemberMutations', () => {
 			items: [{username: 'alice'}, {username: 'carol'}],
 			page: {totalItems: 2},
 		});
+		unsubscribe();
+	});
+
+	it('should not insert an assigned role into a list sorted by name', async ({worker}) => {
+		const rolesByNameKey: QueryKey = [
+			'queryRolesByTenant',
+			TENANT_ID,
+			{sort: [{field: 'name', order: 'ASC'}], page: {from: 0, limit: 20}},
+		];
+		const roles = {items: [{roleId: 'ops', name: 'Operators'}], page: {totalItems: 1}};
+		const {queryClient, unsubscribe, Wrapper} = setUp(roles, rolesByNameKey);
+		const confirmations = vi.fn();
+		worker.use(
+			http.put('*/tenants/:tenantId/roles/:roleId', () => new HttpResponse(null, {status: 204})),
+			http.post('*/tenants/:tenantId/roles/search', () => {
+				confirmations();
+				return HttpResponse.json({...roles, page: {totalItems: 2}});
+			}),
+		);
+		const {result} = await renderHook(() => useTenantMemberMutations('roles', TENANT_ID), {wrapper: Wrapper});
+
+		await result.current.assign.mutateAsync([{roleId: 'admins'}]);
+
+		expect(queryClient.getQueryData(rolesByNameKey)).toEqual(roles);
+		await vi.waitFor(() => expect(confirmations).toHaveBeenCalled());
 		unsubscribe();
 	});
 

@@ -252,16 +252,21 @@ public class PassiveRole extends InactiveRole {
       final long elapsed = System.currentTimeMillis() - pendingSnapshotStartTimestamp;
       final PersistedSnapshot persistedSnapshot;
       log.debug("Committing snapshot {}", pendingSnapshot);
+      var logReset = false;
       try {
         // Reset before committing to prevent the edge case where the system crashes after
         // committing the snapshot, and restart with a snapshot and invalid log.
         resetLogOnReceivingSnapshot(pendingSnapshot.index());
+        logReset = true;
 
         persistedSnapshot = pendingSnapshot.persist().join();
         log.info("Committed snapshot {}", persistedSnapshot);
       } catch (final Exception e) {
         log.error("Failed to commit pending snapshot {}, rolling back", pendingSnapshot, e);
         abortPendingSnapshots();
+        if (logReset) {
+          reloadStoredConfigurationAfterInstall();
+        }
         return CompletableFuture.completedFuture(
             logResponse(
                 InstallResponse.builder()
@@ -279,6 +284,7 @@ public class PassiveRole extends InactiveRole {
       snapshotReplicationMetrics.observeDuration(elapsed);
       raft.updateCurrentSnapshot();
       onSnapshotReceiveCompletedOrAborted();
+      reloadStoredConfigurationAfterInstall();
     } else {
       setNextExpected(request.nextChunkId());
       previouslyReceivedSnapshotChunkId = request.chunkId();
@@ -858,6 +864,10 @@ public class PassiveRole extends InactiveRole {
 
         // Read the previous entry and validate that the term matches the request previous log term.
         final IndexedRaftLogEntry previousEntry = reader.next();
+        if (previousEntry.index() != request.prevLogIndex()) {
+          // the reader skipped to the first entry of the log, which starts after the snapshot
+          return checkPreviousEntryInSnapshot(request, future);
+        }
         if (request.prevLogTerm() != previousEntry.term()) {
           log.debug(
               "Rejected {}: Previous entry term ({}) does not match local log's term for the same entry ({})",
@@ -881,6 +891,27 @@ public class PassiveRole extends InactiveRole {
     return true;
   }
 
+  /**
+   * Checks a previous entry that is not in the log, as the log starts after it, e.g. because it was
+   * replaced by a snapshot. Only the snapshot's own index and term are known; the entries before it
+   * are committed, so the leader has to continue after the snapshot.
+   */
+  private boolean checkPreviousEntryInSnapshot(
+      final InternalAppendRequest request, final CompletableFuture<AppendResponse> future) {
+    final var snapshot = raft.getCurrentSnapshot();
+    if (snapshot != null && snapshot.getIndex() == request.prevLogIndex()) {
+      return checkPreviousEntry(request, snapshot.getIndex(), snapshot.getTerm(), future);
+    }
+
+    final long snapshotIndex = raft.getCurrentSnapshotIndex();
+    log.debug(
+        "Rejected {}: Previous index ({}) is before the local log, which continues after the snapshot index ({})",
+        request,
+        request.prevLogIndex(),
+        snapshotIndex);
+    return failAppend(snapshotIndex, future);
+  }
+
   /** Appends entries from the given AppendRequest. */
   protected void appendEntries(
       final InternalAppendRequest request, final CompletableFuture<AppendResponse> future) {
@@ -895,10 +926,12 @@ public class PassiveRole extends InactiveRole {
 
     if (!request.entries().isEmpty()) {
 
-      // If the previous term is zero, that indicates the previous index represents the beginning of
-      // the log.
-      // Reset the log to the previous index plus one.
-      if (request.prevLogTerm() == 0) {
+      // A previous term of zero means the entries start the leader's log. Reset the log only if it
+      // does not start at the same index, e.g. because it was compacted. Otherwise, the entries
+      // are compared below like any others, so that entries this member acknowledged and the
+      // leader may have committed are not deleted.
+      if (request.prevLogTerm() == 0
+          && raft.getLog().getFirstIndex() != request.prevLogIndex() + 1) {
         log.debug("Reset first index to {}", request.prevLogIndex() + 1);
         resetLog(request.prevLogIndex() + 1);
       }
@@ -1172,6 +1205,19 @@ public class PassiveRole extends InactiveRole {
     return succeeded;
   }
 
+  /**
+   * Reloads the stored configuration once the install is settled. A failure here must not change
+   * the install response: the snapshot is already persisted or aborted, and the leader cannot
+   * repair a member's configuration, so the failure is only logged.
+   */
+  private void reloadStoredConfigurationAfterInstall() {
+    try {
+      raft.getCluster().reloadStoredConfiguration();
+    } catch (final Exception e) {
+      log.error("Failed to reload the stored configuration after the snapshot install", e);
+    }
+  }
+
   private void resetLogOnReceivingSnapshot(final long snapshotIndex) {
     final var raftLog = raft.getLog();
 
@@ -1180,7 +1226,9 @@ public class PassiveRole extends InactiveRole {
         raftLog.getLastIndex(),
         snapshotIndex,
         snapshotIndex + 1);
-    resetLog(snapshotIndex + 1);
+    // The configuration is reloaded by the caller once the snapshot is persisted or aborted: the
+    // reload can change the role of this member, which aborts a pending snapshot.
+    raftLog.reset(snapshotIndex + 1);
   }
 
   /**

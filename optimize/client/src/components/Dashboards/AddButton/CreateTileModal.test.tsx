@@ -103,6 +103,23 @@ it('should call the callback when adding a report', async () => {
   });
 });
 
+it('should reset the report selection when it is cleared', async () => {
+  // given
+  (loadReports as jest.Mock).mockReturnValueOnce([{id: 'a', name: 'Report A'}]);
+  const node = shallow(<CreateTileModal {...props} />);
+  runAllEffects();
+  await flushPromises();
+  node.find(ComboBox).prop('onChange')({selectedItem: {id: 'a'}});
+
+  // when
+  node.find(ComboBox).prop('onChange')({selectedItem: null});
+
+  // then
+  expect(node.find(ComboBox).prop('selectedItem')).toBe(null);
+  expect(node.find(ComboBox).prop('itemToString')?.(null)).toBe('');
+  expect(node.find('Button').at(1)).toBeDisabled();
+});
+
 it('should show a loading skeleton while loading available reports', () => {
   const node = shallow(<CreateTileModal {...props} />);
 

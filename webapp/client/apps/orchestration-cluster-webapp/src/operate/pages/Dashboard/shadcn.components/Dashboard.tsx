@@ -12,7 +12,7 @@ import {cn} from '#/shared/cn';
 import {useRunningInstancesCount} from '#/operate/pages/Dashboard/useRunningInstancesCount';
 import {NoInstancesEmptyState} from './NoInstancesEmptyState';
 import {MetricPanel} from '#/operate/pages/Dashboard/MetricPanel/shadcn.components/MetricPanel';
-import {ErrorMessage} from '#/operate/shared/ErrorMessage/shadcn.components/ErrorMessage';
+import {DataLoadErrorAlert} from '#/operate/shared/DataLoadErrorAlert/shadcn.components/DataLoadErrorAlert';
 import {InstancesByProcess} from '#/operate/pages/Dashboard/InstancesByProcess/shadcn.components/InstancesByProcess';
 import {IncidentsByError} from '#/operate/pages/Dashboard/IncidentsByError/shadcn.components/IncidentsByError';
 
@@ -24,7 +24,7 @@ const noInstancesTableSkeletonColumns = (header: string): DataTableColumn<NoInst
 
 const Dashboard: React.FC = () => {
 	const {t} = useTranslation();
-	const {data: count, isPending, isError, isSuccess} = useRunningInstancesCount();
+	const {data: count, isPending, isError, isSuccess, refetch} = useRunningInstancesCount();
 	const hasNoInstances = count?.total === 0;
 
 	return (
@@ -34,7 +34,13 @@ const Dashboard: React.FC = () => {
 					{t('operate.dashboard.title')}
 				</Heading>
 				<div data-testid="metric-panel">
-					{isError && <ErrorMessage message={t('operate.dashboard.metricFetchError')} />}
+					{isError && (
+						<DataLoadErrorAlert
+							className="p-0"
+							title={t('operate.dashboard.metricFetchError')}
+							onRetry={() => void refetch()}
+						/>
+					)}
 					{isPending && <Skeleton data-testid="instances-bar-skeleton" className="h-24 w-full" />}
 					{isSuccess && <MetricPanel count={count} />}
 				</div>

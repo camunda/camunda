@@ -1,3 +1,5 @@
+import buildlogic.projectArtifact
+import buildlogic.ArtifactKind
 plugins {
   id("buildlogic.server-conventions")
   id("buildlogic.parallel-test-classes-conventions")
@@ -17,6 +19,7 @@ dependencies {
   implementation(libs.jakarta.servlet.jakarta.servlet.api)
 
   testImplementation(project(":zeebe-cluster-config-impl"))
+  testImplementation(projectArtifact(":zeebe-cluster-config-api", ArtifactKind.TESTS))
   testImplementation(libs.org.mockito.mockito.core)
 }
 

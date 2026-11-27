@@ -266,6 +266,8 @@ registerProject(":zeebe-backup-testkit", "zeebe/backup-stores/testkit")
 
 registerProject(":zeebe-workflow-engine", "zeebe/engine")
 
+registerProject(":zeebe-workflow-engine-api", "zeebe/engine-api")
+
 registerProject(":document-api", "document/api")
 
 registerProject(":zeebe-journal", "zeebe/journal")
@@ -338,6 +340,8 @@ registerProject(":zeebe-feel-tagged-parameters", "zeebe/feel-tagged-parameters")
 
 include(":debug-cli")
 
+registerProject(":es9-index-migrator", "migration/es9-index-migrator")
+
 registerProject(":zeebe-opensearch-exporter", "zeebe/exporters/opensearch-exporter")
 
 registerProject(":zeebe-msgpack-core", "zeebe/msgpack-core")
@@ -359,6 +363,8 @@ registerProject(":camunda-testcontainer", "qa/testcontainer")
 registerProject(":zeebe-exporter-common", "zeebe/exporter-common")
 
 registerProject(":zeebe-exporter-config-support", "zeebe/exporter-config-support")
+
+registerProject(":zeebe-cluster-behavior", "zeebe/cluster-behavior")
 
 registerProject(":zeebe-backup-store-gcs", "zeebe/backup-stores/gcs")
 

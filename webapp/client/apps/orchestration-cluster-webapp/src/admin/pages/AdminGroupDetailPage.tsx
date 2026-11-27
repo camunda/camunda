@@ -107,7 +107,15 @@ const AdminGroupDetailPage: React.FC<AdminGroupDetailPageProps> = ({
 
 				<Tabs
 					value={selectedTab}
-					onValueChange={(value) => onSearchChange({tab: value as MemberKind, page: undefined, pageSize: undefined})}
+					onValueChange={(value) =>
+						onSearchChange({
+							tab: value as MemberKind,
+							sortField: undefined,
+							sortOrder: undefined,
+							page: undefined,
+							pageSize: undefined,
+						})
+					}
 				>
 					<TabsList aria-label={t('admin.groups.members.tabsLabel')}>
 						{visibleKinds.map((kind) => (

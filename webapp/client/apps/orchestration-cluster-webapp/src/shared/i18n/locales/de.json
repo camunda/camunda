@@ -86,6 +86,28 @@
 		"admin": {
 			"configuredIdPatternInvalidError": "Darf höchstens 256 Zeichen lang sein und muss dem für diesen Cluster konfigurierten ID-Muster entsprechen: {{pattern}}",
 			"adminPanelNavAria": "Admin-Navigation",
+			"setup": {
+				"title": "Admin-Benutzer erstellen",
+				"username": "Benutzername",
+				"usernamePlaceholder": "Benutzername eingeben",
+				"usernameRequired": "Benutzername ist erforderlich",
+				"password": "Passwort",
+				"passwordPlaceholder": "Passwort eingeben",
+				"passwordRequirements": "Das Passwort muss mindestens 6 Zeichen lang sein und mindestens eine Zahl enthalten.",
+				"passwordRequired": "Passwort ist erforderlich",
+				"confirmPassword": "Passwort bestätigen",
+				"confirmPasswordPlaceholder": "Passwort bestätigen",
+				"confirmPasswordRequired": "Passwortbestätigung ist erforderlich",
+				"passwordsDoNotMatch": "Die Passwörter stimmen nicht überein",
+				"name": "Vollständiger Name",
+				"namePlaceholder": "Vollständigen Namen eingeben",
+				"email": "E-Mail",
+				"emailPlaceholder": "E-Mail eingeben",
+				"emailInvalid": "Bitte geben Sie eine gültige E-Mail-Adresse ein",
+				"submit": "Benutzer erstellen",
+				"submitting": "Benutzer wird erstellt",
+				"genericError": "Beim Erstellen des Admin-Benutzers ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut."
+			},
 			"headerNavItemUsers": "Benutzer",
 			"headerNavItemGroups": "Gruppen",
 			"headerNavItemRoles": "Rollen",
@@ -632,6 +654,12 @@
 				"createTenant": "Mandant erstellen",
 				"editTenant": "Bearbeiten",
 				"deleteTenant": "Löschen",
+				"tenantCreatedTitle": "Mandant erstellt",
+				"tenantCreatedDescription": "„{{name}}“ wurde erfolgreich erstellt.",
+				"nextStepHeading": "Nächster Schritt: Weisen Sie Ihrem neuen Mandanten Entitäten zu",
+				"gotItButton": "Verstanden",
+				"connectorRoleInfo": "Weisen Sie diesem Mandanten die Rolle „Connector“ zu, um automatisch alle Clients mit derselben Rolle zuzuweisen.",
+				"connectorRoleInfoLink": "Mehr zu Mandanten",
 				"addTenantModalTitle": "Mandant erstellen",
 				"editTenantModalTitle": "Mandant bearbeiten",
 				"deleteTenantModalTitle": "Mandant löschen",
@@ -663,6 +691,8 @@
 				"roleNameColumn": "Name",
 				"mappingRuleIdColumn": "Zuordnungsregel-ID",
 				"mappingRuleNameColumn": "Name",
+				"mappingRuleClaimNameColumn": "Claim-Name",
+				"mappingRuleClaimValueColumn": "Claim-Wert",
 				"clientIdColumn": "Client-ID",
 				"members": {
 					"candidatesLoadError": "Optionen konnten nicht geladen werden",
@@ -751,6 +781,31 @@
 			"tasksPanelLabel": "Aufgaben-Seitenleiste",
 			"headerNavItemTasks": "Aufgaben",
 			"headerNavItemProcesses": "Prozesse",
+			"headerNavItemCases": "Fälle",
+			"casesTitle": "Fälle",
+			"casesOpenCount_one": "{{count}} offener Fall",
+			"casesOpenCount_other": "{{count}} offene Fälle",
+			"casesSearchLabel": "Nach Business-ID suchen",
+			"casesClearSearch": "Suche löschen",
+			"casesColumnCase": "Fall",
+			"casesColumnBusinessId": "Business-ID",
+			"casesColumnStarted": "Gestartet",
+			"casesColumnStatus": "Status",
+			"casesStartedRelativeLabel": "Gestartet",
+			"casesStartedAbsoluteLabel": "Gestartet am",
+			"casesStatusActive": "Aktiv",
+			"casesStatusIncident": "Vorfall",
+			"casesStatusSuspended": "Angehalten",
+			"casesStatusCompleted": "Abgeschlossen",
+			"casesStatusTerminated": "Beendet",
+			"casesCaseLinkLabel": "{{title}}, {{businessId}}",
+			"casesNoOpenCasesHeading": "Keine offenen Fälle",
+			"casesNoOpenCasesDescription": "Fälle, an denen Sie arbeiten können, werden hier angezeigt.",
+			"casesNoMatchingCasesHeading": "Keine passenden Fälle",
+			"casesNoMatchingCasesDescription": "Kein offener Fall hat eine Business-ID, die „{{search}}“ enthält.",
+			"casesPageOutOfRangeHeading": "Keine Fälle auf dieser Seite",
+			"casesPageOutOfRangeDescription": "Die Liste enthält möglicherweise weniger Fälle als beim Speichern dieses Links.",
+			"casesGoToFirstPage": "Zur ersten Seite",
 			"taskPanelNavAria": "Tasklist-Navigation",
 			"headerThemeLabel": "Design",
 			"headerThemeSystem": "System",
@@ -1181,7 +1236,11 @@
 						"operationState": "Vorgangsstatus",
 						"operationStateLoading": "Vorgangsstatus werden geladen",
 						"emptyMessage": "Keine Instanzen entsprechen diesen Filtern",
-						"emptyAdditionalInfo": "Wählen Sie mindestens einen Instanzstatus aus, um Ergebnisse zu sehen"
+						"emptyAdditionalInfo": "Wählen Sie mindestens einen Instanzstatus aus, um Ergebnisse zu sehen",
+						"emptyFilteredDescription": "Ändern Sie die Filter oder setzen Sie sie zurück, um mehr Instanzen zu sehen.",
+						"emptyNoStateHeading": "Instanzstatus auswählen",
+						"emptyDefaultHeading": "Noch keine laufenden Instanzen",
+						"emptyDefaultDescription": "Instanzen erscheinen hier, sobald ein Prozess startet. Um abgeschlossene Instanzen zu sehen, wählen Sie sie in den Filtern aus."
 					},
 					"toolbar": {
 						"selectAll": "Alle Instanzen auswählen",
@@ -1193,7 +1252,7 @@
 						"ariaLabel": "Diagrammbereich",
 						"multipleTenantsSelected": "Prozess \"{{name}}\" ist in mehreren Mandanten vorhanden",
 						"multipleVersionsSelected": "Für den Prozess \"{{name}}\" ist mehr als eine Version ausgewählt",
-						"noProcessSelected": "Es ist kein Prozess ausgewählt",
+						"noProcessSelected": "Prozess auswählen",
 						"selectProcessInFilters": "Um ein Diagramm zu sehen, wählen Sie einen Prozess im Filterbereich aus",
 						"selectSingleTenant": "Um ein Diagramm zu sehen, wählen Sie einen einzelnen Mandanten aus",
 						"selectSingleVersion": "Um ein Diagramm zu sehen, wählen Sie eine einzelne Version aus"
@@ -1201,6 +1260,11 @@
 					"diagramHeader": {
 						"copyButtonDescription": "Prozess-ID / Klicken zum Kopieren",
 						"copyButtonTitle": "Prozess-ID kopieren: {{id}}"
+					},
+					"migration": {
+						"noElementsHeading": "Keine Elemente zum Mappen",
+						"noElementsDescription": "Der Quellprozess enthält keine mappbaren Elemente oder Sequenzflüsse. Beenden Sie die Migration und wählen Sie einen anderen Prozess aus.",
+						"selectTargetDescription": "Wählen Sie ein Ziel aus, um dessen Diagramm anzuzeigen und die Quellelemente zu mappen."
 					}
 				},
 				"migration": {
@@ -1599,7 +1663,7 @@
 					"diagramPanel": {
 						"multipleTenantsSelected": "Die Entscheidung \"{{name}}\" ist in mehr als einem Mandanten vorhanden",
 						"multipleVersionsSelected": "Für die Entscheidung \"{{name}}\" ist mehr als eine Version ausgewählt",
-						"noDecisionSelected": "Es ist keine Entscheidung ausgewählt",
+						"noDecisionSelected": "Entscheidung auswählen",
 						"selectDecisionInFilters": "Um eine Entscheidungstabelle oder einen literalen Ausdruck zu sehen, wählen Sie eine Entscheidung im Filterbereich aus",
 						"selectSingleTenant": "Um eine Entscheidungstabelle oder einen literalen Ausdruck zu sehen, wählen Sie einen einzelnen Mandanten aus",
 						"selectSingleVersion": "Um eine Entscheidungstabelle oder einen literalen Ausdruck zu sehen, wählen Sie eine einzelne Version aus"
@@ -1700,7 +1764,11 @@
 					"variablesPanel": {
 						"tabsLabel": "Registerkarten des Variablenbereichs",
 						"inputsAndOutputs": "Eingaben und Ausgaben",
-						"loadingResult": "Ergebnis wird geladen"
+						"loadingResult": "Ergebnis wird geladen",
+						"noResultHeading": "Kein Ergebnis verfügbar",
+						"noInputHeading": "Keine Eingabe verfügbar",
+						"noOutputHeading": "Keine Ausgabe verfügbar",
+						"evaluationFailedDescription": "Die Auswertung ist fehlgeschlagen. Prüfen Sie die Fehlermeldung oben und die Entscheidungsdefinition."
 					},
 					"forbidden": {
 						"heading": "Sie haben keine Berechtigung, diese Informationen anzuzeigen"
@@ -1716,6 +1784,52 @@
 				"ds": {
 					"forbidden": {
 						"heading": "Sie haben keine Berechtigung, diese Informationen anzuzeigen"
+					},
+					"incidents": {
+						"noMatchesHeading": "Keine Incidents entsprechen diesen Fehlertypen",
+						"noMatchesDescription": "Setzen Sie den Fehlertyp-Filter zurück, um alle Incidents zu sehen.",
+						"emptyHeading": "Keine offenen Incidents",
+						"emptyDescription": "Incidents erscheinen hier, wenn ein Element dieser Instanz fehlschlägt.",
+						"noElementIncidentsHeading": "Keine Incidents für dieses Element",
+						"noElementIncidentsDescription": "Wählen Sie ein anderes Element aus oder heben Sie die Auswahl auf, um alle Incidents zu sehen."
+					},
+					"operationsLog": {
+						"multiInstanceHeading": "Eine einzelne Elementinstanz auswählen",
+						"noInstancesHeading": "Dieses Element wurde noch nicht ausgeführt",
+						"noInstancesDescription": "Operationen erscheinen hier, sobald das Element ausgeführt wird. Wählen Sie ein anderes Element im Instanzverlauf aus.",
+						"emptyHeading": "Noch keine Operationen",
+						"emptyDescription": "Operationen an dieser Instanz, etwa Wiederholungen oder Variablenänderungen, erscheinen hier.",
+						"noMatchesHeading": "Keine Operationen entsprechen diesen Filtern",
+						"noMatchesDescription": "Ändern Sie den Filter für Operationstyp oder Entitätstyp, um mehr Operationen zu sehen."
+					},
+					"listeners": {
+						"emptyAllHeading": "Keine Listener an diesem Element",
+						"emptyTaskHeading": "Keine User-Task-Listener an diesem Element",
+						"emptyExecutionHeading": "Keine Ausführungs-Listener an diesem Element",
+						"emptyDescription": "Wählen Sie ein anderes Element im Diagramm aus, um dessen Listener anzuzeigen."
+					},
+					"variables": {
+						"emptyHeading": "Dieses Element hat keine Variablen",
+						"emptyDescription": "Variablen erscheinen hier, sobald das Element sie setzt. Wählen Sie ein anderes Element aus, um dessen Variablen anzuzeigen.",
+						"multiInstanceDescription": "Wählen Sie im Instanzverlauf eine einzelne Elementinstanz aus, um die Variablen anzuzeigen.",
+						"noSearchResultsHeading": "Keine Variablen entsprechen Ihrer Suche",
+						"noSearchResultsDescription": "Ändern oder löschen Sie den Suchbegriff, um weitere Variablen anzuzeigen.",
+						"noDocumentsHeading": "Noch keine Dokumentvariablen",
+						"noDocumentsDescription": "Dokumentvariablen erscheinen hier, sobald die Instanz Dokumente erhält."
+					},
+					"mappings": {
+						"noInputHeading": "Keine Input-Mappings definiert",
+						"noInputDescription": "Definieren Sie Input-Mappings für dieses Element im Prozessmodell, um Variablen in dessen Scope zu übernehmen.",
+						"noOutputHeading": "Keine Output-Mappings definiert",
+						"noOutputDescription": "Definieren Sie Output-Mappings für dieses Element im Prozessmodell, um Variablen aus dessen Scope zu übertragen."
+					},
+					"details": {
+						"noElementHeading": "Kein Element ausgewählt",
+						"noElementDescription": "Wählen Sie ein Element im Diagramm aus, um dessen Details anzuzeigen.",
+						"multiInstanceDescription": "Wählen Sie im Instanzverlauf eine einzelne Elementinstanz aus, um die Details anzuzeigen."
+					},
+					"diagram": {
+						"noDiagramDescription": "Die Prozessdefinition enthält kein Diagramm. Prüfen Sie das Modell im Modeler."
 					}
 				},
 				"history": {
@@ -2272,6 +2386,12 @@
 				},
 				"notifications": {
 					"fetchFailed": "Audit-Protokolle konnten nicht abgerufen werden"
+				},
+				"ds": {
+					"emptyState": {
+						"noResultsTitle": "Keine Operationen entsprechen diesen Filtern",
+						"noResultsDescription": "Ändern Sie die Filter oder setzen Sie sie zurück, um mehr Operationen zu sehen."
+					}
 				}
 			},
 			"batchOperations": {
@@ -2302,7 +2422,11 @@
 				"pageSelectLabel_one": "Seite von {{count}} Seite",
 				"pageSelectLabel_other": "Seite von {{count}} Seiten",
 				"pageText": "Seite {{page}}",
-				"pageOf": "Seite {{page}} von {{count}}"
+				"pageOf": "Seite {{page}} von {{count}}",
+				"ds": {
+					"emptyHeading": "Noch keine Stapeloperationen",
+					"emptyDescription": "Wählen Sie auf der Seite „Prozesse“ oder „Entscheidungen“ Instanzen aus und wenden Sie eine Aktion an, um eine Stapeloperation zu starten."
+				}
 			},
 			"batchOperation": {
 				"title": "Stapeloperationen",
@@ -2346,7 +2470,9 @@
 						"tableLabel": "Elemente der Batch-Operation",
 						"expandFailure": "Fehlerdetails anzeigen",
 						"collapseFailure": "Fehlerdetails ausblenden",
-						"itemStatusPrefix": "Status des Elements"
+						"itemStatusPrefix": "Status des Elements",
+						"emptyHeading": "Noch keine Elemente",
+						"emptyDescription": "Elemente erscheinen hier, sobald die Batch-Operation sie verarbeitet."
 					}
 				},
 				"actions": {
@@ -2656,7 +2782,8 @@
 						"deleteTitle": "Instanz {{processInstanceKey}} löschen",
 						"suspendTitle": "Instanz {{processInstanceKey}} anhalten",
 						"resumeTitle": "Instanz {{processInstanceKey}} fortsetzen"
-					}
+					},
+					"clearFilters": "Filter zurücksetzen"
 				}
 			}
 		}

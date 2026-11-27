@@ -80,14 +80,6 @@ function incidentRow(screen: Awaited<ReturnType<typeof renderIncidents>>, errorM
 	return screen.getByRole('row').filter({hasText: errorMessage});
 }
 
-function incidentMessages(screen: Awaited<ReturnType<typeof renderIncidents>>) {
-	return screen
-		.getByRole('row')
-		.elements()
-		.map((row) => row.textContent ?? '')
-		.flatMap((text) => ['Newer incident', 'Older incident'].filter((message) => text.includes(message)));
-}
-
 function renderIncidents(search = '', processInstance: Partial<ProcessInstance> = {}) {
 	function Incidents() {
 		const routeSearch = useRouterState({select: (state) => state.location.search});
@@ -266,7 +258,7 @@ describe('<IncidentsTab /> (design system)', () => {
 		await expect
 			.element(screen.getByRole('link', {name: 'Child Decision - 123570'}))
 			.toHaveAttribute('href', '/operate-preview/decisions/123570?tenantId=tenant-a');
-		expect(screen.getByRole('button', {name: 'Retry Incident'}).elements()).toHaveLength(1);
+		await expect.element(screen.getByRole('button', {name: 'Retry Incident'})).toHaveLength(1);
 	});
 
 	it('should point to the called instance when the selected call activity has no own incidents', async ({worker}) => {
@@ -299,7 +291,7 @@ describe('<IncidentsTab /> (design system)', () => {
 			`?elementId=call&elementInstanceKey=${ELEMENT_INSTANCE_KEY}&tenantId=tenant-a`,
 		);
 
-		await expect.element(screen.getByText('No incidents found on this element.')).toBeVisible();
+		await expect.element(screen.getByText('No incidents on this element')).toBeVisible();
 		await expect
 			.element(screen.getByRole('link', {name: 'View in Child Process'}))
 			.toHaveAttribute('href', '/operate-preview/processes/9001?tenantId=tenant-a');
@@ -316,8 +308,7 @@ describe('<IncidentsTab /> (design system)', () => {
 		await userEvent.click(incidentRow(screen, 'Expression failed').getByRole('button', {name: 'Expand row'}));
 
 		await expect.element(screen.getByText('2251799813685291')).toBeVisible();
-		await userEvent.click(screen.getByRole('button', {name: 'More'}));
-		await expect.element(screen.getByRole('dialog', {name: 'Element "Review invoice" Error'})).toBeVisible();
+		await expect.element(screen.getByRole('definition').filter({hasText: 'at line 3'})).toBeVisible();
 		await expect.element(incidentRow(screen, 'Expression failed').getByText('Selected')).not.toBeInTheDocument();
 	});
 
@@ -348,11 +339,13 @@ describe('<IncidentsTab /> (design system)', () => {
 		);
 		const screen = await renderIncidents();
 		await expect.element(incidentRow(screen, 'Newer incident')).toBeVisible();
-		await expect.poll(() => incidentMessages(screen)).toEqual(['Newer incident', 'Older incident']);
+		await expect.element(screen.getByRole('row').nth(1)).toMatchTextContent('Newer incident');
+		await expect.element(screen.getByRole('row').nth(2)).toMatchTextContent('Older incident');
 
 		await userEvent.click(screen.getByRole('button', {name: 'Type'}));
 
-		await expect.poll(() => incidentMessages(screen)).toEqual(['Older incident', 'Newer incident']);
+		await expect.element(screen.getByRole('row').nth(1)).toMatchTextContent('Older incident');
+		await expect.element(screen.getByRole('row').nth(2)).toMatchTextContent('Newer incident');
 	});
 
 	it('should point to the failed decision when the selected business rule task has no own incidents', async ({
@@ -413,7 +406,7 @@ describe('<IncidentsTab /> (design system)', () => {
 
 		await userEvent.click(screen.getByRole('button', {name: 'Retry Incident'}));
 
-		await expect.element(screen.getByText('There are no incidents matching this filter set')).toBeVisible();
+		await expect.element(screen.getByText('No open incidents')).toBeVisible();
 	});
 
 	it('should report a retry whose incident cannot be read back', async ({worker}) => {
@@ -438,7 +431,10 @@ describe('<IncidentsTab /> (design system)', () => {
 		worker.use(
 			mockQueryProcessInstanceIncidentsEndpoint({successResponse: incidentsResponse([createIncident({jobKey: null})])}),
 			mockResolveIncidentEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
-			mockGetIncidentEndpoint({successResponse: HttpResponse.json(createIncident({state: 'ACTIVE'}))}),
+			mockGetIncidentEndpoint({
+				successResponse: HttpResponse.json(createIncident({state: 'ACTIVE'})),
+				delay: 'infinite',
+			}),
 		);
 		const screen = await renderIncidents();
 
@@ -453,7 +449,10 @@ describe('<IncidentsTab /> (design system)', () => {
 		worker.use(
 			mockQueryProcessInstanceIncidentsEndpoint({successResponse: incidentsResponse([createIncident({jobKey: null})])}),
 			mockResolveIncidentEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
-			mockGetIncidentEndpoint({successResponse: HttpResponse.json(createIncident({state: 'ACTIVE'}))}),
+			mockGetIncidentEndpoint({
+				successResponse: HttpResponse.json(createIncident({state: 'ACTIVE'})),
+				delay: 'infinite',
+			}),
 		);
 		const screen = await renderIncidents();
 
@@ -500,7 +499,7 @@ describe('<IncidentsTab /> (design system)', () => {
 		worker.use(...enrichment());
 		const screen = await renderIncidents('', {hasIncident: false});
 
-		await expect.element(screen.getByText('There are no incidents matching this filter set')).toBeVisible();
+		await expect.element(screen.getByText('No open incidents')).toBeVisible();
 	});
 
 	it('should show an error message when the incidents cannot be fetched', async ({worker}) => {

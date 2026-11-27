@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.system.configuration;
 public final class ThreadsCfg implements ConfigurationEntry {
   private int cpuThreadCount = 2;
   private int ioThreadCount = 2;
+  private TenantActorPoolCfg physicalTenantActorPool = TenantActorPoolCfg.DISABLED;
 
   public int getCpuThreadCount() {
     return cpuThreadCount;
@@ -27,6 +28,14 @@ public final class ThreadsCfg implements ConfigurationEntry {
     ioThreadCount = ioThreads;
   }
 
+  public TenantActorPoolCfg getPhysicalTenantActorPool() {
+    return physicalTenantActorPool;
+  }
+
+  public void setPhysicalTenantActorPool(final TenantActorPoolCfg physicalTenantActorPool) {
+    this.physicalTenantActorPool = physicalTenantActorPool;
+  }
+
   @Override
   public String toString() {
     return "ThreadsCfg{"
@@ -34,6 +43,8 @@ public final class ThreadsCfg implements ConfigurationEntry {
         + cpuThreadCount
         + ", ioThreadCount="
         + ioThreadCount
+        + ", physicalTenantActorPool="
+        + physicalTenantActorPool
         + '}';
   }
 }

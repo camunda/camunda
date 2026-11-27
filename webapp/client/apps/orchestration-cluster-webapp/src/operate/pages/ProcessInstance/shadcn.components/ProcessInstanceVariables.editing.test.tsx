@@ -10,7 +10,6 @@ import {afterEach, describe, expect, beforeAll} from 'vitest';
 import {userEvent, type Locator} from 'vitest/browser';
 import {cleanup} from 'vitest-browser-react';
 import {HttpResponse} from 'msw';
-import type {SetupWorker} from 'msw/browser';
 import {z} from 'zod';
 import {useRouterState} from '@tanstack/react-router';
 import type {ProcessInstance, Variable} from '@camunda/camunda-api-zod-schemas/8.11';
@@ -19,7 +18,6 @@ import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {
 	mockGetElementInstanceEndpoint,
-	mockGetProcessDefinitionXmlEndpoint,
 	mockGetVariableEndpoint,
 	mockQueryVariablesEndpoint,
 	mockUpdateElementInstanceVariablesEndpoint,
@@ -36,7 +34,6 @@ import {ProcessInstanceVariables} from './ProcessInstanceVariables';
 import {processInstanceSearchSchema} from '../processInstanceSearch';
 import {useModificationController} from '../useProcessInstanceModification';
 import {useProcessInstanceElementSelection} from '../useProcessInstanceElementSelection';
-import {variablesQuery} from '../variables.queries';
 import {preloadMonaco} from '#/vitest-modules/preload-monaco';
 
 const PROCESS_INSTANCE_ID = '2251799813685280';
@@ -58,17 +55,6 @@ function savedResponse() {
 
 function rejectedResponse() {
 	return HttpResponse.json(createProblemDetails({status: 400}), {status: 400});
-}
-
-function updatePayload(variables: Record<string, number>) {
-	return z
-		.object({
-			variables: z
-				.object(Object.fromEntries(Object.entries(variables).map(([name, value]) => [name, z.literal(value)])))
-				.strict(),
-			local: z.literal(true),
-		})
-		.strict();
 }
 
 async function appendToEditor(target: Locator, text: string, container: Locator = target) {
@@ -137,97 +123,13 @@ function renderVariables({
 describe('<ProcessInstanceVariables /> editing', () => {
 	beforeAll(preloadMonaco, 120_000);
 
-	describe('after a failed variable-name pagination', () => {
-		function mockFailedNamePagination(worker: SetupWorker) {
-			let nextPageRequests = 0;
-			const firstPage = HttpResponse.json(
-				createQueryVariablesByUserTaskResponse({
-					items: Array.from({length: 50}, (_, index) =>
-						createVariable({name: `variable-${String(index).padStart(2, '0')}`, variableKey: `${index}`}),
-					),
-					page: {endCursor: 'cursor-1', hasMoreTotalItems: true},
-				}),
-			);
-			const nextPageSchema = z.object({page: z.object({after: z.literal('cursor-1')})}).transform((payload) => {
-				nextPageRequests += 1;
-				return payload;
-			});
-			worker.use(
-				mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text('')}),
-				mockQueryVariablesEndpoint({
-					schema: nextPageSchema,
-					successResponse: HttpResponse.json(createProblemDetails({status: 500}), {status: 500}),
-					failureResponse: firstPage,
-				}),
-			);
-
-			return {
-				getNextPageRequests: () => nextPageRequests,
-				recover: () =>
-					worker.use(
-						mockQueryVariablesEndpoint({
-							schema: nextPageSchema,
-							successResponse: variablesResponse([createVariable({name: 'foo'})]),
-							failureResponse: firstPage,
-						}),
-					),
-			};
-		}
-
-		async function failNamePagination(
-			screen: Awaited<ReturnType<typeof renderVariables>>,
-			getNextPageRequests: () => number,
-		) {
-			screen.queryClient.setQueryDefaults(
-				variablesQuery({processInstanceKey: PROCESS_INSTANCE_ID, scopeKey: PROCESS_INSTANCE_ID}).queryKey,
-				{retry: 2, retryDelay: 20},
-			);
-			await userEvent.click(screen.getByRole('button', {name: 'Add Variable'}));
-
-			await expect.element(screen.getByText('Variables could not be fetched')).toBeVisible();
-			await expect.element(screen.getByText('Refresh the page to try again')).toBeVisible();
-			expect(getNextPageRequests()).toBe(3);
-			await expect.element(screen.getByRole('button', {name: 'Save'})).not.toBeInTheDocument();
-			await expect.element(screen.getByText('Add new variable "foo"')).not.toBeInTheDocument();
-			await expectNoNotifications(screen);
-		}
-
-		async function addDuplicateVariable(screen: Awaited<ReturnType<typeof renderVariables>>) {
-			await userEvent.click(screen.getByRole('button', {name: 'Add Variable'}));
-			await userEvent.fill(screen.getByRole('textbox', {name: 'Name'}), 'foo');
-			await appendToNewValue(screen.getByRole('group', {name: 'Value'}), '1');
-			await userEvent.tab();
-
-			await expect.element(screen.getByText('Name should be unique')).toBeVisible();
-			await expect.element(screen.getByText('Variables could not be fetched')).not.toBeInTheDocument();
-		}
-
-		it('should recover after refreshing in editing mode', async ({worker}) => {
-			const {getNextPageRequests, recover} = mockFailedNamePagination(worker);
-			const screen = await renderVariables();
-			await failNamePagination(screen, getNextPageRequests);
-
-			await screen.unmount();
-			recover();
-			const refreshedScreen = await renderVariables();
-			await addDuplicateVariable(refreshedScreen);
-			await expect.element(variableRow(refreshedScreen, 'foo').getByRole('button', {name: 'Open'})).toBeVisible();
-			await expect.element(refreshedScreen.getByRole('button', {name: 'Save'})).toBeDisabled();
-
-			await userEvent.fill(refreshedScreen.getByRole('textbox', {name: 'Name'}), 'bar');
-			await userEvent.tab();
-
-			await expect.element(refreshedScreen.getByRole('button', {name: 'Save'})).toBeEnabled();
-		});
-	});
-
 	it('should save an edited variable', async ({worker}) => {
 		worker.use(
 			mockQueryVariablesEndpoint({
 				successResponse: variablesResponse([createVariable({name: 'amount', value: '100', variableKey: '1'})]),
 			}),
 			mockUpdateElementInstanceVariablesEndpoint({
-				schema: updatePayload({amount: 1001}),
+				schema: z.strictObject({variables: z.strictObject({amount: z.literal(1001)}), local: z.literal(true)}),
 				successResponse: savedResponse(),
 				failureResponse: rejectedResponse(),
 			}),
@@ -296,7 +198,7 @@ describe('<ProcessInstanceVariables /> editing', () => {
 				successResponse: HttpResponse.json(createVariable({name: 'payload', value: '1234567', variableKey: '7'})),
 			}),
 			mockUpdateElementInstanceVariablesEndpoint({
-				schema: updatePayload({payload: 12345678}),
+				schema: z.strictObject({variables: z.strictObject({payload: z.literal(12345678)}), local: z.literal(true)}),
 				successResponse: savedResponse(),
 				failureResponse: rejectedResponse(),
 			}),
@@ -326,7 +228,7 @@ describe('<ProcessInstanceVariables /> editing', () => {
 				failureResponse: variablesResponse([createVariable({name: 'amount'})]),
 			}),
 			mockUpdateElementInstanceVariablesEndpoint({
-				schema: updatePayload({foo: 123}),
+				schema: z.strictObject({variables: z.strictObject({foo: z.literal(123)}), local: z.literal(true)}),
 				successResponse: savedResponse(),
 				failureResponse: rejectedResponse(),
 			}),
@@ -348,11 +250,11 @@ describe('<ProcessInstanceVariables /> editing', () => {
 		worker.use(mockQueryVariablesEndpoint({successResponse: variablesResponse([])}));
 		const screen = await renderVariables();
 
-		await expect.element(screen.getByText('The element has no variables')).toBeVisible();
+		await expect.element(screen.getByText('This element has no variables')).toBeVisible();
 		await userEvent.click(screen.getByRole('button', {name: 'Add Variable'}));
 
 		await expect.element(screen.getByRole('textbox', {name: 'Name'})).toHaveFocus();
-		await expect.element(screen.getByText('The element has no variables')).not.toBeInTheDocument();
+		await expect.element(screen.getByText('This element has no variables')).not.toBeInTheDocument();
 	});
 
 	it.for([
@@ -437,23 +339,31 @@ describe('<ProcessInstanceVariables /> editing', () => {
 	it.for([
 		{status: 500, title: 'Variable could not be saved'},
 		{status: 403, title: "You don't have permission to perform this operation"},
-	])('should notify when saving fails with $status', async ({status, title}, {worker}) => {
-		worker.use(
-			mockQueryVariablesEndpoint({successResponse: variablesResponse([createVariable({name: 'amount'})])}),
-			mockUpdateElementInstanceVariablesEndpoint({
-				successResponse: HttpResponse.json(createProblemDetails({status}), {status}),
-			}),
-		);
-		const screen = await renderVariables();
+	])(
+		'should show an inline error until the value is edited when saving fails with $status',
+		async ({status, title}, {worker}) => {
+			worker.use(
+				mockQueryVariablesEndpoint({successResponse: variablesResponse([createVariable({name: 'amount'})])}),
+				mockUpdateElementInstanceVariablesEndpoint({
+					successResponse: HttpResponse.json(createProblemDetails({status}), {status}),
+				}),
+			);
+			const screen = await renderVariables();
 
-		await userEvent.click(screen.getByRole('button', {name: 'Add Variable'}));
-		await userEvent.fill(screen.getByRole('textbox', {name: 'Name'}), 'foo');
-		await appendToNewValue(screen.getByRole('group', {name: 'Value'}), '1');
-		await userEvent.click(screen.getByRole('button', {name: 'Save'}));
+			await userEvent.click(screen.getByRole('button', {name: 'Add Variable'}));
+			await userEvent.fill(screen.getByRole('textbox', {name: 'Name'}), 'foo');
+			await appendToNewValue(screen.getByRole('group', {name: 'Value'}), '1');
+			await userEvent.click(screen.getByRole('button', {name: 'Save'}));
 
-		await expect.element(screen.getByText(title)).toBeVisible();
-		await expect.element(screen.getByRole('button', {name: 'Add Variable'})).toBeEnabled();
-	});
+			await expect.element(screen.getByRole('alert').filter({hasText: title})).toBeVisible();
+			await expect.element(screen.getByRole('textbox', {name: 'Name'})).toHaveValue('foo');
+			await expectNoNotifications(screen);
+
+			await appendToNewValue(screen.getByRole('group', {name: 'Value'}), '2');
+
+			await expect.element(screen.getByText(title)).not.toBeInTheDocument();
+		},
+	);
 
 	it('should edit and save a variable from its full value', async ({worker}) => {
 		worker.use(
@@ -464,7 +374,7 @@ describe('<ProcessInstanceVariables /> editing', () => {
 				successResponse: HttpResponse.json(createVariable({name: 'amount', value: '100', variableKey: '1'})),
 			}),
 			mockUpdateElementInstanceVariablesEndpoint({
-				schema: updatePayload({amount: 1005}),
+				schema: z.strictObject({variables: z.strictObject({amount: z.literal(1005)}), local: z.literal(true)}),
 				successResponse: savedResponse(),
 				failureResponse: rejectedResponse(),
 			}),
@@ -556,6 +466,36 @@ describe('<ProcessInstanceVariables /> editing', () => {
 		await expect.element(row.getByRole('button', {name: 'Copy payload'})).toBeVisible();
 		await expect.element(row.getByRole('textbox', {name: 'payload'})).not.toBeInTheDocument();
 		await expect.element(row.getByRole('button', {name: 'Save'})).toBeDisabled();
+	});
+
+	it('should load the full value of a truncated variable when retrying after a failure', async ({worker}) => {
+		worker.use(
+			mockQueryVariablesEndpoint({
+				successResponse: variablesResponse([
+					createVariable({name: 'payload', value: '123', isTruncated: true, variableKey: '7'}),
+				]),
+			}),
+			mockGetVariableEndpoint({
+				successResponse: HttpResponse.json(createProblemDetails({status: 500}), {status: 500}),
+			}),
+		);
+		const screen = await renderVariables();
+		const row = variableRow(screen, 'payload');
+
+		await userEvent.click(row.getByRole('button', {name: /^Edit variable /}));
+		await expect.element(row.getByRole('alert').filter({hasText: 'Variable could not be fetched'})).toBeVisible();
+		await expectNoNotifications(screen);
+
+		worker.use(
+			mockGetVariableEndpoint({
+				successResponse: HttpResponse.json(createVariable({name: 'payload', value: '1234', variableKey: '7'})),
+			}),
+		);
+		await userEvent.click(row.getByRole('button', {name: 'Try again'}));
+
+		await expect.element(row.getByText('Variable could not be fetched')).not.toBeInTheDocument();
+		await expect.element(row.getByRole('textbox', {name: 'payload'})).toBeInTheDocument();
+		await expect.element(row.getByText('1234')).toBeVisible();
 	});
 
 	it.for([

@@ -54,21 +54,31 @@ describe('<CopiableContent />', () => {
 	it('should not show feedback when the copy command is rejected', async () => {
 		vi.spyOn(navigator, 'clipboard', 'get').mockReturnValue(undefined as unknown as Clipboard);
 		vi.spyOn(document, 'execCommand').mockReturnValue(false);
-		const screen = await render(<CopiableContent content="invoice-classification" copyButtonDescription="Copy ID" />);
+		const screen = await render(
+			<>
+				<CopiableContent content="invoice-classification" copyButtonDescription="Copy ID" />
+				<Toaster />
+				<Notifications />
+			</>,
+		);
 
 		await userEvent.click(screen.getByRole('button', {name: 'Copy ID: invoice-classification'}));
 
+		await expect.element(screen.getByText("Couldn't copy to clipboard")).toBeVisible();
 		await expect.element(screen.getByRole('status')).toHaveTextContent('');
 	});
 
 	it('should clear the feedback after the timeout', async () => {
+		vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
 		vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue(undefined);
 
 		const screen = await render(<CopiableContent content="invoice-classification" copyButtonDescription="Copy ID" />);
 		await userEvent.click(screen.getByRole('button', {name: 'Copy ID: invoice-classification'}));
 		await expect.element(screen.getByRole('status')).toHaveTextContent('Copied to clipboard');
 
-		await expect.element(screen.getByRole('status'), {timeout: 4000}).toBeEmptyDOMElement();
+		await vi.advanceTimersByTimeAsync(2000);
+
+		await expect.element(screen.getByRole('status')).toBeEmptyDOMElement();
 	});
 
 	it('should not show feedback and should notify when copying fails', async () => {
@@ -113,19 +123,23 @@ describe('<CopiableContent />', () => {
 	});
 
 	it('should ignore a pending copy that resolves after the content changed and returned', async () => {
-		let resolveWrite: () => void = () => {};
+		vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
+		const pendingWrite = {resolve: () => {}};
 		vi.spyOn(navigator.clipboard, 'writeText').mockReturnValue(
 			new Promise<void>((resolve) => {
-				resolveWrite = resolve;
+				pendingWrite.resolve = resolve;
 			}),
 		);
-
 		const screen = await render(<CopiableContent content="invoice-classification" copyButtonDescription="Copy ID" />);
 		await userEvent.click(screen.getByRole('button', {name: 'Copy ID: invoice-classification'}));
 		await screen.rerender(<CopiableContent content="order-approval" copyButtonDescription="Copy ID" />);
 		await screen.rerender(<CopiableContent content="invoice-classification" copyButtonDescription="Copy ID" />);
-		resolveWrite();
 
+		pendingWrite.resolve();
+		await screen.rerender(<CopiableContent content="invoice-classification" copyButtonDescription="Copy ID" />);
+		vi.clearAllTimers();
+
+		await expect.element(screen.getByRole('button', {name: 'Copy ID: invoice-classification'})).toBeVisible();
 		await expect.element(screen.getByRole('status')).toBeEmptyDOMElement();
 	});
 });

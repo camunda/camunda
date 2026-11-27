@@ -14,17 +14,13 @@ import static org.assertj.core.api.Assertions.tuple;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse.CurrentConfigurationChangeResponse;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
-import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.CompletedOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CompletedChange;
 import io.camunda.zeebe.dynamic.config.state.CompletedPhasedChange;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.DependencyChangePlan;
+import io.camunda.zeebe.dynamic.config.state.DependencyChangePlan.CompletedOperation;
+import io.camunda.zeebe.dynamic.config.state.DependencyChangePlan.Status;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
@@ -37,7 +33,6 @@ import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.PostScalingOp
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.PreScalingOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.UpdatePartitionDistributorConfigOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
-import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.OperationGraph;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
@@ -78,6 +73,7 @@ import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlanStatus;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
+import io.camunda.zeebe.dynamic.config.util.DefaultTenantConfiguration;
 import io.camunda.zeebe.management.cluster.BrokerState;
 import io.camunda.zeebe.management.cluster.ConfigurationChange;
 import io.camunda.zeebe.management.cluster.Error;
@@ -121,10 +117,14 @@ final class ClusterApiUtilsTest {
   @MethodSource("provideClusterConfigurationWithExporters")
   void shouldAggregateExporterState(final ExporterConfigParam param) {
     // when
-    final var result = ClusterApiUtils.aggregateExporterState(param.configuration());
+    final var result =
+        ClusterApiUtils.aggregateExporterState(
+            param.configuration(), CurrentClusterConfiguration.DEFAULT_GROUP);
 
     // then
-    assertThat(result).containsExactlyInAnyOrderElementsOf(param.expectedResult());
+    assertThat(result)
+        .usingRecursiveFieldByFieldElementComparatorIgnoringFields("physicalTenant")
+        .containsExactlyInAnyOrderElementsOf(param.expectedResult());
   }
 
   @Test
@@ -265,10 +265,7 @@ final class ClusterApiUtilsTest {
                     "tenant-b", List.of(tenantBOperation))));
     final var response =
         new ClusterConfigurationChangeResponse(
-            1,
-            new LegacyConfigurationChangeResponse(Map.of(), Map.of(), List.of()),
-            new CurrentConfigurationChangeResponse(
-                CurrentClusterConfiguration.init(), CurrentClusterConfiguration.init(), phases));
+            1, CurrentClusterConfiguration.init(), CurrentClusterConfiguration.init(), phases);
 
     // when
     final var result = ClusterApiUtils.mapOperationResponse(Either.right(response));
@@ -289,26 +286,6 @@ final class ClusterApiUtilsTest {
         .filteredOn(op -> "tenant-b".equals(op.getPhysicalTenant()))
         .extracting(op -> op.getOperation())
         .containsExactly(OperationEnum.DELETE_HISTORY);
-  }
-
-  @Test
-  void shouldFallBackToLegacyPlannedChangesWhenMultiConfigurationResponseIsAbsent() {
-    // given — a peer that hasn't populated the new multi-partition-group response, e.g. one still
-    // running old code (see ClusterConfigurationChangeResponse.response()).
-    final var operation = new MemberLeaveOperation(member(1));
-    final var response =
-        new ClusterConfigurationChangeResponse(
-            1, new LegacyConfigurationChangeResponse(Map.of(), Map.of(), List.of(operation)), null);
-
-    // when
-    final var result = ClusterApiUtils.mapOperationResponse(Either.right(response));
-
-    // then
-    final var body = (PlannedOperationsResponse) result.getBody();
-    assertThat(body).isNotNull();
-    assertThat(body.getPlannedChanges())
-        .extracting(op -> op.getOperation(), op -> op.getPhysicalTenant())
-        .containsExactly(tuple(BROKER_REMOVE, null));
   }
 
   @Test
@@ -368,10 +345,7 @@ final class ClusterApiUtilsTest {
             Map.of("tenant-a", tenantA, "tenant-b", tenantB),
             PhasedChangeState.empty());
     final var response =
-        new ClusterConfigurationChangeResponse(
-            1,
-            new LegacyConfigurationChangeResponse(Map.of(), Map.of(), List.of()),
-            new CurrentConfigurationChangeResponse(multiConfig, multiConfig, List.of()));
+        new ClusterConfigurationChangeResponse(1, multiConfig, multiConfig, List.of());
 
     // when
     final var result = ClusterApiUtils.mapOperationResponse(Either.right(response));
@@ -417,8 +391,8 @@ final class ClusterApiUtilsTest {
     // appear, and the response must keep the top-level field set of the pre-physical-tenant shape.
     // The broker's two version counters are set apart deliberately: BrokerState.version counts
     // lifecycle transitions only and BrokerPartitionState.version counts partition and mode
-    // changes, so brokers[].version must report the higher of the two the way the legacy
-    // MemberState projection did, or a partition join would stop bumping it.
+    // changes, so brokers[].version must report the higher of the two, or a partition join would
+    // stop bumping it.
     final var member1 = member(1);
     final var globalConfiguration =
         new GlobalConfiguration(
@@ -862,20 +836,17 @@ final class ClusterApiUtilsTest {
   void shouldUseBrokerIdAsStringInTopologyResponseForZoneAwareBrokers() {
     // given
     final var config =
-        ClusterConfiguration.init()
+        DefaultTenantConfiguration.init()
             .addMember(
                 MemberId.from("zone-a", 0),
-                MemberState.initializeAsActive(
-                    Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init()))))
+                Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init())))
             .addMember(
                 MemberId.from("zone-b", 0),
-                MemberState.initializeAsActive(
-                    Map.of(1, PartitionState.active(2, DynamicPartitionConfig.init()))));
+                Map.of(1, PartitionState.active(2, DynamicPartitionConfig.init())))
+            .configuration();
 
     // when
-    final var response =
-        ClusterApiUtils.mapClusterTopologyResponse(
-            Either.right(CurrentClusterConfiguration.fromLegacy(config)));
+    final var response = ClusterApiUtils.mapClusterTopologyResponse(Either.right(config));
 
     // then
     assertThat(response.getStatusCode().value()).isEqualTo(200);
@@ -890,20 +861,17 @@ final class ClusterApiUtilsTest {
   void shouldUseBrokerIdAsIntegerInTopologyResponseForNonZoneAwareBrokers() {
     // given
     final var config =
-        ClusterConfiguration.init()
+        DefaultTenantConfiguration.init()
             .addMember(
                 MemberId.from("0"),
-                MemberState.initializeAsActive(
-                    Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init()))))
+                Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init())))
             .addMember(
                 MemberId.from("1"),
-                MemberState.initializeAsActive(
-                    Map.of(1, PartitionState.active(2, DynamicPartitionConfig.init()))));
+                Map.of(1, PartitionState.active(2, DynamicPartitionConfig.init())))
+            .configuration();
 
     // when
-    final var response =
-        ClusterApiUtils.mapClusterTopologyResponse(
-            Either.right(CurrentClusterConfiguration.fromLegacy(config)));
+    final var response = ClusterApiUtils.mapClusterTopologyResponse(Either.right(config));
 
     // then
     assertThat(response.getStatusCode().value()).isEqualTo(200);
@@ -919,18 +887,14 @@ final class ClusterApiUtilsTest {
   void shouldMapRecoveringPartitionState() {
     // given
     final var config =
-        ClusterConfiguration.init()
+        DefaultTenantConfiguration.init()
             .addMember(
                 MemberId.from("0"),
-                MemberState.initializeAsActive(
-                    Map.of(
-                        1,
-                        PartitionState.active(1, DynamicPartitionConfig.init()).toRecovering())));
+                Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init()).toRecovering()))
+            .configuration();
 
     // when
-    final var response =
-        ClusterApiUtils.mapClusterTopologyResponse(
-            Either.right(CurrentClusterConfiguration.fromLegacy(config)));
+    final var response = ClusterApiUtils.mapClusterTopologyResponse(Either.right(config));
 
     // then
     final var body = (GetTopologyResponse) response.getBody();
@@ -965,21 +929,18 @@ final class ClusterApiUtilsTest {
       default -> throw new IllegalArgumentException("Invalid type: " + type);
     }
     final var config =
-        ClusterConfiguration.init()
+        DefaultTenantConfiguration.init()
             .addMember(
                 MemberId.from("0"),
-                MemberState.initializeAsActive(
-                    Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init()))))
+                Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init())))
             .addMember(
                 MemberId.from("1"),
-                MemberState.initializeAsActive(
-                    Map.of(1, PartitionState.active(2, DynamicPartitionConfig.init()))))
-            .setPartitionDistributorConfig(partitionDistributorConfig);
+                Map.of(1, PartitionState.active(2, DynamicPartitionConfig.init())))
+            .setPartitionDistributorConfig(partitionDistributorConfig)
+            .configuration();
 
     // when
-    final var response =
-        ClusterApiUtils.mapClusterTopologyResponse(
-            Either.right(CurrentClusterConfiguration.fromLegacy(config)));
+    final var response = ClusterApiUtils.mapClusterTopologyResponse(Either.right(config));
 
     // then
     assertThat(response.getStatusCode().value()).isEqualTo(200);
@@ -1057,10 +1018,10 @@ final class ClusterApiUtilsTest {
         Named.of(
             "Unknown State",
             new ExporterConfigParam(
-                getConfigWithTwoPartitions(State.ENABLED)
-                    .updateMember(
-                        member(1),
-                        m -> updateExporterState(m, e -> e.disableExporter("exporter-1"))),
+                updateExporterState(
+                    getConfigWithTwoPartitions(State.ENABLED),
+                    member(1),
+                    e -> e.disableExporter("exporter-1")),
                 List.of(
                     new ExporterStatus().exporterId("exporter-1").status(StatusEnum.UNKNOWN),
                     new ExporterStatus().exporterId("exporter-2").status(StatusEnum.ENABLED)))));
@@ -1071,12 +1032,12 @@ final class ClusterApiUtilsTest {
         Named.of(
             "Disabling Exporters",
             new ExporterConfigParam(
-                withPendingChange(
+                updateExporterState(
+                    withPendingChange(
                         getConfigWithTwoPartitions(State.ENABLED),
-                        new PartitionDisableExporterOperation(member(1), 1, "exporter-1"))
-                    .updateMember(
-                        member(2),
-                        m -> updateExporterState(m, e -> e.disableExporter("exporter-1"))),
+                        new PartitionDisableExporterOperation(member(1), 1, "exporter-1")),
+                    member(2),
+                    e -> e.disableExporter("exporter-1")),
                 List.of(
                     new ExporterStatus().exporterId("exporter-1").status(StatusEnum.DISABLING),
                     new ExporterStatus().exporterId("exporter-2").status(StatusEnum.ENABLED)))));
@@ -1087,13 +1048,13 @@ final class ClusterApiUtilsTest {
         Named.of(
             "Enabling Exporters",
             new ExporterConfigParam(
-                withPendingChange(
+                updateExporterState(
+                    withPendingChange(
                         getConfigWithTwoPartitions(State.DISABLED),
                         new PartitionEnableExporterOperation(
-                            member(1), 1, "exporter-1", Optional.empty()))
-                    .updateMember(
-                        member(2),
-                        m -> updateExporterState(m, e -> e.enableExporter("exporter-1", 2))),
+                            member(1), 1, "exporter-1", Optional.empty())),
+                    member(2),
+                    e -> e.enableExporter("exporter-1", 2)),
                 List.of(
                     new ExporterStatus().exporterId("exporter-1").status(StatusEnum.ENABLING),
                     new ExporterStatus().exporterId("exporter-2").status(StatusEnum.DISABLED)))));
@@ -1121,7 +1082,7 @@ final class ClusterApiUtilsTest {
                     new ExporterStatus().exporterId("exporter-2").status(StatusEnum.DISABLED)))));
   }
 
-  private static ClusterConfiguration getConfigWithTwoPartitions(final State exporterState) {
+  private static CurrentClusterConfiguration getConfigWithTwoPartitions(final State exporterState) {
     final DynamicPartitionConfig partitionConfig =
         new DynamicPartitionConfig(
             new ExportingConfig(
@@ -1131,28 +1092,36 @@ final class ClusterApiUtilsTest {
                     new ExporterState(0, exporterState, Optional.empty()),
                     "exporter-2",
                     new ExporterState(0, exporterState, Optional.empty()))));
-    return ClusterConfiguration.init()
+    return DefaultTenantConfiguration.init()
         .addMember(
             member(1),
-            MemberState.initializeAsActive(
-                Map.of(
-                    1,
-                    PartitionState.active(1, partitionConfig),
-                    2,
-                    PartitionState.active(2, partitionConfig))))
+            Map.of(
+                1,
+                PartitionState.active(1, partitionConfig),
+                2,
+                PartitionState.active(2, partitionConfig)))
         .addMember(
             member(2),
-            MemberState.initializeAsActive(
-                Map.of(
-                    1,
-                    PartitionState.active(2, partitionConfig),
-                    2,
-                    PartitionState.active(2, partitionConfig))));
+            Map.of(
+                1,
+                PartitionState.active(2, partitionConfig),
+                2,
+                PartitionState.active(2, partitionConfig)))
+        .configuration();
   }
 
-  private static MemberState updateExporterState(
-      final MemberState m, final UnaryOperator<ExportingConfig> exporterUpdater) {
-    return m.updatePartition(1, p -> p.updateConfig(c -> c.updateExporting(exporterUpdater)));
+  private static CurrentClusterConfiguration updateExporterState(
+      final CurrentClusterConfiguration configuration,
+      final MemberId memberId,
+      final UnaryOperator<ExportingConfig> exporterUpdater) {
+    return configuration.updatePartitionGroupConfig(
+        CurrentClusterConfiguration.DEFAULT_GROUP,
+        group ->
+            group.updateMember(
+                memberId,
+                m ->
+                    m.updatePartition(
+                        1, p -> p.updateConfig(c -> c.updateExporting(exporterUpdater)))));
   }
 
   private static MemberId member(final int id) {
@@ -1618,21 +1587,14 @@ final class ClusterApiUtilsTest {
     assertThat(body.getMessage()).contains("999");
   }
 
-  /**
-   * A legacy configuration carrying a pending change, as a projection of a live sub-configuration
-   * would. Built here rather than started on the configuration: nothing executes a change through
-   * the legacy single-group type, so it has no method that would start one.
-   */
-  private static ClusterConfiguration withPendingChange(
-      final ClusterConfiguration config, final ClusterConfigurationChangeOperation... operations) {
-    return ClusterConfiguration.builder()
-        .from(config)
-        .version(config.version() + 1)
-        .pendingChanges(
-            Optional.of(DependencyChangePlan.sequential(config.version() + 1, List.of(operations))))
-        .build();
+  private static CurrentClusterConfiguration withPendingChange(
+      final CurrentClusterConfiguration config, final PartitionGroupOperation... operations) {
+    return config.updatePartitionGroupConfig(
+        CurrentClusterConfiguration.DEFAULT_GROUP,
+        group ->
+            group.startGraphConfigurationChange(OperationGraph.sequential(List.of(operations))));
   }
 
   private record ExporterConfigParam(
-      ClusterConfiguration configuration, List<ExporterStatus> expectedResult) {}
+      CurrentClusterConfiguration configuration, List<ExporterStatus> expectedResult) {}
 }

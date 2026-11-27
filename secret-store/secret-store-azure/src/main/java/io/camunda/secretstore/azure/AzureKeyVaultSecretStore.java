@@ -9,12 +9,16 @@ package io.camunda.secretstore.azure;
 
 import com.azure.core.credential.TokenCredential;
 import com.azure.core.http.HttpClient;
+import com.azure.core.http.policy.RetryPolicy;
 import com.azure.core.util.Configuration;
+import com.azure.core.util.HttpClientOptions;
 import com.azure.security.keyvault.secrets.SecretClient;
 import com.azure.security.keyvault.secrets.SecretClientBuilder;
 import io.camunda.secretstore.SecretResolutionResult;
 import io.camunda.secretstore.SecretStore;
+import io.camunda.secretstore.SecretStoreUnavailableException;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.time.Duration;
 import java.time.InstantSource;
 import java.util.List;
 import java.util.Map;
@@ -40,8 +44,44 @@ import org.jspecify.annotations.Nullable;
  * <p>In one-by-one mode, {@link #resolve} reads each reference's latest version from the vault;
  * container mode and {@link #list} are not implemented yet (camunda/camunda#67226): they report
  * every name as not found and list no names. The store keeps no cache: the registry wraps it in
- * {@link io.camunda.secretstore.CachingSecretStore} and {@link
- * io.camunda.secretstore.ConcurrentSecretStore}, which fans a request out one name per call.
+ * {@link io.camunda.secretstore.CachingSecretStore} and, with a {@code max-concurrency} above 1,
+ * {@link io.camunda.secretstore.ConcurrentSecretStore}, which fans a request out one name per call.
+ *
+ * <p>Each read of the vault is bounded by {@code callTimeout}, retries included: it runs on the
+ * credential executor, and the caller stops waiting past that time and requests an interrupt, so a
+ * slow vault cannot stall the IO thread resolution shares with the exporters
+ * (camunda/camunda#62869) for longer than that ({@link CallTimeout}). Within it, each HTTP attempt
+ * of the default HTTP client to the vault is bounded by {@code attemptTimeout}; one to Microsoft
+ * Entra ID or IMDS connects within {@code attemptTimeout} but may wait up to {@code callTimeout}
+ * for its answer, for a managed identity's slow first token (an injected client keeps its own
+ * timeouts). The SDK retries up to {@code maxRetries} times on transient failures only: 408, 429,
+ * 500, 502 to 504, network errors and timeouts, never a rejected sign-in ({@link
+ * KeyVaultRetryStrategy}). The waits between retries, backoff and {@code Retry-After} alike, fit in
+ * half of {@code callTimeout}, so a vault that keeps failing fast or throttling is reported with
+ * its own answer rather than as a timeout; a retry whose wait would not fit is not made.
+ *
+ * <p>Key Vault's answers map to the shared error codes as follows ({@link AzureKeyVaultErrors}):
+ *
+ * <table>
+ *   <caption>Key Vault answer to error code</caption>
+ *   <tr><th>Answer</th><th>Result</th></tr>
+ *   <tr><td>404</td><td>{@link io.camunda.secretstore.SecretErrorCode#NOT_FOUND NOT_FOUND}</td></tr>
+ *   <tr><td>403 with inner error code {@code SecretDisabled}, or an expired or not yet active
+ *       secret</td><td>{@link io.camunda.secretstore.SecretErrorCode#NOT_FOUND NOT_FOUND}</td></tr>
+ *   <tr><td>403</td>
+ *       <td>{@link io.camunda.secretstore.SecretErrorCode#ACCESS_DENIED ACCESS_DENIED}</td></tr>
+ *   <tr><td>403 with inner error code {@code ForbiddenByFirewall} or {@code ForbiddenByConnection}
+ *       (the vault's network rules refused the caller)</td>
+ *       <td>{@link io.camunda.secretstore.SecretStoreUnavailableException}</td></tr>
+ *   <tr><td>400, or a name Key Vault cannot hold</td>
+ *       <td>{@link io.camunda.secretstore.SecretErrorCode#INVALID_REF INVALID_REF}</td></tr>
+ *   <tr><td>401, 408, 429, 5xx, any other status, no response (a failed sign-in or a network
+ *       error), past {@code callTimeout}</td>
+ *       <td>{@link io.camunda.secretstore.SecretStoreUnavailableException}</td></tr>
+ * </table>
+ *
+ * <p>A failure message carries Key Vault's own status, error code and message when the vault
+ * answered, and the network error otherwise, never a value.
  *
  * <p>This class is thread-safe: its resolvers keep no mutable state, and its {@link SignInMonitor}
  * is thread-safe.
@@ -108,7 +148,8 @@ public final class AzureKeyVaultSecretStore implements SecretStore {
   /**
    * @param environment where sign-in reads the {@code AZURE_*} variables from
    * @param httpClient the client every call to Entra ID, IMDS and the vault goes through; {@code
-   *     null} for the SDK default
+   *     null} for the SDK default, each attempt bounded by {@code attemptTimeout}, or for sign-in
+   *     answers by {@code callTimeout}
    */
   static AzureKeyVaultSecretStore fromConfig(
       final String physicalTenantId,
@@ -143,13 +184,24 @@ public final class AzureKeyVaultSecretStore implements SecretStore {
         new SignInMonitor(physicalTenantId, storeId, config.vaultUrl(), meterRegistry);
     final AzureKeyVaultSecretStore store;
     try {
+      final var vaultHttp =
+          httpClient != null ? httpClient : defaultHttpClient(config, config.attemptTimeout());
+      final var signInHttp =
+          httpClient != null ? httpClient : defaultHttpClient(config, config.callTimeout());
       final var credential =
           AzureCredentialChain.build(
-              config, environment, httpClient, credentialExecutor, signInMonitor);
-      final var client = buildClient(config, credential, httpClient);
+              config, environment, signInHttp, credentialExecutor, signInMonitor);
+      final var client = buildClient(config, credential, vaultHttp);
+      final var storeDescription =
+          "Azure Key Vault store '%s' of physical tenant '%s' at '%s'"
+              .formatted(storeId, physicalTenantId, config.vaultUrl());
+      final var callTimeout = new CallTimeout(credentialExecutor, config.callTimeout());
       store =
           new AzureKeyVaultSecretStore(
-              resolver(config, client, clock), client, credentialExecutor, signInMonitor);
+              resolver(config, client, clock, storeDescription, callTimeout),
+              client,
+              credentialExecutor,
+              signInMonitor);
     } catch (final RuntimeException e) {
       signInMonitor.close();
       credentialExecutor.shutdownNow();
@@ -167,19 +219,23 @@ public final class AzureKeyVaultSecretStore implements SecretStore {
   }
 
   private static AzureSecretResolver resolver(
-      final AzureKeyVaultStoreConfig config, final SecretClient client, final InstantSource clock) {
+      final AzureKeyVaultStoreConfig config,
+      final SecretClient client,
+      final InstantSource clock,
+      final String storeDescription,
+      final CallTimeout callTimeout) {
     final var configuredPrefix = config.pathPrefix();
     final var pathPrefix = configuredPrefix == null ? "" : configuredPrefix;
     final var containerSecretId = config.containerSecretId();
     if (containerSecretId == null) {
-      return new OneByOneSecretResolver(client, pathPrefix, clock);
+      return new OneByOneSecretResolver(client, pathPrefix, clock, storeDescription, callTimeout);
     }
     return new ContainerSecretResolver(client, pathPrefix + containerSecretId);
   }
 
   /**
-   * Token acquisition, and the startup check, run on platform threads the store owns. The
-   * resolution pool calls the store on virtual threads ({@link
+   * Reads of the vault, token acquisition, and the startup check run on platform threads the store
+   * owns. The resolution pool calls the store on virtual threads ({@link
    * io.camunda.secretstore.ConcurrentSecretStore}), and the SDK's shared pool can deadlock there
    * when every carrier is pinned (Azure/azure-sdk-for-java#46231), as the Azure backup store also
    * works around. The pool creates threads on demand, reaps them after 60s idle, and is shut down
@@ -190,16 +246,32 @@ public final class AzureKeyVaultSecretStore implements SecretStore {
         Thread.ofPlatform().daemon().name("secret-store-azure-credential-", 0).factory());
   }
 
+  /**
+   * The SDK's default client, connecting within {@code attemptTimeout} and waiting for an answer at
+   * most {@code answerTimeout}. Sign-in waits up to {@code callTimeout} for an answer, as the first
+   * token of a managed identity can take longer than one attempt to the vault, while an unreachable
+   * endpoint still fails within {@code attemptTimeout}; the call timeout bounds both.
+   */
+  private static HttpClient defaultHttpClient(
+      final AzureKeyVaultStoreConfig config, final Duration answerTimeout) {
+    return HttpClient.createDefault(
+        new HttpClientOptions()
+            .setConnectTimeout(config.attemptTimeout())
+            .setResponseTimeout(answerTimeout)
+            .setReadTimeout(answerTimeout));
+  }
+
   private static SecretClient buildClient(
       final AzureKeyVaultStoreConfig config,
       final TokenCredential credential,
-      final @Nullable HttpClient httpClient) {
-    final var builder =
-        new SecretClientBuilder().vaultUrl(config.vaultUrl()).credential(credential);
-    if (httpClient != null) {
-      builder.httpClient(httpClient);
-    }
-    return builder.buildClient();
+      final HttpClient httpClient) {
+    return new SecretClientBuilder()
+        .vaultUrl(config.vaultUrl())
+        .credential(credential)
+        .retryPolicy(
+            new RetryPolicy(new KeyVaultRetryStrategy(config.maxRetries(), config.callTimeout())))
+        .httpClient(httpClient)
+        .buildClient();
   }
 
   /** The client {@link #resolve} and {@link #list} read the vault with. */
@@ -213,12 +285,20 @@ public final class AzureKeyVaultSecretStore implements SecretStore {
 
   @Override
   public Map<String, SecretResolutionResult> resolve(final Set<String> names) {
+    requireOpen("resolve secret references");
     return resolver.resolve(names);
   }
 
   @Override
   public List<String> list() {
+    requireOpen("list its secrets");
     return resolver.list();
+  }
+
+  private void requireOpen(final String what) {
+    if (credentialExecutor.isShutdown()) {
+      throw new SecretStoreUnavailableException("Azure Key Vault store is closed: cannot " + what);
+    }
   }
 
   @Override

@@ -11,12 +11,12 @@ import {useEffect, useMemo} from 'react';
 import {keepPreviousData, useQuery} from '@tanstack/react-query';
 import {createLink, useNavigate} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
-import {Alert, Button, Heading, Link, PageLayout, Pagination} from '@camunda/design-system';
+import {Alert, Button, EmptyState, Heading, Link, PageLayout, Pagination} from '@camunda/design-system';
+import {Layers} from '@camunda/design-system/icons';
 import type {BatchOperation} from '@camunda/camunda-api-zod-schemas/8.11';
 import {SortableTable} from '#/operate/shared/SortableTable/shadcn.components/SortableTable';
 import {BatchItemsCount} from '#/operate/shared/BatchItemsCount/shadcn.components/BatchItemsCount';
 import {BatchStateIndicator} from '#/operate/shared/BatchStateIndicator/shadcn.components/BatchStateIndicator';
-import {EmptyMessage} from '#/operate/shared/EmptyMessage/shadcn.components/EmptyMessage';
 import {ForbiddenError} from '#/shared/errors';
 import {ForbiddenPage} from '#/shared/pages/shadcn.components/ForbiddenPage';
 import {GenericErrorPage} from '#/shared/pages/shadcn.components/GenericErrorPage';
@@ -31,11 +31,6 @@ type Props = {
 
 const PAGE_SIZES = [20, 50, 100];
 const DEFAULT_PAGE_SIZE = 20;
-
-const TABLE_CONTAINER_CLASSES = [
-	'[&_[data-slot=table-container]]:rounded-none! [&_[data-slot=table-container]]:border-0! [&_[data-slot=table-container]]:shadow-none!',
-	'[&_[data-slot=data-table]>div.rounded-xl]:rounded-none! [&_[data-slot=data-table]>div.rounded-xl]:border-0!',
-].join(' ');
 
 const TableLink: React.FC<React.ComponentProps<'a'>> = (props) => <Link {...props} />;
 const BatchOperationLink = createLink(TableLink);
@@ -139,17 +134,15 @@ const BatchOperations: React.FC<Props> = ({page, pageSize, sort}) => {
 		.filter(Boolean)
 		.join(' · ');
 
-	let emptyState: React.ReactNode;
-	if (!isLoading) {
-		emptyState = query.isError ? (
-			<></>
-		) : (
-			<EmptyMessage
-				message={t('operate.batchOperations.emptyMessage')}
-				additionalInfo={t('operate.batchOperations.emptyAdditionalInfo')}
-			/>
-		);
-	}
+	const emptyState = isLoading ? undefined : query.isError ? (
+		<></>
+	) : (
+		<EmptyState
+			icon={<Layers aria-hidden />}
+			heading={t('operate.batchOperations.ds.emptyHeading')}
+			description={t('operate.batchOperations.ds.emptyDescription')}
+		/>
+	);
 
 	return (
 		<PageLayout id="main-content" tabIndex={-1} padding="none" width="full" className="h-full">
@@ -179,7 +172,7 @@ const BatchOperations: React.FC<Props> = ({page, pageSize, sort}) => {
 						isFetching={isLoading}
 						emptyState={emptyState}
 						hideHeaderWhenEmpty={!isLoading && !query.isError}
-						className={TABLE_CONTAINER_CLASSES}
+						borderless
 						data-testid="batch-operations-table"
 					/>
 				</div>

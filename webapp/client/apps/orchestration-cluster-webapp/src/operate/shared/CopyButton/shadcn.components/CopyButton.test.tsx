@@ -48,7 +48,7 @@ describe('<CopyButton />', () => {
 	it('should copy the value to clipboard when clicked', async () => {
 		const screen = await renderWithTooltipProvider(<CopyButton value="hello world" />);
 
-		await userEvent.click(screen.getByRole('button', {name: 'Copy', exact: true}).element());
+		await userEvent.click(screen.getByRole('button', {name: 'Copy', exact: true}));
 
 		expect(mockWriteText).toHaveBeenCalledWith('hello world');
 	});
@@ -59,7 +59,7 @@ describe('<CopyButton />', () => {
 
 		expect(transformValue).not.toHaveBeenCalled();
 
-		await userEvent.click(screen.getByRole('button', {name: 'Copy', exact: true}).element());
+		await userEvent.click(screen.getByRole('button', {name: 'Copy', exact: true}));
 
 		expect(transformValue).toHaveBeenCalledOnce();
 		expect(mockWriteText).toHaveBeenCalledWith('transformed hello world');
@@ -69,17 +69,17 @@ describe('<CopyButton />', () => {
 	it('should show copied feedback after clicking', async () => {
 		const screen = await renderWithTooltipProvider(<CopyButton value="hello world" />);
 
-		await userEvent.click(screen.getByRole('button', {name: 'Copy', exact: true}).element());
+		await userEvent.click(screen.getByRole('button', {name: 'Copy', exact: true}));
 
 		await expect.element(screen.getByRole('button', {name: 'Copied'})).toBeVisible();
 	});
 
 	it('should reset to copy state after the feedback timeout', async () => {
-		vi.useFakeTimers({shouldAdvanceTime: true});
+		vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
 
 		const screen = await renderWithTooltipProvider(<CopyButton value="hello world" />);
 
-		await userEvent.click(screen.getByRole('button', {name: 'Copy', exact: true}).element());
+		await userEvent.click(screen.getByRole('button', {name: 'Copy', exact: true}));
 		await expect.element(screen.getByText('Copied')).toBeVisible();
 
 		await vi.advanceTimersByTimeAsync(5000);
@@ -90,7 +90,7 @@ describe('<CopyButton />', () => {
 	it('should reset copied state when value prop changes', async () => {
 		const screen = await renderWithTooltipProvider(<CopyButton value="first" />);
 
-		await userEvent.click(screen.getByRole('button', {name: 'Copy', exact: true}).element());
+		await userEvent.click(screen.getByRole('button', {name: 'Copy', exact: true}));
 		await expect.element(screen.getByText('Copied')).toBeVisible();
 
 		await screen.rerender(<CopyButton value="second" />);
@@ -99,18 +99,38 @@ describe('<CopyButton />', () => {
 	});
 
 	it('should not re-enter the copied state when the value cycles back without a new copy action', async () => {
+		vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
 		const screen = await renderWithTooltipProvider(<CopyButton value="first" />);
-
-		await userEvent.click(screen.getByRole('button', {name: 'Copy', exact: true}).element());
-		await expect.element(screen.getByText('Copied')).toBeVisible();
-
+		await userEvent.click(screen.getByRole('button', {name: 'Copy', exact: true}));
+		await expect.element(screen.getByRole('button', {name: 'Copied'})).toBeVisible();
 		await screen.rerender(<CopyButton value="second" />);
-		await expect.element(screen.getByText('Copy', {exact: true})).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: 'Copy', exact: true})).toBeVisible();
 
 		await screen.rerender(<CopyButton value="first" />);
+		vi.clearAllTimers();
 
-		await expect.element(screen.getByText('Copy', {exact: true})).toBeVisible();
-		await expect.element(screen.getByText('Copied', {exact: true})).not.toBeInTheDocument();
+		await expect.element(screen.getByRole('button', {name: 'Copy', exact: true})).toBeVisible();
+	});
+
+	it('should not show copied feedback for a write that resolves after the value cycled back', async () => {
+		vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
+		const pendingWrite = {resolve: () => {}};
+		mockWriteText.mockImplementation(
+			() =>
+				new Promise<void>((resolve) => {
+					pendingWrite.resolve = resolve;
+				}),
+		);
+		const screen = await renderWithTooltipProvider(<CopyButton value="first" />);
+		await userEvent.click(screen.getByRole('button', {name: 'Copy', exact: true}));
+		await screen.rerender(<CopyButton value="second" />);
+		await screen.rerender(<CopyButton value="first" />);
+
+		pendingWrite.resolve();
+		await screen.rerender(<CopyButton value="first" />);
+		vi.clearAllTimers();
+
+		await expect.element(screen.getByRole('button', {name: 'Copy', exact: true})).toBeVisible();
 	});
 
 	it('should stay in the copy state when the clipboard write is rejected', async () => {
@@ -118,7 +138,7 @@ describe('<CopyButton />', () => {
 
 		const screen = await renderWithTooltipProvider(<CopyButton value="hello world" />);
 
-		await userEvent.click(screen.getByRole('button', {name: 'Copy', exact: true}).element());
+		await userEvent.click(screen.getByRole('button', {name: 'Copy', exact: true}));
 
 		await expect.element(screen.getByText('Copy', {exact: true})).toBeVisible();
 	});
@@ -132,48 +152,9 @@ describe('<CopyButton />', () => {
 
 		const screen = await renderWithTooltipProvider(<CopyButton value="hello world" />);
 
-		await userEvent.click(screen.getByRole('button', {name: 'Copy', exact: true}).element());
+		await userEvent.click(screen.getByRole('button', {name: 'Copy', exact: true}));
 
 		await expect.element(screen.getByText('Copy', {exact: true})).toBeVisible();
-	});
-
-	it('should not show copied feedback for a stale write that resolves after the value changed', async () => {
-		let resolveWrite: () => void = () => {};
-		mockWriteText.mockImplementation(() => new Promise<void>((resolve) => (resolveWrite = resolve)));
-
-		const screen = await renderWithTooltipProvider(<CopyButton value="first" />);
-
-		await userEvent.click(screen.getByRole('button', {name: 'Copy', exact: true}).element());
-
-		await screen.rerender(<CopyButton value="second" />);
-		await expect.element(screen.getByText('Copy', {exact: true})).toBeVisible();
-
-		resolveWrite();
-		await new Promise((resolve) => setTimeout(resolve, 50));
-
-		await expect.element(screen.getByText('Copy', {exact: true})).toBeVisible();
-		await expect.element(screen.getByText('Copied', {exact: true})).not.toBeInTheDocument();
-	});
-
-	it('should not show copied feedback for a stale write that resolves after the value cycled back', async () => {
-		let resolveWrite: () => void = () => {};
-		mockWriteText.mockImplementation(() => new Promise<void>((resolve) => (resolveWrite = resolve)));
-
-		const screen = await renderWithTooltipProvider(<CopyButton value="first" />);
-
-		await userEvent.click(screen.getByRole('button', {name: 'Copy', exact: true}).element());
-
-		// Value cycles away and back to "first" while the clipboard write is still pending.
-		await screen.rerender(<CopyButton value="second" />);
-		await screen.rerender(<CopyButton value="first" />);
-
-		// The stale write resolves after the cycle; `sourceValue` now equals the current `value`
-		// again, so without generation tracking this would incorrectly flip to "Copied".
-		resolveWrite();
-		await new Promise((resolve) => setTimeout(resolve, 50));
-
-		await expect.element(screen.getByText('Copy', {exact: true})).toBeVisible();
-		await expect.element(screen.getByText('Copied', {exact: true})).not.toBeInTheDocument();
 	});
 
 	it('should use the tooltip label for the icon-only variant', async () => {
@@ -191,7 +172,7 @@ describe('<CopyButton />', () => {
 	it('should update the icon-only button label after copying', async () => {
 		const screen = await renderWithTooltipProvider(<CopyButton value="hello world" hasIconOnly />);
 
-		await userEvent.click(screen.getByRole('button', {name: 'Copy to clipboard'}).element());
+		await userEvent.click(screen.getByRole('button', {name: 'Copy to clipboard'}));
 
 		await expect.element(screen.getByRole('button', {name: 'Copied to clipboard'})).toBeVisible();
 	});

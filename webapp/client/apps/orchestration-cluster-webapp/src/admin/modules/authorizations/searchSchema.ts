@@ -12,7 +12,7 @@ import {resourceTypeSchema, type ResourceType} from '@camunda/camunda-api-zod-sc
 const PAGE_SIZES = [10, 20, 50, 100] as const;
 const DEFAULT_PAGE_SIZE = 20;
 
-const SORTABLE_FIELDS = ['ownerType', 'ownerId', 'resourceId'] as const;
+const SORTABLE_FIELDS = ['ownerType', 'ownerId', 'resourceId', 'resourcePropertyName'] as const;
 const DEFAULT_SORT_FIELD = 'ownerId';
 
 const authorizationsSearchSchema = z.object({
@@ -38,8 +38,9 @@ function getEffectiveSort(
 	search: Pick<AuthorizationsSearch, 'sortField' | 'sortOrder'>,
 	resourceType: ResourceType,
 ): {field: (typeof SORTABLE_FIELDS)[number]; order: 'ASC' | 'DESC'} {
-	// USER_TASK authorizations have no resourceId, so that sort would be meaningless.
-	if (search.sortField === undefined || (resourceType === 'USER_TASK' && search.sortField === 'resourceId')) {
+	const columnMissingFromResourceType = resourceType === 'USER_TASK' ? 'resourceId' : 'resourcePropertyName';
+
+	if (search.sortField === undefined || search.sortField === columnMissingFromResourceType) {
 		return {field: DEFAULT_SORT_FIELD, order: 'ASC'};
 	}
 

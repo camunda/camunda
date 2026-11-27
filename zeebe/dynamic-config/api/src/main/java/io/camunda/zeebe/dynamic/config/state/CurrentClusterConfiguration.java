@@ -10,16 +10,11 @@ package io.camunda.zeebe.dynamic.config.state;
 import static java.util.Objects.requireNonNull;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.dynamic.config.InitializableClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
-import io.camunda.zeebe.dynamic.config.state.OperationGraph.PlannedOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRoutingState;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
-import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -28,9 +23,6 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedMap;
-import java.util.SortedSet;
-import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
@@ -56,8 +48,7 @@ public record CurrentClusterConfiguration(
     long version,
     GlobalConfiguration globalConfiguration,
     Map<String, PartitionGroupConfiguration> partitionGroups,
-    PhasedChangeState phasedChangeState)
-    implements InitializableClusterConfiguration {
+    PhasedChangeState phasedChangeState) {
 
   public static final long INITIAL_VERSION = 0;
   public static final String DEFAULT_GROUP = "default";
@@ -74,12 +65,10 @@ public record CurrentClusterConfiguration(
         INITIAL_VERSION, GlobalConfiguration.uninitialized(), Map.of(), PhasedChangeState.empty());
   }
 
-  @Override
   public boolean isUninitialized() {
     return globalConfiguration.isUninitialized();
   }
 
-  @Override
   public Set<MemberId> getMembers() {
     return globalConfiguration.members().keySet();
   }
@@ -113,10 +102,6 @@ public record CurrentClusterConfiguration(
    * Whether the cluster does not use zone awareness at all: no broker is assigned to a zone and the
    * partition distributor is not zone-aware. A cluster where only some of the two holds is
    * mid-migration between the two modes rather than unzoned.
-   *
-   * <p>Both are global state, so this reads the same fields {@link
-   * ClusterConfiguration#isUnzoned()} does — the projection through {@link #toLegacy(String)} that
-   * method needs is not.
    */
   public boolean isUnzoned() {
     return globalConfiguration.members().keySet().stream().allMatch(member -> member.zone() == null)
@@ -130,10 +115,6 @@ public record CurrentClusterConfiguration(
    * Whether the cluster uses zone awareness throughout: every broker is assigned to a zone and the
    * partition distributor is zone-aware. A cluster where only one of the two holds is mid-migration
    * between the two modes rather than fully zone-aware.
-   *
-   * <p>Both are global state, so this reads the same fields {@link
-   * ClusterConfiguration#isFullyZoneAware()} does — the projection through {@link
-   * #toLegacy(String)})} that method needs is not.
    */
   public boolean isFullyZoneAware() {
     return globalConfiguration.members().keySet().stream().allMatch(member -> member.zone() != null)
@@ -146,10 +127,6 @@ public record CurrentClusterConfiguration(
   /**
    * Whether the cluster is between the two modes: some but not all brokers are assigned to a zone,
    * or every broker is but the partition distributor is not zone-aware yet.
-   *
-   * <p>Both are global state, so this reads the same fields {@link
-   * ClusterConfiguration#isPartiallyZoneAware()} does — the projection through {@link
-   * #toLegacy(String)})} that method needs is not.
    */
   public boolean isPartiallyZoneAware() {
     final var members = globalConfiguration.members().keySet();
@@ -171,9 +148,8 @@ public record CurrentClusterConfiguration(
    * every group because the replication factor is a cluster-wide setting: a request that has to
    * match what the cluster runs today has to match it for every tenant, not only the default one.
    *
-   * <p>Read as the minimum rather than a configured value, mirroring {@link
-   * ClusterConfiguration#minReplicationFactor()}: during a configuration change a partition can
-   * temporarily hold more replicas than the cluster is configured for.
+   * <p>Read as the minimum rather than a configured value: during a configuration change a
+   * partition can temporarily hold more replicas than the cluster is configured for.
    *
    * <p>Answers 0 for a cluster that runs no partitions at all, which is what makes an equality
    * check against it fail rather than pass. {@code PartitionGroupScalingPhases} asks a different
@@ -206,84 +182,10 @@ public record CurrentClusterConfiguration(
   }
 
   /**
-   * Migration factory: converts a legacy {@link ClusterConfiguration} (single partition group) into
-   * the new model. Broker lifecycle state is extracted into {@link GlobalConfiguration}; partition
-   * assignment is extracted into the {@link #DEFAULT_GROUP} partition group.
-   *
-   * <p>Field placement:
-   *
-   * <ul>
-   *   <li>{@code clusterId} and {@code partitionDistributorConfig} → {@link GlobalConfiguration}.
-   *   <li>{@code routingState} and {@code incarnationNumber} → the default {@link
-   *       PartitionGroupConfiguration}.
-   *   <li>{@code pendingChanges} → the {@link PhasedChangeState} pending plan. The legacy plan
-   *       mixes {@link GlobalChangeOperation}s and {@link PartitionGroupOperation}s in one flat
-   *       list; those cannot all live on the default group. They are re-expressed as phases,
-   *       preserving order: each maximal run of consecutive operations of the same kind becomes one
-   *       phase (see {@link #toPhases(List)}).
-   *   <li>{@code lastChange} → the {@link PhasedChangeState} last completed change. Its status must
-   *       be terminal (COMPLETED / FAILED / CANCELLED); an {@code IN_PROGRESS} legacy last change
-   *       is rejected.
-   *   <li>every member appears in {@link GlobalConfiguration}; a member appears in the default
-   *       group only if it currently replicates at least one partition.
-   *   <li>a legacy {@code RECOVERING} member maps to a lifecycle {@link BrokerState.State#ACTIVE}
-   *       broker whose default-group {@link BrokerPartitionState} is in {@link Mode#RECOVERING},
-   *       since recovery is now per-group.
-   * </ul>
-   *
-   * <p>This is a pure, side-effect-free conversion: the returned pending plan (if any) is built at
-   * phase 0 but is <em>not</em> activated into the default group — the default group's own {@code
-   * pendingChanges} stays empty. Activation (via {@link #activatePendingPhase()}) is deliberately
-   * left to the caller so converting a legacy configuration does not itself start the pending
-   * change. {@code PersistedCurrentClusterConfiguration} explicitly activates the plan after
-   * converting an on-disk v1 file.
-   *
-   * @throws IllegalStateException if the legacy {@code lastChange} has {@code IN_PROGRESS} status
-   */
-  public static CurrentClusterConfiguration fromLegacy(final ClusterConfiguration legacy) {
-    final long version = legacy.version();
-
-    final Map<MemberId, BrokerState> brokerStates =
-        legacy.members().entrySet().stream()
-            .collect(Collectors.toMap(Entry::getKey, e -> toBrokerState(e.getValue())));
-
-    final var globalConfiguration =
-        new GlobalConfiguration(
-            version,
-            legacy.clusterId(),
-            brokerStates,
-            legacy.partitionDistributorConfig(),
-            Optional.empty(),
-            Optional.empty());
-
-    final Map<MemberId, BrokerPartitionState> partitionStates =
-        legacy.members().entrySet().stream()
-            .filter(e -> !e.getValue().partitions().isEmpty())
-            .collect(Collectors.toMap(Entry::getKey, e -> toBrokerPartitionState(e.getValue())));
-
-    final var defaultGroup =
-        new PartitionGroupConfiguration(
-            version,
-            legacy.incarnationNumber(),
-            partitionStates,
-            legacy.routingState(),
-            Optional.empty(),
-            Optional.empty());
-
-    final PhasedChangeState phasedChangeState = toPhasedChangeState(legacy);
-    return new CurrentClusterConfiguration(
-        INITIAL_VERSION,
-        globalConfiguration,
-        Map.of(DEFAULT_GROUP, defaultGroup),
-        phasedChangeState);
-  }
-
-  /**
    * Activates the current pending plan's phase (see {@link #applyPhase}) if one is pending,
    * otherwise returns this configuration unchanged. Mirrors what {@link #initPlan(List)} does for a
-   * freshly-started plan; intended for one-time migration call sites (see {@link
-   * #fromLegacy(ClusterConfiguration)}) that need to take over driving an already-pending plan
-   * rather than starting a new one.
+   * freshly-started plan; intended for call sites, such as a restore, that need to take over
+   * driving an already-pending plan rather than starting a new one.
    *
    * @throws IllegalStateException if the pending phase targets a sub-configuration that already has
    *     a change in progress
@@ -294,132 +196,6 @@ public record CurrentClusterConfiguration(
       result = result.applyPhase(plan);
     }
     return result;
-  }
-
-  /**
-   * Projects this multi-group configuration back to a legacy single-group {@link
-   * ClusterConfiguration} representing the named partition group. This is the inverse of {@link
-   * #fromLegacy(ClusterConfiguration)}.
-   *
-   * <p>Each member combines its cluster-wide lifecycle state (from {@link #globalConfiguration})
-   * with its partition assignment in {@code groupId} (from {@code partitionGroups[groupId]}); a
-   * member whose operating mode in that group is {@link Mode#RECOVERING} is projected to the legacy
-   * {@link MemberState.State#RECOVERING} state. {@code routingState} and {@code incarnationNumber}
-   * come from that group; {@code clusterId} and {@code partitionDistributorConfig} from the global
-   * configuration.
-   *
-   * <p>The pending/last change is a best-effort projection: {@code pendingChanges} reflects
-   * whichever sub-config currently has an active plan (global first, then the named group), and
-   * {@code lastChange} is derived from the {@link PhasedChangeState} — which is cluster-wide, not
-   * per-group, so the projected {@code lastChange} is the same regardless of which group is
-   * requested. This is intended: the phased change plan spans the whole cluster (see {@link
-   * PhasedChangeState}), so there is no group-scoped completed-change history to derive it from
-   * instead. Cross-sub-config change details cannot be represented losslessly in the flat legacy
-   * plan, so this projection is intended for display and equivalence checks, not for driving legacy
-   * change execution.
-   *
-   * <p>Uninitialized is projected explicitly: {@link #isUninitialized()} is driven by {@code
-   * globalConfiguration}'s own uninitialized sentinel version, which is {@code 0} — distinct from
-   * the legacy {@link ClusterConfiguration}'s sentinel version of {@code -1}. Deriving the legacy
-   * version as {@code Math.max(globalConfiguration.version(), group.version())} would therefore
-   * never equal the legacy sentinel, so callers of {@code ClusterConfiguration#isUninitialized()}
-   * on the projection could never observe {@code true}.
-   *
-   * @param groupId the partition group to project; looked up with {@link
-   *     PartitionGroupConfiguration#empty(long)} as the fallback when absent
-   */
-  public ClusterConfiguration toLegacy(final String groupId) {
-    if (isUninitialized()) {
-      return ClusterConfiguration.uninitialized();
-    }
-
-    final PartitionGroupConfiguration group =
-        partitionGroups.getOrDefault(groupId, PartitionGroupConfiguration.empty(version));
-
-    final Map<MemberId, MemberState> members = new HashMap<>();
-    globalConfiguration
-        .members()
-        .forEach(
-            (memberId, brokerState) ->
-                members.put(memberId, toLegacyMemberState(brokerState, group.getMember(memberId))));
-
-    // The projection carries whichever model the sub-configuration it comes from is running, so a
-    // reader in this process sees the real change — including that several of its operations may be
-    // running at once. It is flattened to a queue only where the wire demands one, when the legacy
-    // ClusterTopology message is encoded (see ClusterChangePlan#flatten).
-    final Optional<ChangePlan> pendingChanges =
-        globalConfiguration
-            .pendingChanges()
-            .<ChangePlan>map(plan -> plan)
-            .filter(ChangePlan::hasPendingChanges)
-            .or(
-                () ->
-                    group
-                        .pendingChanges()
-                        .<ChangePlan>map(plan -> plan)
-                        .filter(ChangePlan::hasPendingChanges));
-
-    final Optional<CompletedChange> lastChange =
-        phasedChangeState.lastChange().map(CurrentClusterConfiguration::toLegacyCompletedChange);
-
-    return ClusterConfiguration.builder()
-        .version(Math.max(globalConfiguration.version(), group.version()))
-        .members(members)
-        .lastChange(lastChange)
-        .pendingChanges(pendingChanges)
-        .routingState(group.routingState())
-        .clusterId(globalConfiguration.clusterId())
-        .incarnationNumber(group.incarnationNumber())
-        .partitionDistributorConfig(globalConfiguration.partitionDistributorConfig())
-        .build();
-  }
-
-  /**
-   * Delegates to {@link #toLegacy(String)} for {@link #DEFAULT_GROUP}. Kept as the stable entry
-   * point for the many call sites that only ever cared about the single default group, from before
-   * this class supported more than one partition group.
-   */
-  public ClusterConfiguration toLegacyDefault() {
-    return toLegacy(DEFAULT_GROUP);
-  }
-
-  private static MemberState toLegacyMemberState(
-      final BrokerState brokerState, final @Nullable BrokerPartitionState partitionState) {
-    final Map<Integer, PartitionState> partitions =
-        partitionState != null ? partitionState.partitions() : Map.of();
-    final MemberState.State state =
-        partitionState != null && partitionState.mode() == Mode.RECOVERING
-            ? MemberState.State.RECOVERING
-            : toLegacyLifecycleState(brokerState.state());
-    final long version =
-        partitionState != null
-            ? Math.max(brokerState.version(), partitionState.version())
-            : brokerState.version();
-    final Instant lastUpdated =
-        partitionState != null && partitionState.lastUpdated().isAfter(brokerState.lastUpdated())
-            ? partitionState.lastUpdated()
-            : brokerState.lastUpdated();
-    return new MemberState(version, lastUpdated, state, partitions);
-  }
-
-  private static MemberState.State toLegacyLifecycleState(final BrokerState.State state) {
-    return switch (state) {
-      case UNINITIALIZED -> MemberState.State.UNINITIALIZED;
-      case JOINING -> MemberState.State.JOINING;
-      case ACTIVE -> MemberState.State.ACTIVE;
-      case LEAVING -> MemberState.State.LEAVING;
-      case LEFT -> MemberState.State.LEFT;
-    };
-  }
-
-  private static CompletedChange toLegacyCompletedChange(final CompletedPhasedChange change) {
-    final Status status =
-        switch (change.status()) {
-          case COMPLETED -> Status.COMPLETED;
-          case FAILED -> Status.FAILED;
-          case CANCELLED -> Status.CANCELLED;
-        };
-    return new CompletedChange(change.id(), status, change.startedAt(), change.completedAt());
   }
 
   /**
@@ -759,8 +535,7 @@ public record CurrentClusterConfiguration(
    * Returns true if this configuration was produced by a restore: the pending plan's id is {@link
    * PhasedChangePlan#RESTORED_PLAN_ID} (see {@link PhasedChangePlan#hasRestorePlanId()}) and it
    * contains exactly one {@link PartitionGroupPhase} whose every named group runs exactly one
-   * operation, an {@link UpdateRoutingState}. Mirrors {@link
-   * ClusterConfiguration#isAfterRestore()}.
+   * operation, an {@link UpdateRoutingState}.
    *
    * <p>The phase may name any number of groups, one per restored physical tenant: {@code
    * RestoreManager} writes one {@link UpdateRoutingState} per group into a single phase, and {@link
@@ -786,6 +561,34 @@ public record CurrentClusterConfiguration(
 
   public @Nullable PartitionGroupConfiguration partitionGroup(final String groupId) {
     return partitionGroups.get(groupId);
+  }
+
+  /**
+   * The version of the configuration as seen from one partition group: the higher of the global
+   * configuration's version and the group's, since a change to either changes what that group runs.
+   * A group that does not exist counts as the global configuration alone.
+   */
+  public long versionOf(final String groupId) {
+    final var group = partitionGroups.get(groupId);
+    return group == null
+        ? globalConfiguration.version()
+        : Math.max(globalConfiguration.version(), group.version());
+  }
+
+  /**
+   * The change plan running on the global configuration if there is one, otherwise the one running
+   * on the given partition group.
+   */
+  public Optional<DependencyChangePlan> pendingChangesOf(final String groupId) {
+    final var group = partitionGroups.get(groupId);
+    return globalConfiguration
+        .pendingChanges()
+        .filter(DependencyChangePlan::hasPendingChanges)
+        .or(
+            () ->
+                group == null
+                    ? Optional.empty()
+                    : group.pendingChanges().filter(DependencyChangePlan::hasPendingChanges));
   }
 
   /**
@@ -826,219 +629,6 @@ public record CurrentClusterConfiguration(
   public Map<String, SortedMap<Integer, MemberId>> desiredLeaders() {
     return partitionGroups.entrySet().stream()
         .collect(Collectors.toMap(Entry::getKey, entry -> entry.getValue().desiredLeaders()));
-  }
-
-  private static PhasedChangeState toPhasedChangeState(final ClusterConfiguration legacy) {
-    final Optional<CompletedPhasedChange> lastChange =
-        legacy.lastChange().map(CurrentClusterConfiguration::toCompletedPhasedChange);
-    final long lastChangeId = lastChange.map(CompletedPhasedChange::id).orElse(0L);
-    final Optional<PhasedChangePlan> pending =
-        legacy.pendingChanges().flatMap(plan -> toPhasedChangePlan(plan, lastChangeId));
-    final List<CompletedPhasedChange> history = lastChange.map(List::of).orElse(List.of());
-    final long nextId =
-        pending
-            .map(plan -> plan.id() + 1)
-            .orElse(Math.max(lastChangeId + 1, PhasedChangePlan.INITIAL_PLAN_ID));
-    final Map<Long, PhasedChangePlan> pendingMap =
-        pending.map(plan -> Map.of(plan.id(), plan)).orElse(Map.of());
-    return new PhasedChangeState(nextId, pendingMap, history);
-  }
-
-  /**
-   * Builds the pending {@link PhasedChangePlan}, normalizing the plan id. Legacy restore plans use
-   * a negative sentinel id ({@code ClusterChangePlan.RESTORE_CHANGE_ID = -2}) that cannot be
-   * preserved as-is ({@link PhasedChangePlan} requires a non-negative id); they are instead
-   * assigned {@link PhasedChangePlan#RESTORED_PLAN_ID}, the new model's own sentinel (see {@link
-   * PhasedChangePlan#hasRestorePlanId()} and {@link #isAfterRestore()}). Any other legacy id that
-   * is not positive or not greater than {@code lastChangeId} is replaced with {@code lastChangeId +
-   * 1}, keeping ids positive and monotonic after migration.
-   *
-   * <p>A restore is only ever produced by {@code RestoreManager#restoreTopologyFile}, which always
-   * regenerates a completely fresh legacy configuration (via {@code StaticConfigurationGenerator})
-   * and attaches the restore plan to it — so a legacy restore plan is expected to never carry a
-   * prior completed change ({@code lastChangeId == 0}). This is asserted below rather than assumed
-   * silently: violating it would mean two restore plans could both be assigned {@link
-   * PhasedChangePlan#RESTORED_PLAN_ID}, and the second migration would only fail downstream in
-   * {@link PhasedChangeState}'s id-monotonicity check with no restore-specific context.
-   *
-   * <p>Only what is left to run is migrated, in both models: a phase is a template with no progress
-   * of its own, so an operation that has already completed has nowhere to be recorded and would
-   * come back as pending if it were carried over. A queue therefore migrates its pending
-   * operations, and a graph the subgraph of its incomplete ones (see {@link
-   * #remainingGraph(DependencyChangePlan)}).
-   *
-   * @throws IllegalStateException if a legacy restore plan is migrated alongside a prior completed
-   *     change, which would violate the assumption above
-   */
-  private static Optional<PhasedChangePlan> toPhasedChangePlan(
-      final ChangePlan plan, final long lastChangeId) {
-    final var phases =
-        switch (plan) {
-          case final ClusterChangePlan queue -> toPhases(queue.pendingOperations());
-          case final DependencyChangePlan graph ->
-              remainingGraph(graph).map(CurrentClusterConfiguration::toPhase).stream().toList();
-        };
-    if (phases.isEmpty()) {
-      return Optional.empty();
-    }
-
-    if (plan instanceof final ClusterChangePlan queue && queue.isRestore()) {
-      if (lastChangeId != 0) {
-        throw new IllegalStateException(
-            "Cannot migrate a legacy restore plan: expected no prior completed change "
-                + "(lastChangeId=0) since a restore always regenerates a fresh configuration, but "
-                + "found lastChangeId="
-                + lastChangeId);
-      }
-      return Optional.of(PhasedChangePlan.initForRestore(phases, plan.startedAt()));
-    }
-    final long id = plan.id() > 0 && plan.id() > lastChangeId ? plan.id() : lastChangeId + 1;
-    return Optional.of(new PhasedChangePlan(id, 0, phases, plan.startedAt()));
-  }
-
-  /**
-   * The phase a graph change belongs in, taken from the operations it holds: cluster-wide ones make
-   * a {@link GlobalPhase}, a partition group's a {@link PartitionGroupPhase} targeting the default
-   * group — which is the only group a single-group projection can be describing.
-   *
-   * <p>A group's graph keeps its edges, so the concurrency it was planned with survives the round
-   * trip. A cluster-wide one cannot: {@link GlobalPhase} carries a flat list. That loses nothing
-   * today, because {@link GlobalConfiguration#startConfigurationChange} only ever builds a
-   * sequential graph and {@link OperationGraph#inOrder()} reproduces exactly that order — but a
-   * cluster-wide change that one day declares two independent operations would need {@code
-   * GlobalPhase} to carry a graph before this could migrate it faithfully.
-   *
-   * <p>A graph mixing both kinds has no phase to go in, and no sub-configuration can produce one:
-   * each holds operations of a single kind. It is rejected rather than split across two phases,
-   * which would invent an ordering between them that the graph never declared.
-   */
-  private static Phase toPhase(final OperationGraph graph) {
-    final var operations = graph.inOrder();
-    if (operations.stream().allMatch(GlobalChangeOperation.class::isInstance)) {
-      return new GlobalPhase(operations.stream().map(GlobalChangeOperation.class::cast).toList());
-    }
-    if (operations.stream().allMatch(PartitionGroupOperation.class::isInstance)) {
-      return new PartitionGroupPhase(Map.of(DEFAULT_GROUP, graph));
-    }
-    throw new IllegalStateException(
-        "Cannot migrate a change whose operations are partly cluster-wide and partly a partition"
-            + " group's: "
-            + operations);
-  }
-
-  /**
-   * The part of a graph change that has not run yet: its incomplete operations, keeping every edge
-   * between two of them and dropping the ones pointing at an operation that has already completed —
-   * a dependency that is already satisfied constrains nothing, and leaving it in would name an
-   * operation the graph no longer contains.
-   *
-   * <p>Empty when every operation has completed, which is a change with nothing left to migrate
-   * rather than a graph with no operations — {@link OperationGraph} rejects the latter.
-   */
-  private static Optional<OperationGraph> remainingGraph(final DependencyChangePlan plan) {
-    final SortedMap<OperationId, PlannedOperation> remaining = new TreeMap<>();
-    plan.operations()
-        .forEach(
-            (operationId, planned) -> {
-              if (plan.isComplete(operationId)) {
-                return;
-              }
-              final SortedSet<OperationId> outstanding = new TreeSet<>(planned.dependsOn());
-              outstanding.removeIf(plan::isComplete);
-              remaining.put(
-                  operationId,
-                  new PlannedOperation(planned.operation(), outstanding, planned.groupId()));
-            });
-    return remaining.isEmpty() ? Optional.empty() : Optional.of(new OperationGraph(remaining));
-  }
-
-  /**
-   * Splits a flat legacy operation list into phases, preserving order: each maximal run of
-   * consecutive operations of the same kind becomes one phase — a run of {@link
-   * GlobalChangeOperation} becomes a {@link GlobalPhase}, a run of {@link PartitionGroupOperation}
-   * becomes a sequential {@link PartitionGroupPhase} targeting the default group. For example
-   * {@code [MemberJoin, PartitionJoin, PartitionLeave, MemberLeave]} yields three phases: a global
-   * phase, a default-group phase with the two partition operations, and another global phase.
-   *
-   * <p>Also used by the coordinator to turn a freshly generated flat operation list (from the
-   * unchanged request transformers) into a {@link PhasedChangePlan} for the default group.
-   */
-  public static List<Phase> toPhases(final List<ClusterConfigurationChangeOperation> operations) {
-    final List<Phase> phases = new ArrayList<>();
-    final List<GlobalChangeOperation> globalRun = new ArrayList<>();
-    final List<PartitionGroupOperation> partitionRun = new ArrayList<>();
-    for (final ClusterConfigurationChangeOperation operation : operations) {
-      switch (operation) {
-        case final GlobalChangeOperation global -> {
-          flushPartitionRun(phases, partitionRun);
-          globalRun.add(global);
-        }
-        case final PartitionGroupOperation partition -> {
-          flushGlobalRun(phases, globalRun);
-          partitionRun.add(partition);
-        }
-      }
-    }
-    flushGlobalRun(phases, globalRun);
-    flushPartitionRun(phases, partitionRun);
-    return phases;
-  }
-
-  private static void flushGlobalRun(
-      final List<Phase> phases, final List<GlobalChangeOperation> run) {
-    if (!run.isEmpty()) {
-      phases.add(new GlobalPhase(List.copyOf(run)));
-      run.clear();
-    }
-  }
-
-  private static void flushPartitionRun(
-      final List<Phase> phases, final List<PartitionGroupOperation> run) {
-    if (!run.isEmpty()) {
-      phases.add(PartitionGroupPhase.sequential(DEFAULT_GROUP, List.copyOf(run)));
-      run.clear();
-    }
-  }
-
-  private static CompletedPhasedChange toCompletedPhasedChange(final CompletedChange change) {
-    final var status =
-        switch (change.status()) {
-          case COMPLETED -> PhasedChangePlanStatus.COMPLETED;
-          case FAILED -> PhasedChangePlanStatus.FAILED;
-          case CANCELLED -> PhasedChangePlanStatus.CANCELLED;
-          case IN_PROGRESS ->
-              throw new IllegalStateException(
-                  "Cannot migrate a legacy last change with IN_PROGRESS status: " + change);
-        };
-    // A completed legacy restore keeps the negative sentinel id
-    // (ClusterChangePlan.RESTORE_CHANGE_ID
-    // = -2). Clamp non-positive ids to 0 so the next derived plan id (lastChange.id() + 1) stays
-    // positive and PhasedChangePlan's id-must-be-positive invariant is preserved.
-    final long id = Math.max(change.id(), 0);
-    return new CompletedPhasedChange(id, status, change.startedAt(), change.completedAt());
-  }
-
-  private static BrokerState toBrokerState(final MemberState memberState) {
-    return new BrokerState(
-        memberState.version(), memberState.lastUpdated(), toLifecycleState(memberState.state()));
-  }
-
-  private static BrokerPartitionState toBrokerPartitionState(final MemberState memberState) {
-    final var mode =
-        memberState.state() == MemberState.State.RECOVERING ? Mode.RECOVERING : Mode.PROCESSING;
-    return new BrokerPartitionState(
-        memberState.version(), memberState.lastUpdated(), memberState.partitions(), mode);
-  }
-
-  private static BrokerState.State toLifecycleState(final MemberState.State state) {
-    return switch (state) {
-      case UNINITIALIZED -> BrokerState.State.UNINITIALIZED;
-      case JOINING -> BrokerState.State.JOINING;
-      // A recovering broker is lifecycle-active; recovery is tracked per group as a Mode.
-      case ACTIVE, RECOVERING -> BrokerState.State.ACTIVE;
-      case LEAVING -> BrokerState.State.LEAVING;
-      case LEFT -> BrokerState.State.LEFT;
-    };
   }
 
   public int getPartitionCount(final String partitionGroup) {

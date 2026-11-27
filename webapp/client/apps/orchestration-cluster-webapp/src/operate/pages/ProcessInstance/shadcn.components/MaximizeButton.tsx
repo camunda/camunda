@@ -28,7 +28,7 @@ const MaximizeButton: React.FC<Props> = ({onClick, isBusy, ref}) => {
 			label={t('operate.processInstance.variables.openDescription')}
 			tooltipSide="top"
 			ref={ref}
-			aria-busy={isBusy}
+			loading={isBusy}
 			onClick={onClick}
 		/>
 	);

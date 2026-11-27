@@ -10,13 +10,10 @@ package io.camunda.zeebe.dynamic.config.state;
 import static java.util.Objects.requireNonNull;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.CompletedOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
@@ -44,8 +41,7 @@ public record DependencyChangePlan(
     Status status,
     Instant startedAt,
     OperationGraph graph,
-    SortedMap<OperationId, Instant> completed)
-    implements ChangePlan {
+    SortedMap<OperationId, Instant> completed) {
 
   public DependencyChangePlan {
     completed = Collections.unmodifiableSortedMap(new TreeMap<>(completed));
@@ -111,7 +107,6 @@ public record DependencyChangePlan(
     return runnable;
   }
 
-  @Override
   public boolean hasPendingChanges() {
     return completed.size() < graph.size();
   }
@@ -120,7 +115,6 @@ public record DependencyChangePlan(
    * The operations still to run, in operation-id order. Ordering is positional rather than by
    * arrival so that two brokers rendering the same converged plan produce identical lists.
    */
-  @Override
   public List<ClusterConfigurationChangeOperation> pendingOperations() {
     final var pending = new ArrayList<ClusterConfigurationChangeOperation>();
     graph
@@ -134,62 +128,7 @@ public record DependencyChangePlan(
     return List.copyOf(pending);
   }
 
-  /**
-   * The operations still to run, ordered so that every operation follows the ones it depends on — a
-   * valid sequential execution of this change.
-   *
-   * <p>{@link #pendingOperations()} orders by operation id, which is topological for every graph
-   * {@link OperationGraph.Builder} produces (it only lets an operation depend on ids already
-   * issued) but not for one built by hand or decoded from the wire, where the ids are whatever the
-   * sender wrote. Reading a change is fine with id order; <em>executing</em> it in id order is not,
-   * and {@link ClusterChangePlan#flatten} hands the result to a broker that will execute it.
-   *
-   * <p>Ties are broken by ascending id rather than left to iteration order, because two brokers
-   * flattening the same plan must produce the same queue: the result is gossiped into the legacy
-   * field and merged there by a version that says nothing about which ordering produced it.
-   *
-   * <p>A dependency that has already completed does not constrain anything, so only incomplete
-   * operations are counted — which is what makes the result executable from the current state
-   * rather than from the start of the change.
-   */
-  public List<ClusterConfigurationChangeOperation> pendingOperationsInDependencyOrder() {
-    final var outstanding = new TreeMap<OperationId, SortedSet<OperationId>>();
-    graph
-        .operations()
-        .forEach(
-            (operationId, planned) -> {
-              if (isComplete(operationId)) {
-                return;
-              }
-              final var blockers = new TreeSet<OperationId>();
-              planned.dependsOn().stream().filter(d -> !isComplete(d)).forEach(blockers::add);
-              outstanding.put(operationId, blockers);
-            });
-
-    final var ordered = new ArrayList<ClusterConfigurationChangeOperation>();
-    while (!outstanding.isEmpty()) {
-      final var next =
-          outstanding.entrySet().stream()
-              .filter(entry -> entry.getValue().isEmpty())
-              .map(Map.Entry::getKey)
-              .findFirst()
-              .orElseThrow(
-                  () ->
-                      new IllegalStateException(
-                          "Cannot order the outstanding operations of change %d: every one is"
-                                  .formatted(id)
-                              + " blocked, which means a dependency cycle OperationGraph should"
-                              + " have rejected: "
-                              + outstanding));
-      outstanding.remove(next);
-      outstanding.values().forEach(blockers -> blockers.remove(next));
-      ordered.add(operation(next));
-    }
-    return List.copyOf(ordered);
-  }
-
   /** The operations already run, in operation-id order. See {@link #pendingOperations()}. */
-  @Override
   public List<CompletedOperation> completedOperations() {
     final var done = new ArrayList<CompletedOperation>();
     graph
@@ -204,9 +143,17 @@ public record DependencyChangePlan(
     return List.copyOf(done);
   }
 
-  @Override
   public CompletedChange cancel() {
     return new CompletedChange(id, Status.CANCELLED, startedAt, Instant.now());
+  }
+
+  /**
+   * How far the change has got, as one plus the number of operations already run. For reporting
+   * only: two brokers running disjoint operations concurrently each report a value the other never
+   * held, so it cannot order two copies of the plan — {@link #merge} unions completions instead.
+   */
+  public int version() {
+    return 1 + completed.size();
   }
 
   /**
@@ -312,5 +259,15 @@ public record DependencyChangePlan(
             graph.operations().get(operationId),
             () -> "%s is not part of this plan".formatted(operationId))
         .operation();
+  }
+
+  public record CompletedOperation(
+      ClusterConfigurationChangeOperation operation, Instant completedAt) {}
+
+  public enum Status {
+    IN_PROGRESS,
+    COMPLETED,
+    FAILED,
+    CANCELLED;
   }
 }

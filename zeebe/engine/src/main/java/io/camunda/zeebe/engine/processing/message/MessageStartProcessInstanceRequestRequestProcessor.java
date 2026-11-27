@@ -230,7 +230,7 @@ public final class MessageStartProcessInstanceRequestRequestProcessor
             storageOrdinal);
 
     if (!activated) {
-      // Activation failed because the definition is draining/deleted on this partition.
+      // Activation failed because the definition is suspended, draining, or deleted here.
       commandSender.sendStartProcessInstanceNoSubscriptionRejected(request);
       metrics.crossPartitionRequest(RequestOutcome.REJECTED_NOT_ACTIVATABLE);
       logRequestOutcome(request, RequestOutcome.REJECTED_NOT_ACTIVATABLE);

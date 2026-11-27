@@ -25,6 +25,7 @@ import io.camunda.zeebe.dynamic.config.impl.changes.NoopPartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.impl.changes.PartitionGroupConfigurationChangeAppliersImpl;
 import io.camunda.zeebe.dynamic.config.impl.metrics.TopologyManagerMetrics;
 import io.camunda.zeebe.dynamic.config.impl.serializer.ProtoBufSerializer;
+import io.camunda.zeebe.dynamic.config.impl.transformers.TestChangePlan;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.BrokerState;
 import io.camunda.zeebe.dynamic.config.state.BrokerState.State;
@@ -41,6 +42,7 @@ import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhas
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlanStatus;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
+import io.camunda.zeebe.dynamic.config.util.DefaultTenantPhases;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.util.Either;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -171,7 +173,7 @@ final class NewModelConfigurationChangeCoordinatorTest {
     final ConfigurationChangeRequest request =
         current ->
             Either.right(
-                CurrentClusterConfiguration.toPhases(
+                DefaultTenantPhases.of(
                     List.of(
                         new PreScalingOperation(MEMBER_0, Set.of(MEMBER_0, MEMBER_1)),
                         new PartitionLeaveOperation(MEMBER_0, 1, 1))));
@@ -180,7 +182,7 @@ final class NewModelConfigurationChangeCoordinatorTest {
     final var result = coordinator.applyOperations(request).join();
 
     // then — the generated operations are returned, the plan drains phase by phase and completes
-    assertThat(result.legacyOperations())
+    assertThat(TestChangePlan.flatten(result.phases()))
         .containsExactly(
             new PreScalingOperation(MEMBER_0, Set.of(MEMBER_0, MEMBER_1)),
             new PartitionLeaveOperation(MEMBER_0, 1, 1));
@@ -208,18 +210,16 @@ final class NewModelConfigurationChangeCoordinatorTest {
     final ConfigurationChangeRequest request =
         current ->
             Either.right(
-                CurrentClusterConfiguration.toPhases(
-                    List.of(new PartitionLeaveOperation(MEMBER_0, 1, 1))));
+                DefaultTenantPhases.of(List.of(new PartitionLeaveOperation(MEMBER_0, 1, 1))));
 
     // when
     final var result = coordinator.applyOperations(request).join();
 
     // then — the coordinator's own result carries the full multi-group configuration, both
     // before and after the change, rather than silently projecting the non-default group away
-    assertThat(result.currentMultiConfiguration().partitionGroup("tenanta"))
+    assertThat(result.currentConfiguration().partitionGroup("tenanta"))
         .isEqualTo(tenantAGroupBefore);
-    assertThat(result.finalMultiConfiguration().partitionGroup("tenanta"))
-        .isEqualTo(tenantAGroupBefore);
+    assertThat(result.finalConfiguration().partitionGroup("tenanta")).isEqualTo(tenantAGroupBefore);
 
     // and — the real post-apply configuration reflects the same: default group changed as
     // expected, tenanta is untouched
@@ -237,8 +237,7 @@ final class NewModelConfigurationChangeCoordinatorTest {
     final ConfigurationChangeRequest request =
         current ->
             Either.right(
-                CurrentClusterConfiguration.toPhases(
-                    List.of(new PartitionLeaveOperation(MEMBER_0, 1, 1))));
+                DefaultTenantPhases.of(List.of(new PartitionLeaveOperation(MEMBER_0, 1, 1))));
 
     // when / then — the non-coordinator refuses to apply the change
     assertThat(coordinator.applyOperations(request)).failsWithin(Duration.ofSeconds(5));
@@ -252,14 +251,13 @@ final class NewModelConfigurationChangeCoordinatorTest {
     final ConfigurationChangeRequest request =
         current ->
             Either.right(
-                CurrentClusterConfiguration.toPhases(
-                    List.of(new PartitionLeaveOperation(MEMBER_0, 1, 1))));
+                DefaultTenantPhases.of(List.of(new PartitionLeaveOperation(MEMBER_0, 1, 1))));
 
     // when
     final var result = coordinator.simulateOperations(request).join();
 
     // then — the operations are returned but no plan is started
-    assertThat(result.legacyOperations())
+    assertThat(TestChangePlan.flatten(result.phases()))
         .containsExactly(new PartitionLeaveOperation(MEMBER_0, 1, 1));
     assertThat(configuration().phasedChangeState().pending()).isEmpty();
     final var defaultGroup =
@@ -277,8 +275,7 @@ final class NewModelConfigurationChangeCoordinatorTest {
     final ConfigurationChangeRequest request =
         current ->
             Either.right(
-                CurrentClusterConfiguration.toPhases(
-                    List.of(new PartitionLeaveOperation(MEMBER_0, 2, 1))));
+                DefaultTenantPhases.of(List.of(new PartitionLeaveOperation(MEMBER_0, 2, 1))));
 
     // when
     final var simulationResult = coordinator.simulateOperations(request);
@@ -296,13 +293,13 @@ final class NewModelConfigurationChangeCoordinatorTest {
     // given
     wire(MEMBER_0, twoMemberCluster());
     final ConfigurationChangeRequest request =
-        current -> Either.right(CurrentClusterConfiguration.toPhases(List.of()));
+        current -> Either.right(DefaultTenantPhases.of(List.of()));
 
     // when
     final var result = coordinator.applyOperations(request).join();
 
     // then
-    assertThat(result.legacyOperations()).isEmpty();
+    assertThat(TestChangePlan.flatten(result.phases())).isEmpty();
     assertThat(configuration().phasedChangeState().pending()).isEmpty();
   }
 
@@ -310,13 +307,12 @@ final class NewModelConfigurationChangeCoordinatorTest {
   void shouldRejectInvalidOperationUsingRealAppliers() {
     // given — a request whose second operation is invalid: member 0 leaves partition 1 twice,
     // but after the first leave it no longer hosts the partition. Validation must catch this via
-    // the real PartitionGroupConfigurationChangeAppliersImpl dispatch table, not a legacy
-    // simulator.
+    // the real PartitionGroupConfigurationChangeAppliersImpl dispatch table.
     wire(MEMBER_0, twoMemberCluster());
     final ConfigurationChangeRequest request =
         current ->
             Either.right(
-                CurrentClusterConfiguration.toPhases(
+                DefaultTenantPhases.of(
                     List.of(
                         new PartitionLeaveOperation(MEMBER_0, 1, 1),
                         new PartitionLeaveOperation(MEMBER_0, 1, 1))));
@@ -347,8 +343,7 @@ final class NewModelConfigurationChangeCoordinatorTest {
     final ConfigurationChangeRequest request =
         current ->
             Either.right(
-                CurrentClusterConfiguration.toPhases(
-                    List.of(new PartitionLeaveOperation(MEMBER_0, 1, 1))));
+                DefaultTenantPhases.of(List.of(new PartitionLeaveOperation(MEMBER_0, 1, 1))));
 
     // when
     final var applyFuture = coordinator.applyOperations(request);
@@ -526,8 +521,7 @@ final class NewModelConfigurationChangeCoordinatorTest {
     final ConfigurationChangeRequest request =
         current ->
             Either.right(
-                CurrentClusterConfiguration.toPhases(
-                    List.of(new PartitionLeaveOperation(MEMBER_0, 1, 1))));
+                DefaultTenantPhases.of(List.of(new PartitionLeaveOperation(MEMBER_0, 1, 1))));
 
     // when — a request targeting the disjoint "default" group is applied through the real
     // coordinator
@@ -559,8 +553,7 @@ final class NewModelConfigurationChangeCoordinatorTest {
         .join();
     final ConfigurationChangeRequest request =
         current ->
-            Either.right(
-                CurrentClusterConfiguration.toPhases(List.of(new MemberLeaveOperation(MEMBER_1))));
+            Either.right(DefaultTenantPhases.of(List.of(new MemberLeaveOperation(MEMBER_1))));
 
     // when — a global-scoped request is applied while the group-scoped one is still pending
     final var applyFuture = coordinator.applyOperations(request);
@@ -583,8 +576,7 @@ final class NewModelConfigurationChangeCoordinatorTest {
     final ConfigurationChangeRequest request =
         current ->
             Either.right(
-                CurrentClusterConfiguration.toPhases(
-                    List.of(new PartitionLeaveOperation(MEMBER_0, 1, 1))));
+                DefaultTenantPhases.of(List.of(new PartitionLeaveOperation(MEMBER_0, 1, 1))));
 
     // when — a group-scoped request is applied while the global one is still pending
     final var applyFuture = coordinator.applyOperations(request);
@@ -625,7 +617,7 @@ final class NewModelConfigurationChangeCoordinatorTest {
           public Either<Exception, List<Phase>> phases(
               final CurrentClusterConfiguration clusterConfiguration) {
             seenByPhases[0] = clusterConfiguration;
-            return Either.right(CurrentClusterConfiguration.toPhases(List.of()));
+            return Either.right(DefaultTenantPhases.of(List.of()));
           }
         };
 
@@ -648,7 +640,7 @@ final class NewModelConfigurationChangeCoordinatorTest {
           public Either<Exception, List<Phase>> phases(
               final CurrentClusterConfiguration clusterConfiguration) {
             seenByPhases[0] = clusterConfiguration;
-            return Either.right(CurrentClusterConfiguration.toPhases(List.of()));
+            return Either.right(DefaultTenantPhases.of(List.of()));
           }
 
           @Override

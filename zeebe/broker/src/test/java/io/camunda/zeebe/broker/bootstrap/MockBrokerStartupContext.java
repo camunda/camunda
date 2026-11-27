@@ -28,6 +28,7 @@ import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
+import io.camunda.zeebe.broker.partitioning.PhysicalTenantActorSchedulers;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.system.PhysicalTenantContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
@@ -35,10 +36,12 @@ import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
 import io.camunda.zeebe.broker.system.management.CheckpointSchedulingService;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
+import io.camunda.zeebe.broker.test.TestEngineFactory;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
+import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
@@ -75,6 +78,8 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   private DiskSpaceUsageMonitor diskSpaceUsageMonitor = mock(DiskSpaceUsageMonitor.class);
   private final ExporterRepository exporterRepository = mock(ExporterRepository.class);
   private final Map<String, JobStreamService> jobStreamServices = new LinkedHashMap<>();
+  private PhysicalTenantActorSchedulers physicalTenantActorSchedulers =
+      PhysicalTenantActorSchedulers.shared(mock(ActorScheduler.class));
   private final Map<String, PartitionManager> partitionManagers = new LinkedHashMap<>();
   private RocksDbResources sharedRocksDbResources;
   private final Map<String, BrokerAdminServiceImpl> brokerAdminServices = new LinkedHashMap<>();
@@ -129,6 +134,16 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   @Override
   public ActorSchedulingService getActorSchedulingService() {
     return actorSchedulingService;
+  }
+
+  @Override
+  public PhysicalTenantActorSchedulers getPhysicalTenantActorSchedulers() {
+    return physicalTenantActorSchedulers;
+  }
+
+  public void setPhysicalTenantActorSchedulers(
+      final PhysicalTenantActorSchedulers physicalTenantActorSchedulers) {
+    this.physicalTenantActorSchedulers = physicalTenantActorSchedulers;
   }
 
   public void setActorSchedulingService(final ActorSchedulingService actorSchedulingService) {
@@ -367,7 +382,8 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
                 featureFlags,
                 brokerConfiguration,
                 exporterRepository,
-                new SecretStoreRegistry(Map.of())));
+                new SecretStoreRegistry(Map.of()),
+                TestEngineFactory.create()));
   }
 
   @Override

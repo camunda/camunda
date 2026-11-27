@@ -7,10 +7,12 @@
  */
 package io.camunda.secretstore.azure;
 
+import static io.camunda.secretstore.SecretErrorCode.ACCESS_DENIED;
 import static io.camunda.secretstore.SecretErrorCode.INVALID_REF;
 import static io.camunda.secretstore.SecretErrorCode.NOT_FOUND;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.assertj.core.api.Assertions.entry;
 
 import com.azure.core.credential.AccessToken;
@@ -43,11 +45,14 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ForkJoinPool;
 import org.apache.logging.log4j.Level;
 import org.awaitility.Awaitility;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -213,7 +218,8 @@ class AzureKeyVaultSecretStoreTest {
           .containsEntry("password", new Resolved("the-password"));
       final var missing = failure(results.get("missing"));
       assertThat(missing.code()).isEqualTo(NOT_FOUND);
-      assertThat(missing.message()).isEqualTo("Secret not found: missing");
+      assertThat(missing.message())
+          .startsWith("Secret not found: missing (Key Vault answered HTTP 404 SecretNotFound: ");
       assertThat(String.valueOf(missing) + log.messages())
           .doesNotContain("the-user", "the-password");
     }
@@ -460,6 +466,264 @@ class AzureKeyVaultSecretStoreTest {
   }
 
   @Test
+  void shouldNotRetryAMissingOrDeniedSecret() {
+    // given
+    final var http = signedIn().putSecret("present", "the-value").answerNextSecretReadsWith(403);
+    try (final var store = store(AzureKeyVaultStoreConfig.of(VAULT_URL), http)) {
+
+      // when
+      final var denied = failure(store.resolve(Set.of("denied")).get("denied"));
+      final var missing = failure(store.resolve(Set.of("missing")).get("missing"));
+
+      // then — the SDK retries neither, and the request names its secret once each
+      assertThat(denied.code()).isEqualTo(ACCESS_DENIED);
+      assertThat(missing.code()).isEqualTo(NOT_FOUND);
+      assertThat(secretPathsRead(http)).containsExactly("/secrets/denied/", "/secrets/missing/");
+    }
+  }
+
+  @Test
+  void shouldReportAccessDeniedWithKeyVaultsAnswerAndWarnOnlyOnce() {
+    // given an identity whose role on the vault was revoked after startup
+    final var http = signedIn().putSecret("a", "value-a").answerNextSecretReadsWith(403, 403);
+    try (final var log = LogCapturer.capturing(OneByOneSecretResolver.class, Level.WARN);
+        final var store = store(AzureKeyVaultStoreConfig.of(VAULT_URL), http)) {
+
+      // when
+      final var first = failure(store.resolve(Set.of("a")).get("a"));
+      final var second = failure(store.resolve(Set.of("a")).get("a"));
+
+      // then
+      assertThat(first.code()).isEqualTo(ACCESS_DENIED);
+      assertThat(first.message())
+          .isEqualTo(
+              "Access denied for secret: a (Key Vault answered HTTP 403 Forbidden:"
+                  + " Key Vault answered 403)");
+      assertThat(second.code()).isEqualTo(ACCESS_DENIED);
+      assertThat(log.messages())
+          .singleElement()
+          .asString()
+          .contains(STORE_ID, PHYSICAL_TENANT, VAULT_URL, "'a'", "'Key Vault Secrets User'")
+          .doesNotContain("value-a");
+    }
+  }
+
+  @Test
+  void shouldResolveAfterATransientFailureIsRetried() {
+    // given
+    final var http = signedIn().putSecret("a", "value-a").answerNextSecretReadsWith(503);
+    try (final var store = store(withRetries(1, Duration.ofSeconds(30)), http)) {
+
+      // when
+      final var results = store.resolve(Set.of("a"));
+
+      // then
+      assertThat(results).containsExactly(entry("a", new Resolved("value-a")));
+      assertThat(secretPathsRead(http)).hasSize(2);
+    }
+  }
+
+  @Test
+  void shouldReportTheStoreUnavailableOnceRetriesAreExhausted() {
+    // given
+    final var http = signedIn().putSecret("a", "value-a").answerNextSecretReadsWith(503, 503, 503);
+    try (final var store = store(withRetries(1, Duration.ofSeconds(30)), http)) {
+
+      // when / then
+      assertThatThrownBy(() -> store.resolve(Set.of("a")))
+          .isInstanceOf(SecretStoreUnavailableException.class)
+          .hasMessage(
+              "Azure Key Vault is unavailable to read secret a: Key Vault answered HTTP 503 Error:"
+                  + " Key Vault answered 503");
+      assertThat(secretPathsRead(http)).hasSize(2);
+    }
+  }
+
+  @Test
+  @Timeout(10)
+  void shouldReportAThrottledAnswerRatherThanWaitForALongRetryAfter() {
+    // given
+    final var http =
+        signedIn().putSecret("a", "value-a").answerNextSecretReadWith(429, Duration.ofMinutes(5));
+    try (final var store = store(withRetries(3, Duration.ofSeconds(1)), http)) {
+
+      // when / then — the SDK cannot shorten the wait, so the retry is not made
+      assertThatThrownBy(() -> store.resolve(Set.of("a")))
+          .isInstanceOf(SecretStoreUnavailableException.class)
+          .hasMessage(
+              "Azure Key Vault is unavailable to read secret a: Key Vault answered HTTP 429 Error:"
+                  + " Key Vault answered 429");
+      assertThat(secretPathsRead(http)).hasSize(1);
+    }
+  }
+
+  @Test
+  void shouldRetryAThrottledAnswerWhoseRetryAfterFits() {
+    // given
+    final var http =
+        signedIn().putSecret("a", "value-a").answerNextSecretReadWith(429, Duration.ofSeconds(1));
+    try (final var store = store(withRetries(1, Duration.ofSeconds(30)), http)) {
+
+      // when
+      final var results = store.resolve(Set.of("a"));
+
+      // then
+      assertThat(results).containsExactly(entry("a", new Resolved("value-a")));
+      assertThat(secretPathsRead(http)).hasSize(2);
+    }
+  }
+
+  @Test
+  @Timeout(10)
+  void shouldReportRepeatedThrottlingRatherThanWaitPastTheCallTimeout() {
+    // given three Retry-After waits of 1s, which each fit in half of the 3s call timeout but
+    // together outlast it
+    final var http =
+        signedIn()
+            .putSecret("a", "value-a")
+            .answerNextSecretReadWith(429, Duration.ofSeconds(1))
+            .answerNextSecretReadWith(429, Duration.ofSeconds(1))
+            .answerNextSecretReadWith(429, Duration.ofSeconds(1));
+    try (final var store = store(withRetries(3, Duration.ofSeconds(3)), http)) {
+
+      // when / then — retried while the waits fit, then reported with the vault's answer
+      assertThatThrownBy(() -> store.resolve(Set.of("a")))
+          .isInstanceOf(SecretStoreUnavailableException.class)
+          .hasMessage(
+              "Azure Key Vault is unavailable to read secret a: Key Vault answered HTTP 429 Error:"
+                  + " Key Vault answered 429");
+      assertThat(secretPathsRead(http)).hasSize(2);
+    }
+  }
+
+  @Test
+  @Timeout(10)
+  void shouldStopRetryingOnceTheBackoffWouldOutlastItsBudget() {
+    // given a vault that keeps failing, and more retries than half the call timeout can hold
+    final var http = signedIn();
+    try (final var store = store(withRetries(Integer.MAX_VALUE, Duration.ofSeconds(1)), http)) {
+      http.answerVaultWith(503);
+
+      // when / then — reported with the vault's answer, well before the call timeout
+      assertThatThrownBy(() -> store.resolve(Set.of("a")))
+          .isInstanceOf(SecretStoreUnavailableException.class)
+          .hasMessageContaining("Key Vault answered HTTP 503");
+      assertThat(secretPathsRead(http)).hasSizeBetween(2, 20);
+    }
+  }
+
+  @Test
+  void shouldNotRetryASignInThatEntraIdRejected() {
+    // given a store signed in once at startup, whose next sign-in Entra ID rejects
+    final var http = StubAzureHttpClient.signingIn(0);
+    try (final var store =
+        AzureKeyVaultSecretStore.fromConfig(
+            PHYSICAL_TENANT,
+            STORE_ID,
+            withRetries(3, Duration.ofSeconds(30)),
+            new SimpleMeterRegistry(),
+            servicePrincipal(),
+            http)) {
+      http.rejectSignIn(true);
+      final int signInsBefore = http.tokenRequests().size();
+
+      // when
+      assertThatThrownBy(() -> store.resolve(Set.of("a")))
+          // then — asked once, rather than once per retry
+          .isInstanceOf(SecretStoreUnavailableException.class)
+          .hasMessageContaining("AADSTS7000215");
+      assertThat(http.tokenRequests()).hasSize(signInsBefore + 1);
+    }
+  }
+
+  @Test
+  void shouldReportTheVaultRejectingTheTokenWithItsAnswer() {
+    // given an identity that signs in, but whose token the vault does not accept
+    final var http = signedIn();
+    try (final var store = store(AzureKeyVaultStoreConfig.of(VAULT_URL), http)) {
+      http.answerVaultWith(401);
+
+      // when / then
+      assertThatThrownBy(() -> store.resolve(Set.of("a")))
+          .isInstanceOf(SecretStoreUnavailableException.class)
+          .hasMessage(
+              "Azure Key Vault is unavailable to read secret a: Key Vault answered HTTP 401 Error:"
+                  + " Key Vault answered 401")
+          .hasNoCause();
+    }
+  }
+
+  @Test
+  void shouldReportAVaultThatKeepsFailingWithItsAnswerRatherThanAsATimeout() {
+    // given — with the SDK's own backoff, three retries would wait 5.6s, past the call timeout
+    final var http =
+        signedIn().putSecret("a", "value-a").answerNextSecretReadsWith(503, 503, 503, 503);
+    try (final var store =
+        store(
+            withRetries(AzureKeyVaultStoreConfig.DEFAULT_MAX_RETRIES, Duration.ofSeconds(1)),
+            http)) {
+
+      // when / then
+      assertThatThrownBy(() -> store.resolve(Set.of("a")))
+          .isInstanceOf(SecretStoreUnavailableException.class)
+          .hasMessageContaining("Key Vault answered HTTP 503");
+      assertThat(secretPathsRead(http)).hasSize(1 + AzureKeyVaultStoreConfig.DEFAULT_MAX_RETRIES);
+    }
+  }
+
+  @Test
+  @Timeout(10)
+  void shouldGiveUpAtTheCallTimeoutWhenTheVaultHangs() {
+    // given
+    final var http = signedIn();
+    try (final var store = store(withRetries(0, Duration.ofSeconds(1)), http)) {
+      http.hangSecretReads();
+
+      // when / then — the first read past its timeout fails the call, rather than every read
+      // waiting out its own
+      assertThatThrownBy(() -> store.resolve(Set.of("a", "b", "c")))
+          .isInstanceOf(SecretStoreUnavailableException.class)
+          .hasMessageMatching(
+              "Azure Key Vault is unavailable: it did not read secret [abc] within the call"
+                  + " timeout of PT1S");
+    }
+  }
+
+  @Test
+  void shouldReportTheStoreUnavailableWhenItCannotSignIn() {
+    // given no route to Entra ID or IMDS: the sign-in fails without an HTTP answer
+    try (final var store =
+        store(withRetries(0, Duration.ofSeconds(5)), StubAzureHttpClient.offline())) {
+
+      // when / then — reported as the store's failure, not as one secret's
+      assertThatThrownBy(() -> store.resolve(Set.of("a")))
+          .isInstanceOf(SecretStoreUnavailableException.class)
+          .hasMessageStartingWith("Azure Key Vault is unavailable to read secret a: ")
+          .hasMessageNotContaining("call timeout")
+          .hasMessageNotContaining("NullPointerException");
+    }
+  }
+
+  @Test
+  void shouldReportAccessDeniedPerSecretAfterAFailedStartupCheck() {
+    // given an identity without a role, which the startup check only warned about
+    final var http = signedIn();
+    http.answerVaultWith(403);
+    try (final var store = store(AzureKeyVaultStoreConfig.of(VAULT_URL), http)) {
+
+      // when
+      final var result = failure(store.resolve(Set.of("a")).get("a"));
+
+      // then
+      assertThat(result.code()).isEqualTo(ACCESS_DENIED);
+      assertThat(result.message())
+          .startsWith("Access denied for secret: a (Key Vault answered HTTP 403");
+      // the SDK's exception holds the request, bearer token included
+      assertThat(result.cause()).isNull();
+    }
+  }
+
+  @Test
   void shouldKeepReadingTheVaultPastTheTokenLifetime() {
     // given — every token is already expired when it is issued, so each call outlives the last
     // token, as a cluster does that runs longer than one token lifetime
@@ -482,6 +746,67 @@ class AzureKeyVaultSecretStoreTest {
       assertThat(first.getValue()).isEqualTo("secret-value");
       assertThat(second.getValue()).isEqualTo("secret-value");
       assertThat(http.tokenRequests()).hasSize(signInsAtStartup + 2);
+    }
+  }
+
+  @Test
+  void shouldReportTheStoreUnavailableOnceClosed() {
+    // given
+    final var store = store(AzureKeyVaultStoreConfig.of(VAULT_URL), signedIn());
+
+    // when
+    store.close();
+
+    // then
+    assertThatThrownBy(() -> store.resolve(Set.of("a")))
+        .isInstanceOf(SecretStoreUnavailableException.class)
+        .hasMessage("Azure Key Vault store is closed: cannot resolve secret references");
+    assertThatThrownBy(store::list)
+        .isInstanceOf(SecretStoreUnavailableException.class)
+        .hasMessage("Azure Key Vault store is closed: cannot list its secrets");
+  }
+
+  @Test
+  void shouldReportTheStoreUnavailableAndKeepTheInterruptWhenTheCallerIsInterrupted() {
+    // given
+    try (final var store = store(AzureKeyVaultStoreConfig.of(VAULT_URL), signedIn())) {
+      Thread.currentThread().interrupt();
+
+      // when
+      final var thrown = catchThrowable(() -> store.resolve(Set.of("a")));
+
+      // then — Thread.interrupted() also clears the flag for the next test
+      assertThat(Thread.interrupted()).isTrue();
+      assertThat(thrown)
+          .isInstanceOf(SecretStoreUnavailableException.class)
+          .hasMessage("Interrupted while waiting for Azure Key Vault to read secret a");
+    }
+  }
+
+  @Test
+  @Timeout(10)
+  void shouldReportTheStoreUnavailableAndKeepTheInterruptWhenInterruptedWhileWaiting() {
+    // given a vault that never answers, so only the interrupt can end the wait
+    final var http = signedIn().hangSecretReads();
+    final var caller = Thread.currentThread();
+    try (final var store = store(withRetries(0, Duration.ofSeconds(30)), http)) {
+      final var interrupter =
+          CompletableFuture.runAsync(
+              () -> {
+                Awaitility.await().until(() -> !secretPathsRead(http).isEmpty());
+                caller.interrupt();
+              });
+
+      // when
+      final var thrown = catchThrowable(() -> store.resolve(Set.of("a")));
+
+      // then — Thread.interrupted() also clears the flag for the next test
+      interrupter.join();
+      assertThat(Thread.interrupted()).isTrue();
+      assertThat(thrown)
+          .isInstanceOf(SecretStoreUnavailableException.class)
+          .hasMessage("Interrupted while waiting for Azure Key Vault to read secret a")
+          .hasCauseInstanceOf(InterruptedException.class);
     }
   }
 
@@ -677,6 +1002,7 @@ class AzureKeyVaultSecretStoreTest {
   }
 
   @Test
+  @Timeout(10)
   void shouldStartWithinTheCallTimeoutWhenTheVaultNeverAnswers() throws IOException {
     // given a vault that accepts connections but never answers, reached over the real HTTP client;
     // the SDK's first, unauthenticated call to the vault hangs, so the store never signs in
@@ -699,9 +1025,9 @@ class AzureKeyVaultSecretStoreTest {
       try (final var store = store(config, new SimpleMeterRegistry(), null)) {
         final var took = Duration.ofNanos(System.nanoTime() - start);
 
-        // then
+        // then — with room for a slow CI machine, well short of the test's timeout
         assertThat(store).isNotNull();
-        assertThat(took).isLessThan(callTimeout.plusSeconds(3));
+        assertThat(took).isLessThan(callTimeout.plusSeconds(5));
         assertThat(log.messages())
             .singleElement()
             .asString()
@@ -813,7 +1139,12 @@ class AzureKeyVaultSecretStoreTest {
             .credential(r -> Mono.just(new AccessToken("token", OffsetDateTime.MAX)))
             .httpClient(http)
             .buildClient();
-    return new OneByOneSecretResolver(client, "", CLOCK);
+    return new OneByOneSecretResolver(
+        client,
+        "",
+        CLOCK,
+        "test store",
+        new CallTimeout(ForkJoinPool.commonPool(), AzureKeyVaultStoreConfig.DEFAULT_CALL_TIMEOUT));
   }
 
   private static List<String> secretPathsRead(final StubAzureHttpClient http) {
@@ -825,27 +1156,42 @@ class AzureKeyVaultSecretStoreTest {
   }
 
   private static AzureKeyVaultStoreConfig prefixed(final String pathPrefix) {
-    return new AzureKeyVaultStoreConfig(
-        VAULT_URL,
+    return config(
         pathPrefix,
         null,
-        null,
-        null,
         AzureKeyVaultStoreConfig.DEFAULT_MAX_RETRIES,
-        AzureKeyVaultStoreConfig.DEFAULT_CALL_TIMEOUT,
-        AzureKeyVaultStoreConfig.DEFAULT_ATTEMPT_TIMEOUT);
+        AzureKeyVaultStoreConfig.DEFAULT_CALL_TIMEOUT);
+  }
+
+  private static AzureKeyVaultStoreConfig withRetries(
+      final int maxRetries, final Duration callTimeout) {
+    return config(null, null, maxRetries, callTimeout);
   }
 
   private static AzureKeyVaultStoreConfig containerConfig() {
-    return new AzureKeyVaultStoreConfig(
-        VAULT_URL,
+    return config(
         "camunda-",
         "container",
-        null,
-        null,
         AzureKeyVaultStoreConfig.DEFAULT_MAX_RETRIES,
-        AzureKeyVaultStoreConfig.DEFAULT_CALL_TIMEOUT,
-        AzureKeyVaultStoreConfig.DEFAULT_ATTEMPT_TIMEOUT);
+        AzureKeyVaultStoreConfig.DEFAULT_CALL_TIMEOUT);
+  }
+
+  /** The attempt timeout is the default, shortened to the call timeout when that is shorter. */
+  private static AzureKeyVaultStoreConfig config(
+      final @Nullable String pathPrefix,
+      final @Nullable String containerSecretId,
+      final int maxRetries,
+      final Duration callTimeout) {
+    final var defaultAttempt = AzureKeyVaultStoreConfig.DEFAULT_ATTEMPT_TIMEOUT;
+    return new AzureKeyVaultStoreConfig(
+        VAULT_URL,
+        pathPrefix,
+        containerSecretId,
+        null,
+        null,
+        maxRetries,
+        callTimeout,
+        callTimeout.compareTo(defaultAttempt) < 0 ? callTimeout : defaultAttempt);
   }
 
   private static Configuration servicePrincipal() {

@@ -203,6 +203,34 @@ public class ProcessInstanceMigrationMigrateAuthorizationTest {
   }
 
   @Test
+  public void shouldRejectMigrationToSuspendedTargetWithoutPermissionAsForbidden() {
+    // callers without access must not learn that the version is suspended
+    // given
+    final var processInstanceKey = createProcessInstance();
+    engine
+        .processDefinitionSuspension()
+        .withProcessDefinitionKey(targetProcDefKey)
+        .suspend(DEFAULT_USER.getUsername());
+    final var user = createUser();
+    addPermissionsToUser(
+        user,
+        AuthorizationResourceType.PROCESS_DEFINITION,
+        PermissionType.UPDATE_PROCESS_INSTANCE,
+        AuthorizationResourceMatcher.ID,
+        PROCESS_ID);
+
+    // when
+    final var rejection = migrateTo(processInstanceKey, targetProcDefKey, user.getUsername());
+
+    // then
+    Assertions.assertThat(rejection).hasRejectionType(RejectionType.FORBIDDEN);
+    assertThat(rejection.getRejectionReason())
+        .startsWith(
+            "Insufficient permissions to perform operation 'UPDATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION'")
+        .doesNotContain("suspended");
+  }
+
+  @Test
   public void shouldBeAuthorizedToMigrateToNewVersionOfSameProcessWithSourcePermissionOnly() {
     // given
     final var processInstanceKey = createProcessInstance();

@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.common;
 
+import static java.util.Objects.requireNonNull;
+
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
 import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceLifecycle;
@@ -75,7 +77,7 @@ public class EventTriggerBehavior {
       final DirectBuffer variables) {
 
     final var flowScopeElementInstance =
-        elementInstanceState.getInstance(flowScopeElementInstanceKey);
+        requireNonNull(elementInstanceState.getInstance(flowScopeElementInstanceKey));
 
     if (flowScopeElementInstance.isInterrupted()
         && !flowScopeElementInstance
@@ -134,7 +136,7 @@ public class EventTriggerBehavior {
                     childInstanceContext.getRecordValue()));
 
     final var elementInstance =
-        elementInstanceState.getInstance(flowScopeContext.getElementInstanceKey());
+        requireNonNull(elementInstanceState.getInstance(flowScopeContext.getElementInstanceKey()));
     final var activeChildInstances = elementInstance.getNumberOfActiveElementInstances();
 
     return activeChildInstances == 0;

@@ -32,12 +32,15 @@ import org.jspecify.annotations.Nullable;
  *     provides
  * @param authorityHost the Microsoft Entra authority host, for sovereign clouds (for example {@code
  *     https://login.microsoftonline.us}); {@code null} uses the public cloud
- * @param maxRetries how many times a throttled or transient request to the vault is retried
- * @param callTimeout upper bound on one {@code resolve} or {@code list} call to the vault, retries
- *     included. The background resolution calls this store from an IO-bound actor thread shared
- *     with every partition's exporter, so an unbounded call there stalls exporting broker-wide
- *     (camunda/camunda#62869)
- * @param attemptTimeout upper bound on a single HTTP attempt within a call
+ * @param maxRetries how many times a throttled or transient request to the vault is retried; a
+ *     rejected sign-in or an answer such as 403 or 404 is never retried
+ * @param callTimeout upper bound on one read of the vault, retries included; a {@code resolve} call
+ *     fails as soon as one of its reads exceeds it. The background resolution calls this store from
+ *     an IO-bound actor thread shared with every partition's exporter, so an unbounded call there
+ *     stalls exporting broker-wide (camunda/camunda#62869)
+ * @param attemptTimeout upper bound on a single HTTP attempt to the vault within a read, and on
+ *     connecting to Microsoft Entra ID or the managed identity endpoint to sign in, whose answer
+ *     may take up to {@code callTimeout}; applied by the default HTTP client only
  * @throws IllegalArgumentException if a setting can never work, naming the setting and the rule; no
  *     call is made to Azure
  */
@@ -55,14 +58,14 @@ public record AzureKeyVaultStoreConfig(
   public static final int DEFAULT_MAX_RETRIES = 3;
 
   /**
-   * Default upper bound on one call to the vault, retries included. Matches the AWS and GCP stores'
+   * Default upper bound on one read of the vault, retries included. Matches the AWS and GCP stores'
    * default, so that a store that has stopped answering is reported unavailable within a few
    * resolution cycles rather than after minutes: that is what lets the scheduler's retry ladder and
    * its cooldown skip engage.
    */
   public static final Duration DEFAULT_CALL_TIMEOUT = Duration.ofSeconds(5);
 
-  /** Default upper bound on a single HTTP attempt within a call, matching the AWS store's. */
+  /** Default upper bound on a single HTTP attempt within a read, matching the AWS store's. */
   public static final Duration DEFAULT_ATTEMPT_TIMEOUT = Duration.ofSeconds(2);
 
   /** Longest secret name Key Vault accepts. */

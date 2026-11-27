@@ -216,7 +216,7 @@ public final class EventHandle {
    *
    * @return the key of the new process instance and its storage ordinal, or {@code -1} with {@link
    *     StorageOrdinalRelated#NOT_ORDINAL_CONTROLLED} when no instance can be created for the start
-   *     event (definition draining or already removed)
+   *     event (definition suspended, draining, or already removed)
    */
   public Tuple<Long, Integer> triggerMessageStartEvent(
       final long subscriptionKey,
@@ -228,7 +228,7 @@ public final class EventHandle {
       final DirectBuffer businessId) {
 
     // Validate before generating a key so we neither waste a key nor emit a CORRELATED event when
-    // no instance will be created (definition draining or already removed).
+    // no instance will be created (definition suspended, draining, or already removed).
     if (!canCreateInstanceForStartEvent(
         subscription.getProcessDefinitionKey(), subscription.getTenantId())) {
       return Tuple.of(-1L, StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
@@ -264,33 +264,6 @@ public final class EventHandle {
         storageOrdinal);
 
     return Tuple.of(newProcessInstanceKey, storageOrdinal);
-  }
-
-  public boolean activateProcessInstanceForStartEvent(
-      final long processDefinitionKey,
-      final long processInstanceKey,
-      final DirectBuffer targetElementId,
-      final DirectBuffer variablesBuffer,
-      final String tenantId) {
-    return activateProcessInstanceForStartEvent(
-        processDefinitionKey, processInstanceKey, targetElementId, variablesBuffer, tenantId, null);
-  }
-
-  public boolean activateProcessInstanceForStartEvent(
-      final long processDefinitionKey,
-      final long processInstanceKey,
-      final DirectBuffer targetElementId,
-      final DirectBuffer variablesBuffer,
-      final String tenantId,
-      final DirectBuffer businessId) {
-    return activateProcessInstanceForStartEvent(
-        processDefinitionKey,
-        processInstanceKey,
-        targetElementId,
-        variablesBuffer,
-        tenantId,
-        businessId,
-        storageOrdinalProvider.getStorageOrdinal());
   }
 
   /**
@@ -378,6 +351,10 @@ public final class EventHandle {
     return true;
   }
 
+  /**
+   * Whether a start event may create an instance of the given definition: it must not be suspended,
+   * must not be draining and must still exist.
+   */
   private boolean canCreateInstanceForStartEvent(
       final long processDefinitionKey, final String tenantId) {
     final DeployedProcess process =
@@ -393,6 +370,17 @@ public final class EventHandle {
       if (LOG.isDebugEnabled()) {
         LOG.debug(
             "Skipping start-event instance creation: process '{}' version {} (key {}, tenant '{}') is draining and no longer accepts new instances.",
+            BufferUtil.bufferAsString(process.getBpmnProcessId()),
+            process.getVersion(),
+            process.getKey(),
+            tenantId);
+      }
+      return false;
+    }
+    if (processState.isSuspended(processDefinitionKey)) {
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(
+            "Skipping start-event instance creation: process '{}' version {} (key {}, tenant '{}') is suspended and does not accept new instances.",
             BufferUtil.bufferAsString(process.getBpmnProcessId()),
             process.getVersion(),
             process.getKey(),

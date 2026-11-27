@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.transport.stream.api.ClientStreamer;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.observation.ObservationRegistry;
 import java.time.Duration;
 import java.util.Map;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -60,6 +61,7 @@ public final class GatewayTestFactory {
         passwordEncoder,
         meterRegistry,
         VariableNameLengthValidator.DEFAULT_MAX_NAME_FIELD_LENGTH,
-        PhysicalTenantIds.DEFAULT);
+        PhysicalTenantIds.DEFAULT,
+        ObservationRegistry.NOOP);
   }
 }

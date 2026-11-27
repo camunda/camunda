@@ -150,6 +150,7 @@ function useProcessFilterOptions({process, version, elementId, tenantId}: Params
 			kind: 'error',
 			title: t('operate.processes.diagramPanel.processNotFoundTitle'),
 			isDismissable: true,
+			autoRemove: false,
 		});
 	}, [areDefinitionsReady, areDefinitionsFetching, areDefinitionsPlaceholder, hasMatch, navigate, t]);
 

@@ -9,7 +9,9 @@
 import {useEffect, useMemo, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useQueries, useQuery, type UseQueryResult} from '@tanstack/react-query';
-import {Alert, Button} from '@camunda/design-system';
+import {useNavigate} from '@tanstack/react-router';
+import {Alert, Button, EmptyState} from '@camunda/design-system';
+import {FunnelX, ScrollText} from '@camunda/design-system/icons';
 import {
 	auditLogSortFieldEnum,
 	type AuditLog,
@@ -21,8 +23,6 @@ import {createSortSearchParamSchema} from '#/shared/sortSearchParam';
 import {logger} from '#/operate/shared/utils/logger';
 import {PanelHeader} from '#/operate/shared/PanelHeader/shadcn.components/PanelHeader';
 import {PaginatedSortableTable} from '#/operate/shared/PaginatedSortableTable/shadcn.components/PaginatedSortableTable';
-import {EmptyMessage} from '#/operate/shared/EmptyMessage/shadcn.components/EmptyMessage';
-import {ErrorMessage} from '#/operate/shared/ErrorMessage/shadcn.components/ErrorMessage';
 import {
 	OperationsLogDetailsModal,
 	type DetailsModalState,
@@ -43,11 +43,6 @@ import type {OperationsLogSearch} from '../operationsLog.schema';
 const DEFAULT_SORT = {field: 'timestamp', order: 'DESC'} as const;
 const sortSearchParamSchema = createSortSearchParamSchema(auditLogSortFieldEnum);
 
-const TABLE_CONTAINER_CLASSES = [
-	'[&_[data-slot=table-container]]:rounded-none! [&_[data-slot=table-container]]:border-0! [&_[data-slot=table-container]]:shadow-none!',
-	'[&_[data-slot=data-table]>div.rounded-xl]:rounded-none! [&_[data-slot=data-table]>div.rounded-xl]:border-0!',
-].join(' ');
-
 const combineDefinitionResults = (results: UseQueryResult<GetProcessDefinitionResponseBody>[]) => ({
 	names: Object.fromEntries(
 		results.flatMap(({data: definition}) =>
@@ -65,6 +60,7 @@ type Props = {
 
 const InstancesTable: React.FC<Props> = ({search, selectedTenantId, selectedDefinitionKey}) => {
 	const {t} = useTranslation();
+	const navigate = useNavigate();
 	const [detailsModal, setDetailsModal] = useState<DetailsModalState>({isOpen: false});
 
 	const {
@@ -154,21 +150,33 @@ const InstancesTable: React.FC<Props> = ({search, selectedTenantId, selectedDefi
 
 	const emptyState =
 		status === 'error' ? (
-			<div className="flex flex-col items-start gap-4" role="alert">
-				<ErrorMessage message={t('operate.operationsLog.notifications.fetchFailed')} additionalInfo="" />
-				<Button variant="ghost" size="sm" disabled={isFetching} onClick={() => void refetch()}>
-					{t('errorGenericErrorPageButtonLabel')}
-				</Button>
+			<div className="w-full p-2">
+				<Alert variant="destructive" title={t('operate.operationsLog.notifications.fetchFailed')}>
+					<Button variant="ghost" size="sm" disabled={isFetching} onClick={() => void refetch()}>
+						{t('errorGenericErrorPageButtonLabel')}
+					</Button>
+				</Alert>
 			</div>
 		) : hasAnyFilter ? (
-			<EmptyMessage
-				message={t('operate.operationsLog.emptyState.noResultsTitle')}
-				additionalInfo={t('operate.operationsLog.emptyState.noResultsDescription')}
+			<EmptyState
+				size="sm"
+				headingLevel={3}
+				icon={<FunnelX aria-hidden />}
+				heading={t('operate.operationsLog.ds.emptyState.noResultsTitle')}
+				description={t('operate.operationsLog.ds.emptyState.noResultsDescription')}
+				action={
+					<Button size="sm" onClick={() => void navigate({to: '.', search: {}})}>
+						{t('operate.shared.ds.clearFilters')}
+					</Button>
+				}
 			/>
 		) : (
-			<EmptyMessage
-				message={t('operate.operationsLog.emptyState.noItemsTitle')}
-				additionalInfo={t('operate.operationsLog.emptyState.noItemsDescription')}
+			<EmptyState
+				size="sm"
+				headingLevel={3}
+				icon={<ScrollText aria-hidden />}
+				heading={t('operate.operationsLog.emptyState.noItemsTitle')}
+				description={t('operate.operationsLog.emptyState.noItemsDescription')}
 			/>
 		);
 
@@ -278,7 +286,7 @@ const InstancesTable: React.FC<Props> = ({search, selectedTenantId, selectedDefi
 					fetchPreviousPage,
 					fetchNextPage,
 				}}
-				className={TABLE_CONTAINER_CLASSES}
+				borderless
 				data-testid="operations-log-table"
 			/>
 			{detailsModal.auditLog && (

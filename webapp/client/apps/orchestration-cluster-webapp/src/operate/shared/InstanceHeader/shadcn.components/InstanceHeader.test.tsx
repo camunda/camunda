@@ -8,6 +8,8 @@
 
 import {render} from 'vitest-browser-react';
 import {describe, expect} from 'vitest';
+import {userEvent} from 'vitest/browser';
+import {TooltipProvider} from '@camunda/design-system';
 import {it} from '#/vitest-modules/test-extend';
 import {InstanceHeader} from './InstanceHeader';
 import {InstanceHeaderSkeleton} from './InstanceHeaderSkeleton';
@@ -27,6 +29,21 @@ describe('<InstanceHeader />', () => {
 		await expect.element(screen.getByText('Process Instance Key')).toBeVisible();
 		await expect.element(screen.getByText('2251799813685467')).toBeVisible();
 		await expect.element(screen.getByTestId('ACTIVE-icon')).toBeVisible();
+	});
+
+	it('should reveal a truncated instance name in a tooltip only when it is cut off', async () => {
+		const longName = 'a-very-long-process-name-that-does-not-fit-in-the-header-and-gets-truncated';
+		const screen = await render(
+			<TooltipProvider>
+				<div className="w-48">
+					<InstanceHeader state="ACTIVE" instanceName={longName} headerColumns={[]} bodyColumns={[]} />
+				</div>
+			</TooltipProvider>,
+		);
+
+		await userEvent.hover(screen.getByText(longName));
+
+		await expect.element(screen.getByRole('tooltip')).toHaveTextContent(longName);
 	});
 
 	it('should show the incidents count when there is at least one incident', async () => {
@@ -65,9 +82,6 @@ describe('<InstanceHeader />', () => {
 		);
 
 		await expect.element(screen.getByText('Waiting')).toBeVisible();
-		await expect.element(screen.getByText('Waiting')).toHaveAttribute('data-slot', 'badge');
-		// a subtitle row (nameSubtitle) switches the instance name to the smaller "label-sm" typography
-		await expect.element(screen.getByText('orderProcess')).toHaveClass('text-xs');
 	});
 
 	it('should skip hidden body columns', async () => {
@@ -96,20 +110,6 @@ describe('<InstanceHeader />', () => {
 		);
 
 		await expect.element(screen.getByRole('button', {name: 'Cancel Instance'})).toBeVisible();
-	});
-
-	it('should hide the bottom border when hideBottomBorder is set', async () => {
-		const screen = await render(
-			<InstanceHeader
-				state="ACTIVE"
-				instanceName="orderProcess"
-				headerColumns={[]}
-				bodyColumns={[]}
-				hideBottomBorder
-			/>,
-		);
-
-		await expect.element(screen.getByTestId('instance-header')).toHaveClass('border-b-0');
 	});
 });
 

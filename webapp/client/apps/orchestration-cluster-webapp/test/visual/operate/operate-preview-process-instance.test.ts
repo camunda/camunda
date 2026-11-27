@@ -12,6 +12,7 @@ import {
 	mockGetElementInstanceEndpoint,
 	mockGetProcessDefinitionXmlEndpoint,
 	mockGetProcessInstanceEndpoint,
+	mockQueryAgentInstancesEndpoint,
 	mockQueryAuditLogsEndpoint,
 	mockQueryElementInstancesEndpoint,
 	mockQueryElementInstanceIncidentsEndpoint,
@@ -22,6 +23,7 @@ import {
 import {BPMN_XML} from '#/shared-test-modules/api-mocks/process-definition-xmls';
 import {createAuditLog, createQueryAuditLogsResponse} from '#/shared-test-modules/api-mocks/audit-logs';
 import {createJob, createListenerJob, createQueryJobsResponse} from '#/shared-test-modules/api-mocks/jobs';
+import {createAgentInstance} from '#/shared-test-modules/api-mocks/agent-instances';
 import {createIncident} from '#/shared-test-modules/api-mocks/incidents';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
 import {createQueryVariablesByUserTaskResponse, createVariable} from '#/shared-test-modules/api-mocks/variables';
@@ -80,6 +82,66 @@ test('should match the process instance diagram panel snapshot with a selected e
 	await expect(operatePreviewProcessInstancePage.stateOverlay('Review invoice, Active: 1')).toBeVisible();
 	await expect(operatePreviewProcessInstancePage.diagramPanel).toHaveScreenshot();
 });
+
+test(
+	'should match the process instance diagram panel snapshot with a keyboard-focused element',
+	{tag: '@desktop'},
+	async ({operatePreviewProcessInstancePage}) => {
+		await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
+
+		await expect(operatePreviewProcessInstancePage.stateOverlay('Review invoice, Active: 1')).toBeVisible();
+		await operatePreviewProcessInstancePage.diagramElement('task-1').focus();
+
+		await expect(operatePreviewProcessInstancePage.diagramElement('task-1')).toBeFocused();
+		await expect(
+			operatePreviewProcessInstancePage.diagramPanel.getByText(
+				'Use the arrow keys to move between elements and Enter to select.',
+			),
+		).toBeVisible();
+		await expect(operatePreviewProcessInstancePage.diagramPanel).toHaveScreenshot();
+	},
+);
+
+test(
+	'should match the process instance diagram panel snapshot with a keyboard-focused selected element',
+	{tag: '@desktop'},
+	async ({operatePreviewProcessInstancePage, page}) => {
+		await page.goto(`/operate-preview/processes/${PROCESS_INSTANCE_ID}/variables?elementId=task-1`);
+
+		await expect(operatePreviewProcessInstancePage.stateOverlay('Review invoice, Active: 1')).toBeVisible();
+		await operatePreviewProcessInstancePage.diagramElement('task-1').focus();
+
+		await expect(operatePreviewProcessInstancePage.diagramElement('task-1')).toBeFocused();
+		await expect(
+			operatePreviewProcessInstancePage.diagramPanel.getByText(
+				'Use the arrow keys to move between elements and Enter to select.',
+			),
+		).toBeVisible();
+		await expect(operatePreviewProcessInstancePage.diagramPanel).toHaveScreenshot();
+	},
+);
+
+test(
+	'should match the process instance diagram panel snapshot with an active agent',
+	{tag: '@desktop'},
+	async ({network, operatePreviewProcessInstancePage, page}) => {
+		network.use(
+			mockQueryAgentInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createPaginatedResponse({
+						items: [createAgentInstance({elementId: 'task-1', processInstanceKey: PROCESS_INSTANCE_ID})],
+					}),
+				),
+			}),
+		);
+		await page.emulateMedia({reducedMotion: 'reduce'});
+		await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
+
+		await expect(operatePreviewProcessInstancePage.stateOverlay('Review invoice, Active: 1')).toBeVisible();
+		await expect(operatePreviewProcessInstancePage.diagramPanel.getByText('Thinking...')).toBeVisible();
+		await expect(operatePreviewProcessInstancePage.diagramPanel).toHaveScreenshot();
+	},
+);
 
 test('should match the process instance variables tab snapshot', async ({
 	network,
@@ -322,4 +384,23 @@ test('should match the process instance output mappings tab snapshot', async ({
 
 	await expect(page.getByRole('cell', {name: 'processResult'})).toBeVisible();
 	await expect(operatePreviewProcessInstancePage.tabPanel).toHaveScreenshot();
+});
+
+test.describe('helper modal', () => {
+	test.use({isProcessInstanceHelperHidden: false});
+
+	test(
+		'should match the what moved helper modal snapshot',
+		{tag: '@desktop'},
+		async ({page, operatePreviewProcessInstancePage}) => {
+			await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
+
+			const helper = page.getByRole('dialog', {name: "Here's what moved in Operate"});
+			await expect(helper).toBeVisible();
+			await expect(
+				helper.getByRole('img', {name: 'Process instance details page with incidents tab and diagram'}),
+			).toHaveJSProperty('complete', true);
+			await expect(helper).toHaveScreenshot();
+		},
+	);
 });

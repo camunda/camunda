@@ -343,19 +343,9 @@ assert_owner \
   "@camunda/orchestration-cluster-webapps"
 
 assert_owner \
-  ".agents/skills/frontend-operate-migrator/ → orchestration-cluster-webapps" \
-  ".agents/skills/frontend-operate-migrator/SKILL.md" \
-  "@camunda/orchestration-cluster-webapps"
-
-assert_owner \
   ".agents/skills/frontend-unit-test/ → orchestration-cluster-webapps" \
   ".agents/skills/frontend-unit-test/SKILL.md" \
   "@camunda/orchestration-cluster-webapps"
-
-assert_owner \
-  ".agents/skills/operate-engineering-loop/ → operate-admin-pod" \
-  ".agents/skills/operate-engineering-loop/SKILL.md" \
-  "@camunda/operate-admin-pod"
 
 assert_owner \
   ".agents/skills/operate-frontend/ → operate-admin-pod" \

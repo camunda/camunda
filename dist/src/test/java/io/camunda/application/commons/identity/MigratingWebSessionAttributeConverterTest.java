@@ -22,6 +22,7 @@ import com.nimbusds.openid.connect.sdk.op.OIDCProviderMetadata;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.api.model.authz.ConditionalMembership;
 import jakarta.servlet.http.Cookie;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -665,6 +666,36 @@ class MigratingWebSessionAttributeConverterTest {
     final var metadata = OIDCProviderMetadata.parse(DISCOVERY_DOCUMENT);
     return (Map<String, Object>)
         OIDCProviderMetadata.class.getMethod("toJSONObject").invoke(metadata);
+  }
+
+  @Test
+  void shouldReadASessionStoredBeforeConditionalMemberships() throws IOException {
+    // given a session attribute serialized without the conditional memberships field
+    final var oldAuth =
+        new io.camunda.security.auth.CamundaAuthentication(
+            "alice", null, false, List.of(), List.of("role1"), List.of(), List.of(), Map.of());
+
+    // when
+    final var restored = (CamundaAuthentication) converter.deserialize(serialize(oldAuth));
+
+    // then
+    assertThat(restored.authenticatedRoleIds()).containsExactly("role1");
+    assertThat(restored.conditionalRoleMemberships()).isEmpty();
+  }
+
+  @Test
+  void shouldNotReferenceConditionalMembershipsInASessionWithoutThem() {
+    // given an authentication as OC builds it: its MembershipPort has no conditional memberships
+    final var auth =
+        CamundaAuthentication.of(
+            b -> b.user("bob").role("viewer").conditionalRoleMembershipsSupplier(List::of));
+
+    // when
+    final byte[] payload = converter.serialize(auth);
+
+    // then the payload names no class an older node lacks, so it can still read the session
+    assertThat(new String(payload, StandardCharsets.ISO_8859_1))
+        .doesNotContain(ConditionalMembership.class.getSimpleName());
   }
 
   private static byte[] serialize(final Object obj) throws IOException {

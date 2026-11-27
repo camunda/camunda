@@ -8,6 +8,7 @@
 
 import {useState} from 'react';
 import {useTranslation} from 'react-i18next';
+import {Tooltip, TooltipContent, TooltipTrigger} from '@camunda/design-system';
 import {CircleX, Pause, Play, RotateCcw, Trash2} from '@camunda/design-system/icons';
 import type {ProcessInstancesSelection, ProcessBulkAction} from '../useProcessInstancesSelection';
 import type {ProcessBulkActionDialogProps} from './ProcessBulkActionDialog';
@@ -85,12 +86,22 @@ function useProcessBulkActions({selection, isSubmitting, onSubmit, migration, mo
 			];
 	const selectedLabel = t('operate.processes.ds.toolbar.selected', {count: selectedCount, total});
 	const unavailableText = unavailableReasons.join(' ');
-	// Reasons stay out of the visible bar (Carbon shows them as a button title) but remain available on hover and to screen readers.
-	const selectionCountLabel = (
-		<span title={unavailableText || undefined}>
+	// Reasons stay out of the visible bar but remain available on hover and to screen readers.
+	const selectionText = (
+		<>
 			{selectedLabel}
 			{unavailableText ? <span className="sr-only"> {unavailableText}</span> : null}
-		</span>
+		</>
+	);
+	const selectionCountLabel = unavailableText ? (
+		<Tooltip>
+			<TooltipTrigger asChild>
+				<span tabIndex={0}>{selectionText}</span>
+			</TooltipTrigger>
+			<TooltipContent>{unavailableText}</TooltipContent>
+		</Tooltip>
+	) : (
+		<span>{selectionText}</span>
 	);
 
 	const dialogProps: ProcessBulkActionDialogProps = {

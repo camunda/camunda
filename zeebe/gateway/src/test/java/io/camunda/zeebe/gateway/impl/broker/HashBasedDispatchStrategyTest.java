@@ -86,7 +86,7 @@ final class HashBasedDispatchStrategyTest {
   @Test
   void shouldDispatchViaTopologyForNonDefaultTenantWithNoOwnPartitionGroupConfig() {
     // given -- a non-default tenant that has no entry in the cluster configuration's partition
-    // groups (e.g. the tenant only exists in the legacy single-group model)
+    // groups
     final var businessId = "order-12345";
     final var dispatchStrategy = new HashBasedDispatchStrategy(businessId, "business id");
     final var partitionCount = 3;

@@ -7,10 +7,12 @@
  */
 package io.camunda.zeebe.engine.processing.policy;
 
+import static io.camunda.zeebe.engine.processing.policy.PolicyUpdateCommitVersionTest.versionCommitted;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
+import io.camunda.zeebe.protocol.impl.encoding.InternalOperationReference;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
@@ -138,6 +140,18 @@ public final class PolicyUpdateApplyTest {
                 .getValue()
                 .getPermissionTypes())
         .containsExactly(PermissionType.READ_PROCESS_DEFINITION);
+    final var identityCommands = identityCommandsOf(chunk.getUpdateId());
+    assertThat(identityCommands)
+        .extracting(Record::getValueType)
+        .contains(
+            ValueType.TENANT,
+            ValueType.ROLE,
+            ValueType.GROUP,
+            ValueType.MAPPING_RULE,
+            ValueType.AUTHORIZATION);
+    assertThat(identityCommands)
+        .extracting(InternalOperationReference::of)
+        .containsOnly(referenceTo(chunk.getUpdateId()));
   }
 
   @Test
@@ -192,6 +206,46 @@ public final class PolicyUpdateApplyTest {
         .containsExactly(PermissionType.UPDATE_PROCESS_INSTANCE);
     assertThat(RecordingExporter.groupRecords(GroupIntent.DELETED).withGroupId(groupId).exists())
         .isTrue();
+    final var identityCommands = identityCommandsOf(second.getUpdateId());
+    assertThat(identityCommands)
+        .extracting(Record::getIntent)
+        .contains(RoleIntent.UPDATE, AuthorizationIntent.UPDATE, GroupIntent.DELETE);
+    assertThat(identityCommands)
+        .extracting(InternalOperationReference::of)
+        .containsOnly(referenceTo(second.getUpdateId()));
+  }
+
+  @Test
+  public void shouldRejectApplyingAChunkOfAnUpdateThatIsNotOpen() {
+    // given
+    final var update = chunk();
+
+    // when
+    writeApplyChunk(update);
+
+    // then
+    assertApplyRejectedAsNotOpen(update.getUpdateId());
+  }
+
+  @Test
+  public void shouldRejectApplyingAChunkOfAnUpdateWhileAnotherIsOpen() {
+    // given
+    final var openUpdate = chunk().setChunkCount(2);
+    apply(openUpdate);
+    RecordingExporter.policyUpdateRecords(PolicyUpdateIntent.CHUNK_APPENDED)
+        .filter(record -> record.getValue().getUpdateId().equals(openUpdate.getUpdateId()))
+        .await();
+    final var otherUpdate = chunk();
+
+    // when
+    writeApplyChunk(otherUpdate);
+
+    // then
+    assertApplyRejectedAsNotOpen(otherUpdate.getUpdateId());
+
+    // and the open update completes, so it doesn't block the other tests
+    apply(openUpdate.setChunkIndex(1));
+    versionCommitted(openUpdate.getUpdateId());
   }
 
   @Test
@@ -233,6 +287,64 @@ public final class PolicyUpdateApplyTest {
     return RecordingExporter.policyUpdateRecords(PolicyUpdateIntent.CHUNK_APPLIED)
         .filter(record -> record.getValue().getUpdateId().equals(updateId))
         .getFirst();
+  }
+
+  /** Writes the command to apply the chunk, as the broker does once every chunk is buffered. */
+  private static void writeApplyChunk(final PolicyUpdateRecord chunk) {
+    ENGINE.writeRecords(
+        RecordToWrite.commandWithoutClaims().policyUpdate(PolicyUpdateIntent.APPLY_CHUNK, chunk));
+  }
+
+  private static void assertApplyRejectedAsNotOpen(final String updateId) {
+    final var command =
+        RecordingExporter.policyUpdateRecords(PolicyUpdateIntent.APPLY_CHUNK)
+            .onlyCommands()
+            .filter(record -> record.getValue().getUpdateId().equals(updateId))
+            .getFirst();
+    final var rejection =
+        RecordingExporter.policyUpdateRecords(PolicyUpdateIntent.APPLY_CHUNK)
+            .onlyCommandRejections()
+            .filter(record -> record.getValue().getUpdateId().equals(updateId))
+            .getFirst();
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
+    assertThat(rejection.getRejectionReason())
+        .contains(updateId, "to be open", "failed or no longer exists");
+    assertThat(
+            RecordingExporter.records()
+                .limit(record -> record.getPosition() == rejection.getPosition())
+                .filter(record -> record.getSourceRecordPosition() == command.getPosition()))
+        .describedAs("the rejection is the only record written for the command")
+        .extracting(Record::getPosition)
+        .containsExactly(rejection.getPosition());
+  }
+
+  /**
+   * The commands that applying the single chunk of the update wrote for its identity entries. They
+   * are written between its APPLY_CHUNK command and its CHUNK_APPLIED event.
+   */
+  private static List<Record<?>> identityCommandsOf(final String updateId) {
+    final var applyChunk =
+        RecordingExporter.policyUpdateRecords(PolicyUpdateIntent.APPLY_CHUNK)
+            .onlyCommands()
+            .filter(record -> record.getValue().getUpdateId().equals(updateId))
+            .getFirst();
+    final var chunkApplied = appliedRecord(updateId);
+    return RecordingExporter.records()
+        .limit(record -> record.getPosition() == chunkApplied.getPosition())
+        .onlyCommands()
+        .filter(record -> record.getPosition() > applyChunk.getPosition())
+        .filter(record -> record.getValueType() != ValueType.POLICY_UPDATE)
+        .<Record<?>>map(record -> record)
+        .toList();
+  }
+
+  /** The reference to the update, which carries the key of its first appended chunk. */
+  private static InternalOperationReference referenceTo(final String updateId) {
+    final var firstChunkAppended =
+        RecordingExporter.policyUpdateRecords(PolicyUpdateIntent.CHUNK_APPENDED)
+            .filter(record -> record.getValue().getUpdateId().equals(updateId))
+            .getFirst();
+    return InternalOperationReference.policyUpdate(firstChunkAppended.getKey());
   }
 
   private static void assertRejectedAsClientRequest(final PolicyUpdateIntent intent) {

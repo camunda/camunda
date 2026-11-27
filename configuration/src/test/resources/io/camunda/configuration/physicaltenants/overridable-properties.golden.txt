@@ -21,6 +21,7 @@ data.audit-log.user.categories
 data.audit-log.user.excludes
 data.audit-log.variable-history-enabled
 data.export.distribution-interval
+data.export.export-only-backed-up-records
 data.export.migration-status-scan-max-records
 data.export.skip-records
 data.exporters
@@ -67,9 +68,12 @@ data.primary-storage.backup.s3.endpoint
 data.primary-storage.backup.s3.force-path-style-access
 data.primary-storage.backup.s3.max-concurrent-connections
 data.primary-storage.backup.s3.region
+data.primary-storage.backup.s3.replication-poll-interval
+data.primary-storage.backup.s3.replication-timeout
 data.primary-storage.backup.s3.secret-key
 data.primary-storage.backup.s3.ssec-key
 data.primary-storage.backup.s3.support-legacy-md5
+data.primary-storage.backup.s3.wait-for-replication
 data.primary-storage.backup.schedule
 data.primary-storage.backup.store
 data.primary-storage.backup.write-timeout
@@ -167,6 +171,7 @@ data.secondary-storage.elasticsearch.number-of-shards-per-index.usage-metric
 data.secondary-storage.elasticsearch.number-of-shards-per-index.usage-metric-tu
 data.secondary-storage.elasticsearch.number-of-shards-per-index.user
 data.secondary-storage.elasticsearch.number-of-shards-per-index.variable
+data.secondary-storage.elasticsearch.number-of-shards-per-index.variable-history
 data.secondary-storage.elasticsearch.number-of-shards-per-index.wait-state
 data.secondary-storage.elasticsearch.number-of-shards-per-index.web-session
 data.secondary-storage.elasticsearch.password
@@ -279,6 +284,7 @@ data.secondary-storage.opensearch.number-of-shards-per-index.usage-metric
 data.secondary-storage.opensearch.number-of-shards-per-index.usage-metric-tu
 data.secondary-storage.opensearch.number-of-shards-per-index.user
 data.secondary-storage.opensearch.number-of-shards-per-index.variable
+data.secondary-storage.opensearch.number-of-shards-per-index.variable-history
 data.secondary-storage.opensearch.number-of-shards-per-index.wait-state
 data.secondary-storage.opensearch.number-of-shards-per-index.web-session
 data.secondary-storage.opensearch.password
@@ -555,6 +561,8 @@ security.initialization.mapping-rules
 security.initialization.roles
 security.initialization.tenants
 security.initialization.users
+system.actor-pool.cpu-thread-count
+system.actor-pool.io-thread-count
 system.clock-controlled
 system.legacy-query-api.enabled
 webapps.identity.enabled

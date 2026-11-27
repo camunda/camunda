@@ -33,6 +33,7 @@ dependencies {
   implementation(project(":zeebe-broker"))
   implementation(project(":zeebe-msgpack-value"))
   implementation(project(":zeebe-workflow-engine"))
+  implementation(project(":zeebe-workflow-engine-api"))
   implementation(project(":camunda-exporter"))
   implementation(project(":camunda-schema-manager"))
   implementation(project(":webapps-schema"))

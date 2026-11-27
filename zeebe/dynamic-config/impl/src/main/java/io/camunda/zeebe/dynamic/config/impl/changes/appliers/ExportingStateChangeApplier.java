@@ -19,11 +19,10 @@ import java.util.Set;
 import java.util.function.UnaryOperator;
 
 /**
- * New-model applier for {@code PartitionGroupOperation.ExportingStateChangeOperation}, operating on
- * a single named {@link PartitionGroupConfiguration}. Mirrors the legacy {@code
- * ExportingStateChangeApplier} in {@code changes/}, which this does not replace or modify: it fans
- * out the change to every partition the member replicates within this group, awaits completion of
- * all of them, and only then updates the member's partition configs to reflect the new state.
+ * Applier for {@code PartitionGroupOperation.ExportingStateChangeOperation}, operating on a single
+ * named {@link PartitionGroupConfiguration}: it fans out the change to every partition the member
+ * replicates within this group, awaits completion of all of them, and only then updates the
+ * member's partition configs to reflect the new state.
  */
 public final class ExportingStateChangeApplier implements PartitionGroupConfigurationChangeApplier {
 

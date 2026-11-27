@@ -10,9 +10,6 @@ package io.camunda.zeebe.dynamic.config.util;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.BrokerState;
-import io.camunda.zeebe.dynamic.config.state.ChangePlan;
-import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CompletedChange;
 import io.camunda.zeebe.dynamic.config.state.CompletedPhasedChange;
@@ -22,7 +19,6 @@ import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExportingConfig;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
-import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.OperationGraph;
 import io.camunda.zeebe.dynamic.config.state.OperationId;
@@ -67,60 +63,11 @@ import net.jqwik.api.support.CollectorsSupport;
 import net.jqwik.time.api.DateTimes;
 
 /**
- * Contains all arbitraries needed to generate a {@link ClusterConfiguration}. The topology is not
+ * Contains all arbitraries needed to generate a {@link CurrentClusterConfiguration}. It is not
  * semantically correct (e.g. contains operations for members that don't exist) but all fields
  * should have valid values.
  */
 public final class ClusterTopologyDomain extends DomainContextBase {
-
-  @Provide
-  Arbitrary<ClusterConfiguration> clusterTopologies() {
-    // Combine arbitraries (instead of just using `Arbitraries.forType(ClusterTopology.class)`
-    // here so that we have control over the version. Version must be greater than 0 for
-    // `ClusterTopology#isUninitialized` to return false.
-    final var arbitraryVersion = Arbitraries.integers().greaterOrEqual(0);
-    final var arbitraryMembers =
-        Arbitraries.maps(memberIds(), Arbitraries.forType(MemberState.class).enableRecursion())
-            .ofMaxSize(10);
-    final var arbitraryCompletedChange =
-        Arbitraries.forType(CompletedChange.class).enableRecursion().optional();
-    final var arbitraryChangePlan =
-        Arbitraries.forType(ClusterChangePlan.class)
-            .enableRecursion()
-            .<ChangePlan>map(plan -> plan)
-            .optional();
-    final var arbitraryRoutingState = routingStates().optional();
-    final var arbitraryClusterId = Arbitraries.strings().ofMinLength(1).ofMaxLength(50).optional();
-    final var arbitraryIncarnationNumber = Arbitraries.longs().greaterOrEqual(0);
-    return Combinators.combine(
-            arbitraryVersion,
-            arbitraryMembers,
-            arbitraryCompletedChange,
-            arbitraryChangePlan,
-            arbitraryRoutingState,
-            arbitraryClusterId,
-            arbitraryIncarnationNumber)
-        .flatAs(
-            (version,
-                members,
-                lastChange,
-                pendingChanges,
-                routingState,
-                clusterId,
-                incarnationNumber) ->
-                partitionDistributorConfigs()
-                    .map(
-                        distributorConfig ->
-                            new ClusterConfiguration(
-                                version,
-                                members,
-                                lastChange,
-                                pendingChanges,
-                                routingState,
-                                clusterId,
-                                incarnationNumber,
-                                distributorConfig)));
-  }
 
   @Provide
   Arbitrary<PartitionDistributorConfig> partitionDistributorConfig() {
@@ -444,7 +391,7 @@ public final class ClusterTopologyDomain extends DomainContextBase {
   private Arbitrary<DependencyChangePlan> dependencyChangePlansOver(
       final Arbitrary<OperationGraph> graphs) {
     final var id = Arbitraries.longs().between(0, 500);
-    final var status = Arbitraries.of(ClusterChangePlan.Status.values());
+    final var status = Arbitraries.of(DependencyChangePlan.Status.values());
     return Combinators.combine(id, status, nanoPrecisionInstants(), graphs)
         .as(PartialDependencyChangePlan::new)
         .flatMap(ClusterTopologyDomain::withCompletedOperations);
@@ -564,5 +511,5 @@ public final class ClusterTopologyDomain extends DomainContextBase {
   }
 
   private record PartialDependencyChangePlan(
-      long id, ClusterChangePlan.Status status, Instant startedAt, OperationGraph graph) {}
+      long id, DependencyChangePlan.Status status, Instant startedAt, OperationGraph graph) {}
 }

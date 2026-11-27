@@ -281,8 +281,8 @@ public class ClusterEndpoint {
    * already applied operations, so the cluster will be in an intermediate state with partially
    * applied changes. For example, a partition might have been added to a broker, but not removed
    * from another one; so it has a higher number of replicas than the configured value. In another
-   * case, the configuration in raft might differ from what is reflected in the ClusterTopology. So
-   * a manual intervention would be required to clean up the state.
+   * case, the configuration in raft might differ from what is reflected in the cluster
+   * configuration. So a manual intervention would be required to clean up the state.
    */
   private ResponseEntity<?> cancelChange(final String changeId) {
     try {

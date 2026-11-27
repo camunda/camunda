@@ -6,18 +6,19 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useMemo, useState} from 'react';
+import {useMemo} from 'react';
 import {useTranslation} from 'react-i18next';
 import {Link} from '@tanstack/react-router';
-import {Button, linkVariants, Text, Tooltip, TooltipContent, TooltipTrigger} from '@camunda/design-system';
+import {Button, EmptyState, linkVariants, Text} from '@camunda/design-system';
+import {CircleCheck, FunnelX, Search} from '@camunda/design-system/icons';
 import {cn} from '#/shared/cn';
 import {SortableTable} from '#/operate/shared/SortableTable/shadcn.components/SortableTable';
-import {EmptyMessage} from '#/operate/shared/EmptyMessage/shadcn.components/EmptyMessage';
-import {ErrorMessage} from '#/operate/shared/ErrorMessage/shadcn.components/ErrorMessage';
-import {RichTextEditorModal} from '#/operate/shared/Editors/shadcn.components/RichTextEditorModal';
+import {TruncatedText} from '#/operate/shared/TruncatedText/shadcn.components/TruncatedText';
 import {formatTimestamp} from '#/operate/shared/utils/formatTimestamp';
 import type {ChildInstanceWithIncident, DecisionInstanceLookup, EnhancedIncident} from '../incidents.types';
-import {shouldOfferErrorMessageModal} from '../shouldOfferErrorMessageModal';
+import {useIncidentsFilter} from '../useIncidentsFilter';
+import {useProcessInstanceElementSelection} from '../useProcessInstanceElementSelection';
+import {DataLoadErrorAlert} from '#/operate/shared/DataLoadErrorAlert/shadcn.components/DataLoadErrorAlert';
 import {IncidentOperation} from './IncidentOperation';
 
 type Props = {
@@ -33,6 +34,7 @@ type Props = {
 	isFetchingPreviousPage: boolean;
 	isFetchingNextPage: boolean;
 	onSelect: (incident: EnhancedIncident) => void;
+	onRetry: () => void;
 	onVerticalScrollStartReach: () => void;
 	onVerticalScrollEndReach: () => void;
 };
@@ -50,28 +52,6 @@ const ExpansionField: React.FC<{label: string; children: React.ReactNode}> = ({l
 	</div>
 );
 
-const TruncatedLink: React.FC<{label: string; children: React.ReactElement}> = ({label, children}) => (
-	<Tooltip>
-		<TooltipTrigger asChild>{children}</TooltipTrigger>
-		<TooltipContent side="bottom" className="max-w-md break-words whitespace-pre-wrap">
-			{label}
-		</TooltipContent>
-	</Tooltip>
-);
-
-const TruncatedText: React.FC<{children: string}> = ({children}) => (
-	<Tooltip>
-		<TooltipTrigger asChild>
-			<span tabIndex={0} className="block truncate">
-				{children}
-			</span>
-		</TooltipTrigger>
-		<TooltipContent side="bottom" className="max-w-md break-words whitespace-pre-wrap">
-			{children}
-		</TooltipContent>
-	</Tooltip>
-);
-
 const ElementName: React.FC<{
 	incident: EnhancedIncident;
 	processInstanceKey: string;
@@ -86,38 +66,34 @@ const ElementName: React.FC<{
 	if (decisionInstance !== undefined) {
 		const label = `${decisionInstance.decisionDefinitionName} - ${decisionInstance.decisionInstanceKey}`;
 		return (
-			<TruncatedLink label={label}>
-				<Link
-					to="/operate-preview/decisions/$decisionInstanceId"
-					params={{decisionInstanceId: decisionInstance.decisionInstanceKey}}
-					search={{tenantId}}
-					className={cn(linkVariants(), 'block truncate')}
-					data-interactive
-				>
-					{label}
-				</Link>
-			</TruncatedLink>
+			<Link
+				to="/operate-preview/decisions/$decisionInstanceId"
+				params={{decisionInstanceId: decisionInstance.decisionInstanceKey}}
+				search={{tenantId}}
+				className={cn(linkVariants(), 'block min-w-0')}
+				data-interactive
+			>
+				<TruncatedText text={label} />
+			</Link>
 		);
 	}
 
 	if (incident.processInstanceKey !== processInstanceKey) {
 		const label = `${incident.elementId} - ${incident.processDefinitionName} - ${incident.processInstanceKey}`;
 		return (
-			<TruncatedLink label={label}>
-				<Link
-					to="/operate-preview/processes/$processInstanceId"
-					params={{processInstanceId: incident.processInstanceKey}}
-					search={{elementId: incident.elementId, tenantId}}
-					className={cn(linkVariants(), 'block truncate')}
-					data-interactive
-				>
-					{label}
-				</Link>
-			</TruncatedLink>
+			<Link
+				to="/operate-preview/processes/$processInstanceId"
+				params={{processInstanceId: incident.processInstanceKey}}
+				search={{elementId: incident.elementId, tenantId}}
+				className={cn(linkVariants(), 'block min-w-0')}
+				data-interactive
+			>
+				<TruncatedText text={label} />
+			</Link>
 		);
 	}
 
-	return <TruncatedText>{incident.elementName}</TruncatedText>;
+	return <TruncatedText text={incident.elementName} />;
 };
 
 const IncidentsTable: React.FC<Props> = ({
@@ -133,11 +109,13 @@ const IncidentsTable: React.FC<Props> = ({
 	isFetchingPreviousPage,
 	isFetchingNextPage,
 	onSelect,
+	onRetry,
 	onVerticalScrollStartReach,
 	onVerticalScrollEndReach,
 }) => {
 	const {t} = useTranslation();
-	const [modal, setModal] = useState<{title: string; content: string} | null>(null);
+	const {errorTypes, setErrorTypes} = useIncidentsFilter();
+	const {hasSelection} = useProcessInstanceElementSelection();
 
 	const columns = useMemo(
 		() => [
@@ -153,7 +131,7 @@ const IncidentsTable: React.FC<Props> = ({
 						{incident.isSelected && (
 							<span className="sr-only">{t('operate.processInstance.incidents.selectedRow')}</span>
 						)}
-						<TruncatedText>{incident.errorMessage}</TruncatedText>
+						<TruncatedText text={incident.errorMessage} />
 					</span>
 				),
 			},
@@ -207,9 +185,12 @@ const IncidentsTable: React.FC<Props> = ({
 		return (
 			<div className={CENTERED_STATE_CLASS}>
 				<div className="flex flex-col gap-4">
-					<EmptyMessage
-						message={t('operate.processInstance.incidents.noIncidentsOnElement')}
-						additionalInfo={t('operate.processInstance.incidents.calledInstanceInfo')}
+					<EmptyState
+						size="sm"
+						headingLevel={3}
+						icon={<Search aria-hidden />}
+						heading={t('operate.processInstance.ds.incidents.noElementIncidentsHeading')}
+						description={t('operate.processInstance.incidents.calledInstanceInfo')}
 					/>
 					{type === 'process' ? (
 						<Link
@@ -237,75 +218,75 @@ const IncidentsTable: React.FC<Props> = ({
 		);
 	}
 
-	if (state === 'empty' || state === 'error') {
-		return (
-			<div className={CENTERED_STATE_CLASS}>
-				{state === 'empty' ? (
-					<EmptyMessage message={t('operate.processInstance.incidents.noMatchingIncidents')} />
-				) : (
-					<ErrorMessage />
-				)}
-			</div>
-		);
+	if (state === 'error') {
+		return <DataLoadErrorAlert onRetry={onRetry} />;
 	}
 
-	return (
-		<>
-			<SortableTable
-				ariaLabel={t('operate.processInstance.incidents.list')}
-				className="[&_tbody_tr:has([data-selected-row])]:bg-[var(--neutral-background-medium)] [&_td:has([data-error-message])]:w-full [&_td:has([data-error-message])]:max-w-0 [&_td:has([data-error-message])]:min-w-64 [&_td:has([data-element-name])]:max-w-48 [&_td]:whitespace-nowrap [&_th]:whitespace-nowrap"
-				borderless
-				columns={columns}
-				rows={incidents}
-				rowKey={(incident) => incident.incidentKey}
-				isFetching={state === 'skeleton'}
-				isFetchingPreviousPage={isFetchingPreviousPage}
-				isFetchingNextPage={isFetchingNextPage}
-				hasPreviousPage={hasPreviousPage}
-				hasNextPage={hasNextPage}
-				onRowClick={onSelect}
-				expandRowLabel={t('operate.processInstance.incidents.expandRow')}
-				collapseRowLabel={t('operate.processInstance.incidents.collapseRow')}
-				expansion={(incident) => (
-					<dl className="m-0 flex flex-col gap-3">
-						<ExpansionField label={t('operate.processInstance.incidents.jobId')}>
-							<dd className="m-0 text-sm">{incident.jobKey ?? t('operate.processInstance.header.none')}</dd>
-						</ExpansionField>
-						<ExpansionField label={t('operate.processInstance.incidents.errorMessage')}>
-							<dd className="m-0 flex items-start gap-2 text-sm">
-								<span className="min-w-0 break-words whitespace-pre-wrap">{incident.errorMessage}</span>
-								{shouldOfferErrorMessageModal(incident.errorMessage) && (
-									<Button
-										type="button"
-										size="sm"
-										variant="ghost"
-										onClick={() =>
-											setModal({
-												title: t('operate.processInstance.incidents.errorModalTitle', {name: incident.elementName}),
-												content: incident.errorMessage,
-											})
-										}
-									>
-										{t('operate.processInstance.incidents.more')}
-									</Button>
-								)}
-							</dd>
-						</ExpansionField>
-					</dl>
-				)}
-				onVerticalScrollStartReach={onVerticalScrollStartReach}
-				onVerticalScrollEndReach={onVerticalScrollEndReach}
+	const emptyState =
+		state !== 'empty' ? undefined : errorTypes.length > 0 ? (
+			<EmptyState
+				size="sm"
+				headingLevel={3}
+				icon={<FunnelX aria-hidden />}
+				heading={t('operate.processInstance.ds.incidents.noMatchesHeading')}
+				description={t('operate.processInstance.ds.incidents.noMatchesDescription')}
+				action={
+					<Button size="sm" onClick={() => setErrorTypes([])}>
+						{t('operate.shared.ds.clearFilters')}
+					</Button>
+				}
 			/>
-			{modal !== null && (
-				<RichTextEditorModal
-					isVisible
-					title={modal.title}
-					value={modal.content}
-					onClose={() => setModal(null)}
-					readOnly
-				/>
+		) : hasSelection ? (
+			<EmptyState
+				size="sm"
+				headingLevel={3}
+				icon={<CircleCheck aria-hidden />}
+				heading={t('operate.processInstance.ds.incidents.noElementIncidentsHeading')}
+				description={t('operate.processInstance.ds.incidents.noElementIncidentsDescription')}
+			/>
+		) : (
+			<EmptyState
+				size="sm"
+				headingLevel={3}
+				icon={<CircleCheck aria-hidden />}
+				heading={t('operate.processInstance.ds.incidents.emptyHeading')}
+				description={t('operate.processInstance.ds.incidents.emptyDescription')}
+			/>
+		);
+
+	return (
+		<SortableTable
+			ariaLabel={t('operate.processInstance.incidents.list')}
+			className="[&_tbody_tr:has([data-selected-row])]:bg-[var(--neutral-background-medium)] [&_td:has([data-error-message])]:w-full [&_td:has([data-error-message])]:max-w-0 [&_td:has([data-error-message])]:min-w-64 [&_td:has([data-element-name])]:max-w-48 [&_td]:whitespace-nowrap [&_th]:whitespace-nowrap"
+			borderless
+			columns={columns}
+			rows={state === 'empty' ? [] : incidents}
+			rowKey={(incident) => incident.incidentKey}
+			emptyState={emptyState}
+			hideHeaderWhenEmpty
+			isFetching={state === 'skeleton'}
+			isFetchingPreviousPage={isFetchingPreviousPage}
+			isFetchingNextPage={isFetchingNextPage}
+			hasPreviousPage={hasPreviousPage}
+			hasNextPage={hasNextPage}
+			onRowClick={onSelect}
+			expandRowLabel={t('operate.processInstance.incidents.expandRow')}
+			collapseRowLabel={t('operate.processInstance.incidents.collapseRow')}
+			expansion={(incident) => (
+				<dl className="m-0 flex flex-col gap-3">
+					<ExpansionField label={t('operate.processInstance.incidents.jobId')}>
+						<dd className="m-0 text-sm">{incident.jobKey ?? t('operate.processInstance.header.none')}</dd>
+					</ExpansionField>
+					<ExpansionField label={t('operate.processInstance.incidents.errorMessage')}>
+						<dd className="m-0 flex items-start gap-2 text-sm">
+							<span className="min-w-0 break-words whitespace-pre-wrap">{incident.errorMessage}</span>
+						</dd>
+					</ExpansionField>
+				</dl>
 			)}
-		</>
+			onVerticalScrollStartReach={onVerticalScrollStartReach}
+			onVerticalScrollEndReach={onVerticalScrollEndReach}
+		/>
 	);
 };
 

@@ -7,7 +7,6 @@
  */
 
 import {describe, expect, it} from 'vitest';
-import {ADMIN_NAV_ITEMS} from '#/shared/header/useSidebarNavigation.shadcn';
 import {
 	canManageMappingRuleMembers,
 	getAdminLandingSection,
@@ -18,7 +17,15 @@ import {
 const ALL_CONFIGS: AdminSectionConfig[] = [false, true].flatMap((isOidc) =>
 	[false, true].flatMap((isSaas) =>
 		[false, true].flatMap((isTenantsApiEnabled) =>
-			[false, true].map((isCamundaGroupsEnabled) => ({isOidc, isSaas, isTenantsApiEnabled, isCamundaGroupsEnabled})),
+			[false, true].flatMap((isCamundaGroupsEnabled) =>
+				[false, true].map((isAdditionalIdpConfigured) => ({
+					isOidc,
+					isSaas,
+					isTenantsApiEnabled,
+					isCamundaGroupsEnabled,
+					isAdditionalIdpConfigured,
+				})),
+			),
 		),
 	),
 );
@@ -28,6 +35,7 @@ const SELF_MANAGED: AdminSectionConfig = {
 	isSaas: false,
 	isTenantsApiEnabled: false,
 	isCamundaGroupsEnabled: false,
+	isAdditionalIdpConfigured: false,
 };
 
 describe('admin section availability', () => {
@@ -40,6 +48,13 @@ describe('admin section availability', () => {
 		expect(isAdminSectionAvailable('mapping-rules', SELF_MANAGED)).toBe(false);
 		expect(isAdminSectionAvailable('mapping-rules', {...SELF_MANAGED, isOidc: true})).toBe(true);
 		expect(isAdminSectionAvailable('mapping-rules', {...SELF_MANAGED, isOidc: true, isSaas: true})).toBe(false);
+	});
+
+	it('should offer mapping rules on SaaS once an additional IdP is configured', () => {
+		const saas: AdminSectionConfig = {...SELF_MANAGED, isOidc: true, isSaas: true};
+
+		expect(isAdminSectionAvailable('mapping-rules', {...saas, isAdditionalIdpConfigured: true})).toBe(true);
+		expect(isAdminSectionAvailable('mapping-rules', {...SELF_MANAGED, isAdditionalIdpConfigured: true})).toBe(false);
 	});
 
 	it('should offer groups only while Camunda manages group membership', () => {
@@ -58,6 +73,7 @@ describe('admin section availability', () => {
 			isSaas: true,
 			isTenantsApiEnabled: true,
 			isCamundaGroupsEnabled: true,
+			isAdditionalIdpConfigured: false,
 		};
 
 		expect(isAdminSectionAvailable('roles', SELF_MANAGED)).toBe(true);
@@ -68,22 +84,34 @@ describe('admin section availability', () => {
 
 describe('mapping rule members', () => {
 	it('should be manageable with OIDC outside SaaS', () => {
-		expect(canManageMappingRuleMembers({...SELF_MANAGED, isOidc: true}, false)).toBe(true);
+		expect(canManageMappingRuleMembers({...SELF_MANAGED, isOidc: true})).toBe(true);
 	});
 
 	it('should be manageable on SaaS only with an additional IdP', () => {
 		const saas: AdminSectionConfig = {...SELF_MANAGED, isOidc: true, isSaas: true};
 
-		expect(canManageMappingRuleMembers(saas, false)).toBe(false);
-		expect(canManageMappingRuleMembers(saas, true)).toBe(true);
+		expect(canManageMappingRuleMembers(saas)).toBe(false);
+		expect(canManageMappingRuleMembers({...saas, isAdditionalIdpConfigured: true})).toBe(true);
 	});
 
 	it('should not be manageable without OIDC', () => {
-		expect(canManageMappingRuleMembers(SELF_MANAGED, true)).toBe(false);
+		expect(canManageMappingRuleMembers({...SELF_MANAGED, isAdditionalIdpConfigured: true})).toBe(false);
 	});
 });
 
 describe('admin landing section', () => {
+	it('should keep mapping rules out of the landing on SaaS with an additional IdP', () => {
+		const saas: AdminSectionConfig = {
+			...SELF_MANAGED,
+			isOidc: true,
+			isSaas: true,
+			isCamundaGroupsEnabled: true,
+			isAdditionalIdpConfigured: true,
+		};
+
+		expect(getAdminLandingSection(saas)).toBe('groups');
+	});
+
 	it('should land on users while Camunda owns them', () => {
 		expect(getAdminLandingSection(SELF_MANAGED)).toBe('users');
 	});
@@ -101,15 +129,6 @@ describe('admin landing section', () => {
 	it('should fall back to roles when no earlier section is offered', () => {
 		expect(getAdminLandingSection({...SELF_MANAGED, isOidc: true, isSaas: true})).toBe('roles');
 	});
-
-	it.for(ALL_CONFIGS.map((config) => [JSON.stringify(config), config] as const))(
-		'should land on the first sidebar entry that is offered in %s',
-		([, config]) => {
-			const firstOffered = ADMIN_NAV_ITEMS.find(({key}) => isAdminSectionAvailable(key, config));
-
-			expect(getAdminLandingSection(config)).toBe(firstOffered?.key);
-		},
-	);
 
 	it.for(ALL_CONFIGS.map((config) => [JSON.stringify(config), config] as const))(
 		'should always offer roles in %s, as the landing fallback relies on it',

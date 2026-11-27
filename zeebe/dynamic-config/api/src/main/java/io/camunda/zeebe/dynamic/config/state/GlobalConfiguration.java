@@ -351,8 +351,7 @@ public record GlobalConfiguration(
   /**
    * Cancels any pending changes, returning a new configuration with the already-applied changes and
    * no pending changes. This is a dangerous operation that can leave the configuration
-   * inconsistent; it should only be used as a last resort when a change is stuck. Mirrors {@code
-   * ClusterConfiguration#cancelPendingChanges()}.
+   * inconsistent; it should only be used as a last resort when a change is stuck.
    */
   public GlobalConfiguration cancelPendingChanges() {
     if (!hasPendingChanges()) {

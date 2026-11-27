@@ -40,6 +40,7 @@ dependencies {
   implementation(project(":zeebe-atomix-utils"))
   api(libs.io.micrometer.micrometer.core)
   api(libs.io.micrometer.micrometer.commons)
+  api(libs.io.micrometer.micrometer.observation)
   api(libs.com.fasterxml.jackson.core.jackson.core)
   api(libs.com.fasterxml.jackson.core.jackson.databind)
   testImplementation(project(":zeebe-atomix-membership-api"))

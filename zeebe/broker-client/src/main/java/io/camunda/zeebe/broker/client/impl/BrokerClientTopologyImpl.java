@@ -9,7 +9,7 @@ package io.camunda.zeebe.broker.client.impl;
 
 import io.atomix.cluster.BrokerMemberId;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
@@ -29,8 +29,8 @@ import org.jspecify.annotations.Nullable;
  * the brokers such as the partition roles and health, as well as the configured state of the
  * cluster such as the configured clusterSize, number of partitions and replication factor. The live
  * state is aggregated from the member properties received via membership gossip from each broker.
- * The configured cluster state is updated from the global {@link
- * io.camunda.zeebe.dynamic.config.state.ClusterConfiguration}.
+ * The configured cluster state is updated from the {@link
+ * io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration}.
  */
 public record BrokerClientTopologyImpl(
     LiveClusterState liveClusterState, ConfiguredClusterState configuredClusterState)
@@ -40,7 +40,7 @@ public record BrokerClientTopologyImpl(
   public static final long NO_COMPLETED_LAST_CHANGE_ID = -1;
   public static final String NO_CLUSTER_ID = "";
   private static final long UNINITIALIZED_INCARNATION_NUMBER =
-      ClusterConfiguration.INITIAL_INCARNATION_NUMBER;
+      PartitionGroupConfiguration.INITIAL_INCARNATION_NUMBER;
 
   public static BrokerClientTopologyImpl uninitialized() {
     return new BrokerClientTopologyImpl(

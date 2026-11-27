@@ -7,8 +7,10 @@
  */
 package io.camunda.configuration.data.primarystorage.backup;
 
+import io.camunda.configuration.AcceptsSecretReference;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
+import io.camunda.zeebe.backup.s3.S3BackupConfig;
 import io.camunda.zeebe.backup.s3.S3BackupConfig.DefaultsMode;
 import java.time.Duration;
 import java.util.LinkedHashSet;
@@ -112,14 +114,14 @@ public class S3 {
    * will be determined as documented in <a
    * href="https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/credentials.html#credentials-chain">...</a>
    */
-  private String accessKey;
+  @AcceptsSecretReference private String accessKey;
 
   /**
    * Configure access credentials. If either accessKey or secretKey is not provided, the credentials
    * will be determined as documented in <a
    * href="https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/credentials.html#credentials-chain">...</a>
    */
-  private String secretKey;
+  @AcceptsSecretReference private String secretKey;
 
   /**
    * Configure a maximum duration for all S3 client API calls. Lower values will ensure that failed
@@ -182,7 +184,28 @@ public class S3 {
    * the brokers and on the restore application; S3 does not store the key and cannot decrypt
    * objects without it.
    */
-  private String ssecKey;
+  @AcceptsSecretReference private String ssecKey;
+
+  /**
+   * When enabled, a backup is only confirmed once every object of the backup has been replicated by
+   * the bucket's own replication (S3 replication or MinIO bucket replication) to the replica site,
+   * as reported by each object's replication status. If replication of an object fails, or does not
+   * complete within replication-timeout, the backup fails. Requires replication to be configured on
+   * the bucket.
+   */
+  private boolean waitForReplication = false;
+
+  /**
+   * How often to check the replication status of backup objects that are still pending replication.
+   * Only used when wait-for-replication is enabled.
+   */
+  private Duration replicationPollInterval = S3BackupConfig.DEFAULT_REPLICATION_POLL_INTERVAL;
+
+  /**
+   * How long to wait for all objects of a backup to be replicated before the backup fails. Only
+   * used when wait-for-replication is enabled.
+   */
+  private Duration replicationTimeout = S3BackupConfig.DEFAULT_REPLICATION_TIMEOUT;
 
   public String getBucketName() {
     return UnifiedConfigurationHelper.validateLegacyConfigurationWithOrderingUnsafe(
@@ -346,6 +369,30 @@ public class S3 {
 
   public void setBasePath(final String basePath) {
     this.basePath = basePath;
+  }
+
+  public boolean isWaitForReplication() {
+    return waitForReplication;
+  }
+
+  public void setWaitForReplication(final boolean waitForReplication) {
+    this.waitForReplication = waitForReplication;
+  }
+
+  public Duration getReplicationPollInterval() {
+    return replicationPollInterval;
+  }
+
+  public void setReplicationPollInterval(final Duration replicationPollInterval) {
+    this.replicationPollInterval = replicationPollInterval;
+  }
+
+  public Duration getReplicationTimeout() {
+    return replicationTimeout;
+  }
+
+  public void setReplicationTimeout(final Duration replicationTimeout) {
+    this.replicationTimeout = replicationTimeout;
   }
 
   public String getSsecKey() {

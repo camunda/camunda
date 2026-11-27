@@ -15,17 +15,15 @@ import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.mockStatic;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.dynamic.config.PersistedClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.PersistedClusterConfiguration.ChecksumMismatch;
-import io.camunda.zeebe.dynamic.config.PersistedClusterConfiguration.MissingHeader;
-import io.camunda.zeebe.dynamic.config.PersistedClusterConfiguration.UnexpectedVersion;
 import io.camunda.zeebe.dynamic.config.PersistedCurrentClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.PersistedCurrentClusterConfiguration.ChecksumMismatch;
+import io.camunda.zeebe.dynamic.config.PersistedCurrentClusterConfiguration.MissingHeader;
+import io.camunda.zeebe.dynamic.config.PersistedCurrentClusterConfiguration.UnexpectedVersion;
 import io.camunda.zeebe.dynamic.config.impl.serializer.ProtoBufSerializer;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
-import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
+import io.camunda.zeebe.dynamic.config.util.DefaultTenantConfiguration;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -43,14 +41,10 @@ final class PersistedCurrentClusterConfigurationTest {
   @TempDir private Path tmp;
 
   private CurrentClusterConfiguration sampleConfiguration() {
-    final var legacy =
-        ClusterConfiguration.init()
-            .addMember(
-                MemberId.from("0"),
-                MemberState.initializeAsActive(
-                    Map.of(1, PartitionState.active(1, partitionConfig))))
-            .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()));
-    return CurrentClusterConfiguration.fromLegacy(legacy);
+    return DefaultTenantConfiguration.init()
+        .addMember(MemberId.from("0"), Map.of(1, PartitionState.active(1, partitionConfig)))
+        .addMember(MemberId.from("1"))
+        .configuration();
   }
 
   @Test
@@ -137,46 +131,6 @@ final class PersistedCurrentClusterConfigurationTest {
   }
 
   @Test
-  void shouldMigrateLegacyVersion1FileOnRead() throws IOException {
-    // given — a legacy (version 1) file, as the legacy persistence code used to write it
-    final var file = tmp.resolve("config.meta");
-    final var legacy =
-        ClusterConfiguration.init()
-            .addMember(
-                MemberId.from("0"),
-                MemberState.initializeAsActive(
-                    Map.of(1, PartitionState.active(1, partitionConfig))));
-    writeLegacyVersion1File(file, legacy);
-    assertThat(Files.readAllBytes(file)[0]).isEqualTo((byte) 1);
-
-    // when — read it through the new persistence class
-    final var persisted = PersistedCurrentClusterConfiguration.ofFile(file, serializer);
-
-    // then — it is migrated to the new model, equivalent to fromLegacy
-    assertThat(persisted.isUninitialized()).isFalse();
-    assertThat(persisted.getConfiguration())
-        .isEqualTo(CurrentClusterConfiguration.fromLegacy(legacy));
-  }
-
-  @Test
-  void shouldWriteBackAsVersion2AfterMigration() throws IOException {
-    // given — a legacy version 1 file
-    final var file = tmp.resolve("config.meta");
-    final var legacy =
-        ClusterConfiguration.init()
-            .addMember(MemberId.from("0"), MemberState.initializeAsActive(Map.of()));
-    writeLegacyVersion1File(file, legacy);
-
-    // when — read (migrate) and persist a change
-    final var persisted = PersistedCurrentClusterConfiguration.ofFile(file, serializer);
-
-    // then — the file is now version 2 and reloads to the updated configuration
-    assertThat(Files.readAllBytes(file)[0]).isEqualTo(PersistedCurrentClusterConfiguration.VERSION);
-    assertThat(PersistedCurrentClusterConfiguration.ofFile(file, serializer).getConfiguration())
-        .isEqualTo(persisted.getConfiguration());
-  }
-
-  @Test
   void shouldDetectChecksumMismatch() throws IOException {
     // given
     final var file = tmp.resolve("config.meta");
@@ -195,19 +149,13 @@ final class PersistedCurrentClusterConfigurationTest {
     // given — two configurations that serialize to the same length, differing in one field
     final var file = tmp.resolve("config.meta");
     final var initial =
-        CurrentClusterConfiguration.fromLegacy(
-            ClusterConfiguration.init()
-                .addMember(
-                    MemberId.from("0"),
-                    MemberState.initializeAsActive(
-                        Map.of(1, PartitionState.active(2, partitionConfig)))));
+        DefaultTenantConfiguration.init()
+            .addMember(MemberId.from("0"), Map.of(1, PartitionState.active(2, partitionConfig)))
+            .configuration();
     final var changed =
-        CurrentClusterConfiguration.fromLegacy(
-            ClusterConfiguration.init()
-                .addMember(
-                    MemberId.from("0"),
-                    MemberState.initializeAsActive(
-                        Map.of(1, PartitionState.active(3, partitionConfig)))));
+        DefaultTenantConfiguration.init()
+            .addMember(MemberId.from("0"), Map.of(1, PartitionState.active(3, partitionConfig)))
+            .configuration();
     PersistedCurrentClusterConfiguration.ofFile(file, serializer).update(initial);
 
     // when — keep the same header but overwrite the body in place with different content of the
@@ -218,7 +166,7 @@ final class PersistedCurrentClusterConfigurationTest {
         newBody,
         0,
         fileContent,
-        PersistedClusterConfiguration.Header.HEADER_LENGTH,
+        PersistedCurrentClusterConfiguration.Header.LENGTH,
         newBody.length);
     Files.write(file, fileContent, StandardOpenOption.WRITE);
 
@@ -250,8 +198,22 @@ final class PersistedCurrentClusterConfigurationTest {
   }
 
   @Test
+  void shouldRejectLegacyVersion1File() throws IOException {
+    // given — a file with the legacy header version 1, which every 8.10 broker has already
+    // migrated to version 2
+    final var file = tmp.resolve("config.meta");
+    PersistedCurrentClusterConfiguration.ofFile(file, serializer).update(sampleConfiguration());
+    Files.write(file, new byte[] {1}, StandardOpenOption.WRITE);
+
+    // then — the operator is told how to get the file migrated
+    assertThatCode(() -> PersistedCurrentClusterConfiguration.ofFile(file, serializer))
+        .isInstanceOf(UnexpectedVersion.class)
+        .hasMessageContaining("Start this broker on 8.10 first");
+  }
+
+  @Test
   void shouldRejectUnknownHeaderVersion() throws IOException {
-    // given — a header version that is neither the legacy (1) nor the current (2) format
+    // given — a header version that is not the current (2) format
     final var file = tmp.resolve("config.meta");
     PersistedCurrentClusterConfiguration.ofFile(file, serializer).update(sampleConfiguration());
     Files.write(file, new byte[] {3}, StandardOpenOption.WRITE);
@@ -259,14 +221,5 @@ final class PersistedCurrentClusterConfigurationTest {
     // then
     assertThatCode(() -> PersistedCurrentClusterConfiguration.ofFile(file, serializer))
         .isInstanceOf(UnexpectedVersion.class);
-  }
-
-  /**
-   * Writes {@code legacy} to {@code file} exactly as the (now removed) legacy persistence class
-   * used to: header version 1, followed by the checksummed, serialized legacy configuration.
-   */
-  private void writeLegacyVersion1File(final Path file, final ClusterConfiguration legacy)
-      throws IOException {
-    PersistedClusterConfiguration.writeToFile(serializer.encode(legacy), file);
   }
 }

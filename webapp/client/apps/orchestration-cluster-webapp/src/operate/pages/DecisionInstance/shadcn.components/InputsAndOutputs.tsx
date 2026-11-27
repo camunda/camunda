@@ -7,10 +7,10 @@
  */
 
 import {useEffect, useMemo, useRef, useState} from 'react';
-import {Heading} from '@camunda/design-system';
+import {EmptyState, Heading} from '@camunda/design-system';
+import {CircleAlert} from '@camunda/design-system/icons';
 import {useTranslation} from 'react-i18next';
-import {EmptyMessage} from '#/operate/shared/EmptyMessage/shadcn.components/EmptyMessage';
-import {ErrorMessage} from '#/operate/shared/ErrorMessage/shadcn.components/ErrorMessage';
+import {DataLoadErrorAlert} from '#/operate/shared/DataLoadErrorAlert/shadcn.components/DataLoadErrorAlert';
 import {StructuredList} from '#/operate/shared/StructuredList/shadcn.components/StructuredList';
 import {useDecisionInstance} from '../decisionInstance.queries';
 import {InputOutputSkeleton} from './InputOutputSkeleton';
@@ -74,12 +74,18 @@ const InputsAndOutputs: React.FC<Props> = ({query}) => {
 					{query.isPending && <InputOutputSkeleton columnWidths={inputColumnWidths} data-testid="inputs-skeleton" />}
 					{query.isError && (
 						<div className="row-span-2 row-start-1 place-self-center px-4">
-							<ErrorMessage className="max-w-none" />
+							<DataLoadErrorAlert onRetry={() => void query.refetch()} />
 						</div>
 					)}
 					{query.isSuccess && query.data.state === 'FAILED' && inputRows.length === 0 && (
 						<div className="place-self-center px-4">
-							<EmptyMessage className="max-w-none" message={t('operate.decisionInstance.variablesPanel.noInput')} />
+							<EmptyState
+								size="sm"
+								headingLevel={3}
+								icon={<CircleAlert aria-hidden />}
+								heading={t('operate.decisionInstance.ds.variablesPanel.noInputHeading')}
+								description={t('operate.decisionInstance.ds.variablesPanel.evaluationFailedDescription')}
+							/>
 						</div>
 					)}
 					{query.isSuccess && inputRows.length > 0 && (
@@ -108,7 +114,7 @@ const InputsAndOutputs: React.FC<Props> = ({query}) => {
 					{query.isPending && <InputOutputSkeleton columnWidths={outputColumnWidths} data-testid="outputs-skeleton" />}
 					{query.isError && (
 						<div className="row-span-2 row-start-1 place-self-center px-4">
-							<ErrorMessage className="max-w-none" />
+							<DataLoadErrorAlert onRetry={() => void query.refetch()} />
 						</div>
 					)}
 					{query.isSuccess && query.data.state !== 'FAILED' && (
@@ -127,7 +133,13 @@ const InputsAndOutputs: React.FC<Props> = ({query}) => {
 					)}
 					{query.isSuccess && query.data.state === 'FAILED' && (
 						<div className="place-self-center px-4">
-							<EmptyMessage className="max-w-none" message={t('operate.decisionInstance.variablesPanel.noOutput')} />
+							<EmptyState
+								size="sm"
+								headingLevel={3}
+								icon={<CircleAlert aria-hidden />}
+								heading={t('operate.decisionInstance.ds.variablesPanel.noOutputHeading')}
+								description={t('operate.decisionInstance.ds.variablesPanel.evaluationFailedDescription')}
+							/>
 						</div>
 					)}
 				</section>

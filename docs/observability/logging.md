@@ -57,6 +57,18 @@ One notable exception is Spring, for which we set the log level to `INFO`. This 
 Spring as our application server, and information about its operation (e.g. the embedded Tomcat
 server starting, the security chain configuration, etc.) is relevant to the user.
 
+Another exception is the Azure SDK's sign-in logging, which is turned off. When Microsoft Entra ID
+or IMDS answers with a token response the SDK cannot parse, the SDK logs the response verbatim, and
+that can include an access token. The Azure Key Vault secret store reports sign-in failures itself,
+with the response left out. A deployment that ships its own `log4j2.xml` should turn off the same
+loggers:
+
+```xml
+<Logger name="com.azure.identity" level="OFF" />
+<Logger name="com.microsoft.aad.msal4j" level="OFF" />
+<Logger name="com.azure.core.credential.AccessTokenCache" level="OFF" />
+```
+
 As for outputs, C8 will log both to standard out (aka console) and to file by default. Logging to
 STDOUT is how most Kubernetes implementations - or in general, most cloud providers - capture and
 aggregate logs. The file output is then mostly for bare metal systems, where logs are expected to be

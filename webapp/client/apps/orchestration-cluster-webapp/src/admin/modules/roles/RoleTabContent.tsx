@@ -12,7 +12,7 @@ import {useTranslation} from 'react-i18next';
 import type {DataTableColumn} from '@camunda/design-system';
 import {queries} from '#/shared/http/queries';
 import {RoleMembersTab} from './RoleMembersTab';
-import {getMembersQuery, toMemberRow, type MemberKind, type MemberRow} from './members';
+import {getMemberColumnSortField, getMembersQuery, toMemberRow, type MemberKind, type MemberRow} from './members';
 import {getRoleMembersRequestBody, type RoleDetailSearch, type RoleDetailSearchChange} from './detailSearchSchema';
 
 type Props = {
@@ -67,19 +67,27 @@ const RoleTabContent: React.FC<Props> = ({roleId, kind, isOidc, isCamundaGroupsE
 	}, [data, kind, userDetails, groupDetails, enrichesUsers, enrichesGroups]);
 
 	const columns = useMemo<DataTableColumn<MemberRow>[]>(() => {
-		const memberColumns = COLUMN_FIELDS[kind].map((field) => ({
-			accessorKey: field,
-			header: t(`admin.roles.members.${kind}.${field}Column`),
-		}));
+		const memberColumns = COLUMN_FIELDS[kind].map((field) => {
+			const sortField = getMemberColumnSortField(kind, field);
+			return {
+				id: sortField ?? field,
+				accessorKey: field,
+				header: t(`admin.roles.members.${kind}.${field}Column`),
+				enableSorting: sortField !== undefined,
+			};
+		});
 		if (enrichesUsers) {
 			return [
 				...memberColumns,
-				{accessorKey: 'name', header: t('admin.users.name')},
-				{accessorKey: 'email', header: t('admin.users.email')},
+				{accessorKey: 'name', header: t('admin.users.name'), enableSorting: false},
+				{accessorKey: 'email', header: t('admin.users.email'), enableSorting: false},
 			];
 		}
 		if (enrichesGroups) {
-			return [...memberColumns, {accessorKey: 'name', header: t('admin.roles.members.groups.nameColumn')}];
+			return [
+				...memberColumns,
+				{accessorKey: 'name', header: t('admin.roles.members.groups.nameColumn'), enableSorting: false},
+			];
 		}
 		return memberColumns;
 	}, [kind, enrichesUsers, enrichesGroups, t]);

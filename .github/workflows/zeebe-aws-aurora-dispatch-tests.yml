@@ -92,6 +92,7 @@ jobs:
           -D test.integration.aurora.aws.url="jdbc:aws-wrapper:postgresql://camunda-ci-eks-aurora-postgresql-17.cluster-clnwzia8ptad.eu-central-1.rds.amazonaws.com:5432/${{env.AURORA_DATABASE}}?wrapperPlugins=iam"
           -D test.integration.aurora.aws.username=zeebe-irsa
           -D test.integration.camunda.database.type=rdbms_aurora
+          -D test.integration.camunda.database.fast-init=true
           -P parallel-tests,extract-flaky-tests,multi-db-test
           -pl "io.camunda:camunda-qa-acceptance-tests"
           verify

@@ -67,6 +67,37 @@ class PhysicalTenantOverridePolicyValidationTest {
         .withMessageContaining("system.cpu-thread-count");
   }
 
+  @ParameterizedTest
+  @ValueSource(strings = {"cpu-thread-count", "io-thread-count"})
+  void shouldAllowTenantOverridingPhysicalTenantActorPoolThreadCount(final String property) {
+    // given a tenant overriding an actor-pool thread count that is consumed from its own config
+    final MockEnvironment environment =
+        environmentWith(
+            Map.of("camunda.physical-tenants.tenanta.system.actor-pool." + property, 3));
+
+    // when / then the tenant-specific count is permitted
+    assertThatCode(() -> PhysicalTenantOverridePolicyValidation.validate(environment))
+        .doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldRejectTenantOverridingPhysicalTenantActorPoolEnabled() {
+    // given a tenant attempting to enable or disable actor-pool support independently
+    final MockEnvironment environment =
+        environmentWith(
+            Map.of(
+                "camunda.system.actor-pool.enabled",
+                false,
+                "camunda.physical-tenants.tenanta.system.actor-pool.enabled",
+                true));
+
+    // when / then the broker-wide enablement remains non-overridable
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> PhysicalTenantOverridePolicyValidation.validate(environment))
+        .withMessageContaining("tenanta")
+        .withMessageContaining("system.actor-pool.enabled");
+  }
+
   @Test
   void shouldRejectTenantOverridingLicenseProperty() {
     // given a tenant overriding the cluster-wide license

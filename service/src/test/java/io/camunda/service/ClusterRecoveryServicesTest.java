@@ -16,7 +16,6 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterRestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreParameters;
@@ -24,6 +23,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse.ErrorCode;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
@@ -215,8 +215,9 @@ final class ClusterRecoveryServicesTest {
                 Either.right(
                     new ClusterConfigurationChangeResponse(
                         9L,
-                        new LegacyConfigurationChangeResponse(Map.of(), Map.of(), List.of()),
-                        null))));
+                        CurrentClusterConfiguration.init(),
+                        CurrentClusterConfiguration.init(),
+                        List.of()))));
   }
 
   private void givenModeChangeAccepted() {
@@ -226,7 +227,8 @@ final class ClusterRecoveryServicesTest {
                 Either.right(
                     new ClusterConfigurationChangeResponse(
                         7L,
-                        new LegacyConfigurationChangeResponse(Map.of(), Map.of(), List.of()),
-                        null))));
+                        CurrentClusterConfiguration.init(),
+                        CurrentClusterConfiguration.init(),
+                        List.of()))));
   }
 }

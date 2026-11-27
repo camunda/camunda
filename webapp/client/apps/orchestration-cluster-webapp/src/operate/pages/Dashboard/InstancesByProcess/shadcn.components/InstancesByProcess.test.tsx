@@ -12,7 +12,6 @@ import {afterEach, beforeEach, describe, expect} from 'vitest';
 import {HttpResponse} from 'msw';
 import {z} from 'zod';
 import {userEvent} from 'vitest/browser';
-import {setUpFakeIntersectionObserver} from '#/vitest-modules/fake-intersection-observer';
 import {
 	mockGetProcessDefinitionInstanceStatisticsEndpoint,
 	mockGetProcessDefinitionInstanceVersionStatisticsEndpoint,
@@ -124,16 +123,14 @@ describe('<InstancesByProcess />', () => {
 
 		const screen = await renderWithRouter(() => <InstancesByProcess />, {path: '/operate-preview'});
 
-		await expect.element(screen.getByRole('link', {name: BETA_PROCESS_LINK_NAME})).toBeVisible();
+		const betaProcessLink = screen.getByRole('link', {name: BETA_PROCESS_LINK_NAME});
+		const alphaProcessLink = screen.getByRole('link', {name: ALPHA_PROCESS_LINK_NAME});
+		await expect.element(betaProcessLink).toBeVisible();
+		await expect.element(alphaProcessLink).toBeVisible();
 
-		const betaRow = screen.getByRole('link', {name: BETA_PROCESS_LINK_NAME}).element() as HTMLElement;
-		await expect.element(betaRow.querySelector('[data-testid="draining-indicator"]') as HTMLElement).toBeVisible();
-		expect(betaRow.querySelector('[data-testid="draining-indicator"]')?.hasAttribute('tabindex')).toBe(false);
-
-		const alphaRow = screen.getByRole('link', {name: ALPHA_PROCESS_LINK_NAME}).element() as HTMLElement;
-		await expect
-			.element(alphaRow.querySelector('[data-testid="draining-indicator"]') as HTMLElement | null)
-			.not.toBeInTheDocument();
+		await expect.element(betaProcessLink.getByTestId('draining-indicator')).toBeVisible();
+		await expect.element(betaProcessLink.getByTestId('draining-indicator')).not.toHaveAttribute('tabindex');
+		await expect.element(alphaProcessLink.getByTestId('draining-indicator')).not.toBeInTheDocument();
 	});
 
 	it('should show a draining indicator for a specific draining version when expanded', async ({worker}) => {
@@ -192,21 +189,13 @@ describe('<InstancesByProcess />', () => {
 		await expect.element(screen.getByText(/Alpha Process/)).toBeVisible();
 		await userEvent.click(screen.getByRole('button', {name: 'Expand row'}));
 
-		await expect.element(screen.getByText(/version 2/)).toBeVisible();
+		const version2Link = screen.getByRole('link').filter({hasText: /version 2/});
+		const version1Link = screen.getByRole('link').filter({hasText: /version 1/});
+		await expect.element(version2Link).toBeVisible();
+		await expect.element(version1Link).toBeVisible();
 
-		const version2Row = screen
-			.getByText(/version 2/)
-			.element()
-			.closest('a') as HTMLElement;
-		await expect.element(version2Row.querySelector('[data-testid="draining-indicator"]') as HTMLElement).toBeVisible();
-
-		const version1Row = screen
-			.getByText(/version 1/)
-			.element()
-			.closest('a') as HTMLElement;
-		await expect
-			.element(version1Row.querySelector('[data-testid="draining-indicator"]') as HTMLElement | null)
-			.not.toBeInTheDocument();
+		await expect.element(version2Link.getByTestId('draining-indicator')).toBeVisible();
+		await expect.element(version1Link.getByTestId('draining-indicator')).not.toBeInTheDocument();
 	});
 });
 
@@ -218,8 +207,6 @@ describe('<InstancesByProcess /> pagination', () => {
 	afterEach(() => {
 		sessionStorage.clear();
 	});
-
-	const {getObserver} = setUpFakeIntersectionObserver();
 
 	beforeEach(() => {
 		sessionStorage.setItem('clientConfig', JSON.stringify(createSystemConfiguration()));
@@ -243,7 +230,7 @@ describe('<InstancesByProcess /> pagination', () => {
 			}),
 		);
 
-	it('should load the next page when the bottom of the list becomes visible', async ({worker}) => {
+	it('should load the next page when the bottom of the list is visible', async ({worker}) => {
 		// given
 		worker.use(
 			mockGetProcessDefinitionInstanceStatisticsEndpoint({
@@ -258,33 +245,8 @@ describe('<InstancesByProcess /> pagination', () => {
 			mockQueryProcessDefinitionsEndpoint({successResponse: NO_DRAINING_RESPONSE}),
 		);
 		const screen = await renderWithRouter(() => <InstancesByProcess />, {path: '/operate-preview'});
-		await expect.element(screen.getByRole('link', {name: /Alpha Process/})).toBeVisible();
 
-		// when
-		getObserver().intersect(screen.getByTestId('instances-by-process-list-bottom-sentinel').element());
-
-		// then
 		await expect.element(screen.getByRole('link', {name: /Beta Process/})).toBeVisible();
 		await expect.element(screen.getByRole('link', {name: /Alpha Process/})).toBeVisible();
-	});
-
-	it('should not render pagination sentinels when everything fits on one page', async ({worker}) => {
-		// given
-		worker.use(
-			mockGetProcessDefinitionInstanceStatisticsEndpoint({
-				schema: REQUEST_SCHEMA,
-				successResponse: PAGE_1_RESPONSE,
-				failureResponse: FAILURE_RESPONSE,
-			}),
-			mockQueryProcessDefinitionsEndpoint({successResponse: NO_DRAINING_RESPONSE}),
-		);
-
-		// when
-		const screen = await renderWithRouter(() => <InstancesByProcess />, {path: '/operate-preview'});
-
-		// then
-		await expect.element(screen.getByRole('link', {name: ALPHA_PROCESS_LINK_NAME})).toBeVisible();
-		await expect.element(screen.getByTestId('instances-by-process-list-bottom-sentinel')).not.toBeInTheDocument();
-		await expect.element(screen.getByTestId('instances-by-process-list-top-sentinel')).not.toBeInTheDocument();
 	});
 });

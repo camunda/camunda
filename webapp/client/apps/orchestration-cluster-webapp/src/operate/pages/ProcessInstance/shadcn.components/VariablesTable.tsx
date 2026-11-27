@@ -12,9 +12,8 @@ import {keepPreviousData, useInfiniteQuery} from '@tanstack/react-query';
 import {useForm, useFormState} from 'react-final-form';
 import {FieldArray} from 'react-final-form-arrays';
 import {useTranslation} from 'react-i18next';
-import {IconButton, SearchInput, Tabs, TabsContent, TabsList, TabsTrigger} from '@camunda/design-system';
-import {Pencil} from '@camunda/design-system/icons';
-import {EmptyMessage} from '#/operate/shared/EmptyMessage/shadcn.components/EmptyMessage';
+import {EmptyState, IconButton, SearchInput, ToggleGroup, ToggleGroupItem} from '@camunda/design-system';
+import {Pencil, Search} from '@camunda/design-system/icons';
 import {PreviewDocumentButton} from '#/operate/shared/Documents/shadcn.components/PreviewDocumentButton';
 import {DownloadDocumentButton} from '#/operate/shared/Documents/shadcn.components/DownloadDocumentButton';
 import {StructuredList, StructuredRows} from '#/operate/shared/StructuredList/shadcn.components/StructuredList';
@@ -59,16 +58,17 @@ const VariablesTable: React.FC<{scopeKey: string}> = ({scopeKey}) => {
 	const debouncedSearchValue = useDebouncedValue(searchValue, SEARCH_DEBOUNCE_MS);
 	const searchTerm = isModificationModeEnabled ? '' : debouncedSearchValue;
 	const documentsOnly = showDocumentsOnly && !isModificationModeEnabled;
-	const {data, error, isLoading, isPlaceholderData, hasNextPage, isFetchingNextPage, fetchNextPage} = useInfiniteQuery({
-		...variablesQuery({
-			processInstanceKey: processInstanceId,
-			scopeKey: canQuery ? scopeKey : null,
-			searchTerm,
-			documentsOnly,
-		}),
-		placeholderData: keepPreviousData,
-		refetchOnMount: false,
-	});
+	const {data, error, isLoading, isPlaceholderData, hasNextPage, isFetchingNextPage, fetchNextPage, refetch} =
+		useInfiniteQuery({
+			...variablesQuery({
+				processInstanceKey: processInstanceId,
+				scopeKey: canQuery ? scopeKey : null,
+				searchTerm,
+				documentsOnly,
+			}),
+			placeholderData: keepPreviousData,
+			refetchOnMount: false,
+		});
 	const pages = useMemo(
 		() =>
 			(data?.pages ?? []).map((page) =>
@@ -116,16 +116,23 @@ const VariablesTable: React.FC<{scopeKey: string}> = ({scopeKey}) => {
 						}}
 						onClear={() => setSearchValue('')}
 					/>
-					<Tabs
+					<ToggleGroup
+						type="single"
+						variant="outline"
+						size="sm"
+						aria-label={t('operate.processInstance.variables.filter')}
 						value={showDocumentsOnly ? 'documents' : 'all'}
-						onValueChange={(value) => setShowDocumentsOnly(value === 'documents')}
+						onValueChange={(value) => {
+							if (value !== '') {
+								setShowDocumentsOnly(value === 'documents');
+							}
+						}}
 					>
-						<TabsList variant="line" aria-label={t('operate.processInstance.variables.filter')}>
-							<TabsTrigger value="all">{t('operate.processInstance.variables.filterAll')}</TabsTrigger>
-							<TabsTrigger value="documents">{t('operate.processInstance.variables.filterDocuments')}</TabsTrigger>
-						</TabsList>
-						<TabsContent value={showDocumentsOnly ? 'documents' : 'all'} className="hidden" />
-					</Tabs>
+						<ToggleGroupItem value="all">{t('operate.processInstance.variables.filterAll')}</ToggleGroupItem>
+						<ToggleGroupItem value="documents">
+							{t('operate.processInstance.variables.filterDocuments')}
+						</ToggleGroupItem>
+					</ToggleGroup>
 				</div>
 			)}
 			<div
@@ -134,14 +141,22 @@ const VariablesTable: React.FC<{scopeKey: string}> = ({scopeKey}) => {
 					isPlaceholderData && 'pointer-events-none opacity-50',
 				)}
 			>
-				{error !== null && <VariablesError error={error} />}
+				{error !== null && <VariablesError error={error} onRetry={() => void refetch()} />}
 				{error === null && isEmptyResult && (
 					<div className="flex flex-1 items-center justify-center">
-						<EmptyMessage
-							message={t(
+						<EmptyState
+							size="sm"
+							headingLevel={3}
+							icon={<Search aria-hidden />}
+							heading={t(
 								hasSearchTerm
-									? 'operate.processInstance.variables.noSearchResults'
-									: 'operate.processInstance.variables.noDocuments',
+									? 'operate.processInstance.ds.variables.noSearchResultsHeading'
+									: 'operate.processInstance.ds.variables.noDocumentsHeading',
+							)}
+							description={t(
+								hasSearchTerm
+									? 'operate.processInstance.ds.variables.noSearchResultsDescription'
+									: 'operate.processInstance.ds.variables.noDocumentsDescription',
 							)}
 						/>
 					</div>

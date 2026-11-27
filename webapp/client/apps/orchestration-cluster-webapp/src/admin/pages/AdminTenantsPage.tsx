@@ -21,13 +21,15 @@ import {
 	type SortingConfig,
 } from '@camunda/design-system';
 import type {Tenant} from '@camunda/camunda-api-zod-schemas/8.11';
+import {useNavigate} from '@tanstack/react-router';
 import {AddTenantModal} from '#/admin/modules/tenants/AddTenantModal';
+import type {TenantTab} from '#/admin/modules/tenants/detailSearchSchema';
 import {EditTenantModal} from '#/admin/modules/tenants/EditTenantModal';
 import {DeleteTenantModal} from '#/admin/modules/tenants/DeleteTenantModal';
 import {isDefaultTenant} from '#/admin/modules/tenants/defaultTenant';
 import {DEFAULT_PAGE_SIZE, PAGE_SIZES, type TenantsSearch} from '#/admin/modules/tenants/searchSchema';
 import {CreateEmptyState} from '#/admin/modules/shared/CreateEmptyState';
-import {RouterRowLink} from '#/admin/modules/shared/RouterRowLink';
+import {RouterRowLink} from '#/shared/router/RouterRowLink';
 import {useAdminDetailPath} from '#/admin/modules/shared/useAdminDetailPath';
 import {useDebouncedUrlFilter} from '#/shared/hooks/useDebouncedUrlFilter';
 import {GUIDE_URLS} from '#/admin/modules/shared/guideUrls';
@@ -45,6 +47,7 @@ type AdminTenantsPageProps = {
 
 const AdminTenantsPage: React.FC<AdminTenantsPageProps> = ({tenants, totalItems, search, onSearchChange}) => {
 	const detailPath = useAdminDetailPath();
+	const navigate = useNavigate();
 	const {t} = useTranslation();
 	const [modal, setModal] = useState<ModalState | null>(null);
 	const appliedSearchTerm = search.search ?? '';
@@ -58,6 +61,13 @@ const AdminTenantsPage: React.FC<AdminTenantsPageProps> = ({tenants, totalItems,
 			{accessorKey: 'name', header: t('admin.tenants.tenantNameColumn')},
 		],
 		[t],
+	);
+
+	const handleAssign = useCallback(
+		(tenantId: string, tab: TenantTab) => {
+			navigate({to: '/admin/tenants/$tenantId', params: {tenantId}, search: {tab}});
+		},
+		[navigate],
 	);
 
 	const sortState = useMemo<SortingState>(
@@ -180,7 +190,7 @@ const AdminTenantsPage: React.FC<AdminTenantsPageProps> = ({tenants, totalItems,
 					</div>
 				)}
 			</div>
-			<AddTenantModal isOpen={modal?.type === 'add'} onClose={closeModal} />
+			{modal?.type === 'add' && <AddTenantModal onClose={closeModal} onAssign={handleAssign} />}
 			<EditTenantModal tenant={modal?.type === 'edit' ? modal.tenant : null} onClose={closeModal} />
 			<DeleteTenantModal tenant={modal?.type === 'delete' ? modal.tenant : null} onClose={closeModal} />
 		</PageLayout>

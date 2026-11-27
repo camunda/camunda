@@ -8,10 +8,8 @@
 package io.camunda.debug.cli;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatNoException;
 
 import com.google.protobuf.Timestamp;
-import io.camunda.zeebe.dynamic.config.PersistedClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.PersistedCurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.impl.protocol.Topology;
 import java.io.IOException;
@@ -19,11 +17,9 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -38,53 +34,12 @@ public class TopologyMetaCommandTest {
   StringWriter err;
   StringWriter out;
 
-  /** A per-test copy of the legacy (header version 1) file, since some tests overwrite it. */
-  Path legacyFile;
-
   @BeforeEach
   public void setup() throws IOException {
     err = new StringWriter();
     out = new StringWriter();
     commandLine =
         new CommandLine(new Main()).setErr(new PrintWriter(err)).setOut(new PrintWriter(out));
-    legacyFile = copyLegacyFile();
-  }
-
-  @ParameterizedTest
-  @ValueSource(strings = {"f", "file", "r", "root"})
-  public void shouldReadTopologyFileCorrectly(final String method) {
-    // given
-    runWithMethod(method);
-    final var json = out.toString();
-    assertThat(json).isNotEmpty();
-    assertThatNoException()
-        .isThrownBy(
-            () -> {
-              TopologyMetaCommand.parseTopology(json);
-            });
-  }
-
-  @ParameterizedTest
-  @ValueSource(strings = {"f", "file", "r", "root"})
-  public void shouldUpdateTopologyFile(final String method) throws IOException {
-    // given
-    runWithMethod(method);
-    final var protobuf = TopologyMetaCommand.parseTopology(out.toString());
-    final var modifiedJson =
-        new TopologyMetaCommand().convertToJson(protobuf.toBuilder().setVersion(999L).build());
-    final var source = Files.writeString(tempDir.resolve("scratch.json"), modifiedJson);
-
-    // when
-    runWithMethod(method, "-s", "--source", source.toString());
-
-    // then the legacy header version is kept, and the edit round-trips
-    assertThat(Files.readAllBytes(legacyFile)[0]).isEqualTo(PersistedClusterConfiguration.VERSION);
-
-    out = new StringWriter();
-    commandLine.setOut(new PrintWriter(out));
-    runWithMethod(method);
-    // there's a newline difference, so trim() is needed
-    assertThat(out.toString().trim()).isEqualTo(modifiedJson.trim());
   }
 
   @ParameterizedTest
@@ -174,6 +129,18 @@ public class TopologyMetaCommandTest {
   }
 
   @Test
+  public void shouldRejectLegacyHeaderVersion1() throws IOException {
+    // given
+    final var file = writeConfigurationFile(configurationWith(timestamp(1758000000L)), (byte) 1);
+
+    // when
+    final var exitCode = commandLine.execute("topology", "-f", file.toString());
+
+    // then
+    assertThat(exitCode).isEqualTo(2);
+  }
+
+  @Test
   public void shouldRejectUnknownHeaderVersion() throws IOException {
     // given
     final var file = writeConfigurationFile(configurationWith(timestamp(1758000000L)), (byte) 3);
@@ -209,20 +176,11 @@ public class TopologyMetaCommandTest {
       final Topology.CurrentClusterConfiguration configuration, final byte headerVersion)
       throws IOException {
     final var file = Files.createDirectories(tempDir.resolve("current")).resolve(".topology.meta");
-    PersistedClusterConfiguration.writeToFile(configuration.toByteArray(), file, headerVersion);
+    PersistedCurrentClusterConfiguration.writeToFile(configuration.toByteArray(), file);
+    final var content = Files.readAllBytes(file);
+    content[0] = headerVersion;
+    Files.write(file, content);
     return file;
-  }
-
-  private Path copyLegacyFile() throws IOException {
-    final var resourceUrl = getClass().getClassLoader().getResource(".topology.meta");
-    Assertions.assertThat(resourceUrl).isNotNull();
-    final var target = tempDir.resolve(".topology.meta");
-    Files.copy(Path.of(resourceUrl.getPath()), target, StandardCopyOption.REPLACE_EXISTING);
-    return target;
-  }
-
-  public int runWithMethod(final String method, final String... extraArgs) {
-    return runWithMethod(legacyFile, method, extraArgs);
   }
 
   public int runWithMethod(final Path file, final String method, final String... extraArgs) {

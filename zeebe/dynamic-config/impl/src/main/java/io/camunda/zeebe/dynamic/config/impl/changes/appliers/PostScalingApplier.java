@@ -18,10 +18,9 @@ import java.util.Set;
 import java.util.function.UnaryOperator;
 
 /**
- * New-model applier for {@code GlobalChangeOperation.PostScalingOperation}, operating on {@link
- * GlobalConfiguration}. Mirrors the legacy {@code PostScalingApplier} in {@code changes/}, which
- * this does not replace or modify. Finalizes a member after scaling by invoking the post-scaling
- * callback on the {@link ClusterChangeExecutor}.
+ * Applier for {@code GlobalChangeOperation.PostScalingOperation}, operating on {@link
+ * GlobalConfiguration}. Finalizes a member after scaling by invoking the post-scaling callback on
+ * the {@link ClusterChangeExecutor}.
  */
 public final class PostScalingApplier implements GlobalConfigurationChangeApplier {
 

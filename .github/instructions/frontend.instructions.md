@@ -88,4 +88,4 @@ npm run test:docs-screenshots  # Playwright docs.camunda.io images (needs Docker
 - For the docs.camunda.io image tests in `test/docs-screenshots/`, see `.agents/skills/frontend-docs-screenshots/`.
 - Follow the pod areas + shared + routes architecture. See `.agents/skills/frontend-feature/`.
 - For Tasklist pod work in `src/tasklist/`, see `.agents/skills/tasklist-frontend/`.
-- For migrating legacy Operate code to the unified app, see `.agents/skills/frontend-operate-migrator/`.
+- For Operate pod work in `src/operate/`, see `.agents/skills/operate-frontend/`.

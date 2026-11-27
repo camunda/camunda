@@ -19,10 +19,9 @@ import io.camunda.zeebe.util.Either;
 import java.util.function.UnaryOperator;
 
 /**
- * New-model applier for {@code
+ * Applier for {@code
  * PartitionGroupOperation.PartitionChangeOperation.PartitionDisableExporterOperation}, operating on
- * a single named {@link PartitionGroupConfiguration}. Mirrors the legacy {@code
- * PartitionDisableExporterApplier} in {@code changes/}, which this does not replace or modify.
+ * a single named {@link PartitionGroupConfiguration}.
  */
 public final class PartitionDisableExporterApplier
     implements PartitionGroupConfigurationChangeApplier {

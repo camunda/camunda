@@ -49,7 +49,6 @@ When a skill exists for a recurring operation, use it rather than improvising st
 | `frontend-feature`             | Build non-Operate features in the orchestration cluster webapp                                                 |
 | `frontend-docs-screenshots`    | Add, change, or run the Playwright tests that make the docs.camunda.io images for the OC webapp                |
 | `frontend-integration-test`    | Write or debug Playwright-based integration, visual, and accessibility tests in the OC webapp                  |
-| `frontend-operate-migrator`    | Independently port legacy Operate behavior through fidelity review and a draft PR                             |
 | `frontend-unit-test`           | Write or debug Vitest browser-mode unit tests in the orchestration cluster webapp                              |
 | `heap-dump-analysis`           | Analyze broker heap dumps (.hprof) with headless MAT: heap fill, owners per component and partition, no PII   |
 | `maven-run-build`              | Compile, test, format, and package with `./mvnw`: module scoping, `-Dquickly`, single tests, pre-commit steps   |
@@ -60,7 +59,6 @@ When a skill exists for a recurring operation, use it rather than improvising st
 | `gradle-run-build`             | Compile, test, and package with `./gradlew`: single-test filters, `-Pquickly`, IT vs unit, gotchas            |
 | `grafana-dashboards`           | Create or change Grafana dashboards in `monitor/grafana/`: UID, datasource, refresh, rows, PromQL, deployment   |
 | `oc-api-design-review`         | Review OC REST API spec changes or endpoint design proposals against the REST API endpoint guidelines          |
-| `operate-engineering-loop`     | Drive a tracked Operate change (OC webapp `src/operate/`) through implementation, gated validation, independent review, a draft PR, and Copilot review |
 | `operate-frontend`             | Operate frontend conventions for both codebases — the OC webapp `src/operate/` pod and legacy `operate/client/` |
 | `optimize-patch-release`       | Release an Optimize 8.6 or 8.7 patch: release branch, Zeebe/Identity bump, release workflow, GitHub release, next upgrade plan, merge-back PR |
 | `session-state`                | Persist and resume Claude Code session progress across restarts, `--resume`/`--continue`, and compaction        |

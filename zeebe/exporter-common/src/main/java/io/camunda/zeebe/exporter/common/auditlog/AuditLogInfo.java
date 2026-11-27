@@ -43,7 +43,10 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import java.util.Map;
 import java.util.Optional;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 public record AuditLogInfo(
     AuditLogOperationCategory category,
     AuditLogEntityType entityType,
@@ -236,11 +239,20 @@ public record AuditLogInfo(
           Map.entry(ValueType.USER_TASK, AuditLogEntityType.USER_TASK));
 
   public static AuditLogInfo of(final Record<?> record) {
+    return of(record, AuditLogActor.of(record));
+  }
+
+  /**
+   * Creates the info with the given actor instead of the one from the record's identity. This lets
+   * a caller check a record against the configuration as another actor, such as {@link
+   * AuditLogActor#ENGINE}.
+   */
+  public static AuditLogInfo of(final Record<?> record, final AuditLogActor actor) {
     return new AuditLogInfo(
         getOperationCategory(record),
         getEntityType(record),
         getOperationType(record),
-        AuditLogActor.of(record),
+        actor,
         AuditLogTenant.of(record));
   }
 
@@ -278,11 +290,12 @@ public record AuditLogInfo(
     return OPERATION_TYPE_MAP.getOrDefault(intent, AuditLogOperationType.UNKNOWN);
   }
 
-  public record AuditLogActor(AuditLogActorType actorType, String actorId) {
+  public record AuditLogActor(AuditLogActorType actorType, @Nullable String actorId) {
 
     public static final AuditLogActor ANONYMOUS =
         new AuditLogActor(AuditLogActorType.ANONYMOUS, null);
     public static final AuditLogActor UNKNOWN = new AuditLogActor(AuditLogActorType.UNKNOWN, null);
+    public static final AuditLogActor ENGINE = new AuditLogActor(AuditLogActorType.ENGINE, null);
 
     public static AuditLogActor unknown() {
       return UNKNOWN;

@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.state.deployment;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -17,7 +19,6 @@ import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import java.util.List;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
-import org.agrona.collections.Object2ObjectHashMap;
 
 public final class VersionManager {
 
@@ -28,13 +29,14 @@ public final class VersionManager {
   private final DbString tenantIdKey;
   private final DbTenantAwareKey<DbString> tenantAwareIdKey;
   private final VersionInfo versionInfo = new VersionInfo();
-  private final Object2ObjectHashMap<TenantIdAndResourceId, VersionInfo> versionByTenantCache;
+  private final Cache<TenantIdAndResourceId, VersionInfo> versionByTenantCache;
 
   public VersionManager(
       final long initialValue,
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
       final ZbColumnFamilies columnFamily,
-      final TransactionContext transactionContext) {
+      final TransactionContext transactionContext,
+      final long cacheCapacity) {
     this.initialValue = initialValue;
 
     tenantIdKey = new DbString();
@@ -42,21 +44,23 @@ public final class VersionManager {
     tenantAwareIdKey = new DbTenantAwareKey<>(tenantIdKey, idKey, PlacementType.PREFIX);
     versionInfoColumnFamily =
         zeebeDb.createColumnFamily(columnFamily, transactionContext, tenantAwareIdKey, versionInfo);
-    versionByTenantCache = new Object2ObjectHashMap<>();
+    // Keeps the version info of recently used resource ids in memory to skip RocksDB reads,
+    // dropping the least recently used ones so old ids don't stay in heap forever.
+    versionByTenantCache = CacheBuilder.newBuilder().maximumSize(cacheCapacity).build();
   }
 
   private VersionInfo getVersionInfo() {
-    return versionByTenantCache.computeIfAbsent(
-        new TenantIdAndResourceId(tenantIdKey.toString(), idKey.toString()),
-        (key) -> {
-          final var persistedVersionInfo = versionInfoColumnFamily.get(tenantAwareIdKey);
-
-          if (persistedVersionInfo == null) {
-            return new VersionInfo().setHighestVersionIfHigher(initialValue);
-          } else {
-            return new VersionInfo(persistedVersionInfo);
-          }
-        });
+    final var key = new TenantIdAndResourceId(tenantIdKey.toString(), idKey.toString());
+    var cachedVersionInfo = versionByTenantCache.getIfPresent(key);
+    if (cachedVersionInfo == null) {
+      final var persistedVersionInfo = versionInfoColumnFamily.get(tenantAwareIdKey);
+      cachedVersionInfo =
+          persistedVersionInfo == null
+              ? new VersionInfo().setHighestVersionIfHigher(initialValue)
+              : new VersionInfo(persistedVersionInfo);
+      versionByTenantCache.put(key, cachedVersionInfo);
+    }
+    return cachedVersionInfo;
   }
 
   public void addResourceVersion(final String resourceId, final long value, final String tenantId) {
@@ -86,7 +90,7 @@ public final class VersionManager {
   }
 
   public void clear() {
-    versionByTenantCache.clear();
+    versionByTenantCache.invalidateAll();
   }
 
   /**

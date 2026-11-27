@@ -149,11 +149,13 @@ configurations.configureEach {
       useVersion(springVersion)
       because("Maven pins Spring Framework to version.spring")
     }
-    // context-propagation has independent versioning; only pin the BOM-managed artifacts.
+    // context-propagation and micrometer-tracing have independent versioning (the latter is managed
+    // by the Spring Boot BOM); only pin the artifacts of the micrometer BOM.
     if (
       requested.group == "io.micrometer" &&
         requested.name.startsWith("micrometer-") &&
-        requested.name != "micrometer-bom"
+        requested.name != "micrometer-bom" &&
+        !requested.name.startsWith("micrometer-tracing")
     ) {
       useVersion(micrometerVersion)
     }

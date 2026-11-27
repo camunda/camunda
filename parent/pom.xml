@@ -37,8 +37,20 @@
     <!-- data layer nightly test exclusion flag -->
     <failsafe.excluded.nightly>dl-nightly</failsafe.excluded.nightly>
 
+    <!--
+      Start the test classes that took longest in the previous run first, so parallel forks don't
+      idle while one slow class finishes last. Run times come from a .surefire-<checksum> file in
+      the module basedir; without one, the order is the default filesystem order. The checksum pins
+      the file name (by default a hash of the whole plugin configuration) and keeps unit and
+      integration test statistics apart. CI carries the files between runs (setup-maven-cache).
+    -->
+    <surefire.runOrder>balanced</surefire.runOrder>
+    <surefire.runOrder.statisticsFile.checksum>unit</surefire.runOrder.statisticsFile.checksum>
+    <failsafe.runOrder>balanced</failsafe.runOrder>
+    <failsafe.runOrder.statisticsFile.checksum>it</failsafe.runOrder.statisticsFile.checksum>
+
     <!-- EXTERNAL LIBS -->
-    <version.agrona>2.7.1</version.agrona>
+    <version.agrona>2.7.2</version.agrona>
     <version.animal-sniffer>1.29.1</version.animal-sniffer>
     <version.assertj>3.27.7</version.assertj>
     <version.assertj-assertions-generator>2.2.0</version.assertj-assertions-generator>
@@ -60,7 +72,7 @@
     <version.cron-utils>9.2.1</version.cron-utils>
     <version.docker-java-api>3.7.1</version.docker-java-api>
     <version.elasticsearch.client>9.5.6</version.elasticsearch.client>
-    <version.elasticsearch-java-client>9.5.6</version.elasticsearch-java-client>
+    <version.elasticsearch-java-client>9.5.7</version.elasticsearch-java-client>
     <!-- renovate: datasource=docker depName=docker.elastic.co/elasticsearch/elasticsearch -->
     <version.elasticsearch.container>9.5.6</version.elasticsearch.container>
     <version.error-prone>2.53.0</version.error-prone>
@@ -80,7 +92,7 @@
     <version.httpcore5>5.4.4</version.httpcore5>
     <version.httpcomponents>4.4.16</version.httpcomponents>
     <version.identity>8.10.5</version.identity>
-    <version.instancio>6.2.1</version.instancio>
+    <version.instancio>6.2.2</version.instancio>
     <version.jackson>2.23.0</version.jackson>
     <version.jackson3>3.3.0</version.jackson3>
     <version.json-base>3.0.0</version.json-base>
@@ -122,7 +134,7 @@
     <version.protobuf-common>2.82.0</version.protobuf-common>
     <version.micrometer>1.17.2</version.micrometer>
     <version.rocksdbjni>11.8.1</version.rocksdbjni>
-    <version.sbe>1.42.0</version.sbe>
+    <version.sbe>1.42.1</version.sbe>
     <version.scala>3.10.1</version.scala>
     <version.slf4j>2.0.20</version.slf4j>
     <version.snakeyaml>2.7</version.snakeyaml>
@@ -170,7 +182,7 @@
     <version.easy-random>5.0.0</version.easy-random>
     <version.jcip>1.0</version.jcip>
     <version.jnr-ffi>2.3.7</version.jnr-ffi>
-    <version.jnr-posix>3.2.8</version.jnr-posix>
+    <version.jnr-posix>3.2.9</version.jnr-posix>
     <version.jnr-constants>0.11.4</version.jnr-constants>
     <version.feign>13.18</version.feign>
     <version.google-sdk>26.94.0</version.google-sdk>
@@ -192,7 +204,7 @@
     <version.java-jwt>4.6.2</version.java-jwt>
     <version.reactive-streams>1.0.4</version.reactive-streams>
     <version.roaster>2.31.1.Final</version.roaster>
-    <version.postgresql>42.7.14</version.postgresql>
+    <version.postgresql>42.7.15</version.postgresql>
     <version.h2>2.5.252</version.h2>
     <version.aws-advanced-jdbc-wrapper>4.7.0</version.aws-advanced-jdbc-wrapper>
     <version.aws-signing>4.0.1</version.aws-signing>
@@ -393,6 +405,12 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
+        <artifactId>es9-index-migrator</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
         <artifactId>zeebe-protocol-test-util</artifactId>
         <version>${project.version}</version>
       </dependency>
@@ -412,6 +430,12 @@
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-workflow-engine</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>zeebe-workflow-engine-api</artifactId>
         <version>${project.version}</version>
       </dependency>
 
@@ -507,6 +531,14 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
+        <artifactId>zeebe-db</artifactId>
+        <version>${project.version}</version>
+        <classifier>tests</classifier>
+        <type>test-jar</type>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
         <artifactId>zeebe-build-tools</artifactId>
         <version>${project.version}</version>
       </dependency>
@@ -554,6 +586,12 @@
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-exporter-config-support</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>zeebe-cluster-behavior</artifactId>
         <version>${project.version}</version>
       </dependency>
 

@@ -7,17 +7,7 @@
  */
 
 import {describe, expect, it} from 'vitest';
-import {isValidEmail, isValidUsername} from './userValidation';
-
-describe('isValidUsername', () => {
-	it.for(['jane.doe', 'jane_doe-99', 'a', '~@+.-_'])('should accept %s', (username) => {
-		expect(isValidUsername(username)).toBe(true);
-	});
-
-	it.for(['jane doe', 'jane/doe', 'jane#doe', ''])('should reject %s', (username) => {
-		expect(isValidUsername(username)).toBe(false);
-	});
-});
+import {isValidEmail} from './userValidation';
 
 describe('isValidEmail', () => {
 	it.for(['jane.doe@example.com', 'jane+doe@example.co.uk'])('should accept %s', (email) => {

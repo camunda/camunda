@@ -6,8 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-/// <reference types="vitest/config" />
-
 import {resolve} from 'node:path';
 import {defineConfig} from 'vite';
 import dts from 'vite-plugin-dts';
@@ -18,7 +16,7 @@ export default defineConfig({
 		dts({
 			insertTypesEntry: true,
 			// Only the 8.11 modules consume the generated schemas so far.
-			exclude: ['lib/8.9/gen/**', 'lib/8.10/gen/**', 'lib/**/*.test.ts'],
+			exclude: ['lib/8.9/gen/**', 'lib/8.10/gen/**'],
 		}),
 		circleDependency(),
 	],
@@ -172,10 +170,5 @@ export default defineConfig({
 				preserveModules: true,
 			},
 		},
-	},
-	test: {
-		include: ['lib/**/*.test.ts'],
-		reporters: process.env['CI'] ? ['default', 'github-actions', 'junit'] : ['default'],
-		outputFile: process.env['CI'] ? {junit: 'TEST-unit.xml'} : undefined,
 	},
 });

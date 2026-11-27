@@ -75,6 +75,13 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>zeebe-cluster-config-api</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-cluster-config-impl</artifactId>
       <scope>test</scope>
     </dependency>

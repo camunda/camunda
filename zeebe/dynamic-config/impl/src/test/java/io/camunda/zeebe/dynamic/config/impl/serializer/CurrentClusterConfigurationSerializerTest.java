@@ -17,10 +17,8 @@ import io.camunda.zeebe.dynamic.config.impl.protocol.Topology;
 import io.camunda.zeebe.dynamic.config.serializer.DecodingFailed;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.BrokerState;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
-import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.OperationGraph;
 import io.camunda.zeebe.dynamic.config.state.OperationId;
@@ -93,9 +91,10 @@ final class CurrentClusterConfigurationSerializerTest {
   void shouldRoundTripGossipState() {
     // given
     final var configuration =
-        CurrentClusterConfiguration.fromLegacy(
-            ClusterConfiguration.init()
-                .addMember(MemberId.from("0"), MemberState.initializeAsActive(Map.of())));
+        CurrentClusterConfiguration.init()
+            .updateGlobalConfiguration(
+                global -> global.addMember(MemberId.from("0"), BrokerState.initializeAsActive()))
+            .initPartitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP);
     final var state = new ClusterConfigurationGossipState();
     state.setCurrentClusterConfiguration(configuration);
 

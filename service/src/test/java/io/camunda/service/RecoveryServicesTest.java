@@ -31,7 +31,6 @@ import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreParameters;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
@@ -39,13 +38,11 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse.ErrorCode;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.util.Either;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -404,7 +401,7 @@ public class RecoveryServicesTest {
   }
 
   private CurrentClusterConfiguration stubTopologySuccess() {
-    final var configuration = CurrentClusterConfiguration.fromLegacy(ClusterConfiguration.init());
+    final var configuration = CurrentClusterConfiguration.init();
     when(clusterConfigurationRequestSender.getTopology())
         .thenReturn(CompletableFuture.completedFuture(Either.right(configuration)));
     return configuration;
@@ -417,8 +414,9 @@ public class RecoveryServicesTest {
                 Either.right(
                     new ClusterConfigurationChangeResponse(
                         0L,
-                        new LegacyConfigurationChangeResponse(Map.of(), Map.of(), List.of()),
-                        null))));
+                        CurrentClusterConfiguration.init(),
+                        CurrentClusterConfiguration.init(),
+                        List.of()))));
   }
 
   private void grant(
@@ -437,8 +435,9 @@ public class RecoveryServicesTest {
                 Either.right(
                     new ClusterConfigurationChangeResponse(
                         0L,
-                        new LegacyConfigurationChangeResponse(Map.of(), Map.of(), List.of()),
-                        null))));
+                        CurrentClusterConfiguration.init(),
+                        CurrentClusterConfiguration.init(),
+                        List.of()))));
   }
 
   private static void assertForbidden(

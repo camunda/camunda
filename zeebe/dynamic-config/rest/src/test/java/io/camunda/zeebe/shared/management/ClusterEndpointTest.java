@@ -26,13 +26,12 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
 import io.camunda.zeebe.dynamic.config.impl.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.serializer.ClusterConfigurationJsonSerializer;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.DependencyChangePlan;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberJoinOperation;
-import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
+import io.camunda.zeebe.dynamic.config.util.DefaultTenantConfiguration;
 import io.camunda.zeebe.management.cluster.AddZoneRequest;
 import io.camunda.zeebe.management.cluster.BrokerId;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequest;
@@ -112,16 +111,18 @@ final class ClusterEndpointTest {
     return new ClusterEndpoint(sender, new ProtoBufSerializer());
   }
 
+  private static CurrentClusterConfiguration singleBrokerConfiguration() {
+    return DefaultTenantConfiguration.init()
+        .addMember(
+            MemberId.from("0"), Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init())))
+        .configuration();
+  }
+
   @Nested
   class ClusterTopologyEndpoint {
 
     private CurrentClusterConfiguration singleTenantConfiguration() {
-      return CurrentClusterConfiguration.fromLegacy(
-          ClusterConfiguration.init()
-              .addMember(
-                  MemberId.from("0"),
-                  MemberState.initializeAsActive(
-                      Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init())))));
+      return singleBrokerConfiguration();
     }
 
     @Test
@@ -243,9 +244,9 @@ final class ClusterEndpointTest {
                   Either.right(
                       new ClusterConfigurationChangeResponse(
                           1L,
-                          new ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse(
-                              Map.of(), Map.of(), List.of()),
-                          null))));
+                          CurrentClusterConfiguration.init(),
+                          CurrentClusterConfiguration.init(),
+                          List.of()))));
       return sender;
     }
   }
@@ -274,9 +275,9 @@ final class ClusterEndpointTest {
                   Either.right(
                       new ClusterConfigurationChangeResponse(
                           1L,
-                          new ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse(
-                              Map.of(), Map.of(), List.of()),
-                          null))));
+                          CurrentClusterConfiguration.init(),
+                          CurrentClusterConfiguration.init(),
+                          List.of()))));
 
       // when
       final var response =
@@ -301,9 +302,9 @@ final class ClusterEndpointTest {
                   Either.right(
                       new ClusterConfigurationChangeResponse(
                           1L,
-                          new ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse(
-                              Map.of(), Map.of(), List.of()),
-                          null))));
+                          CurrentClusterConfiguration.init(),
+                          CurrentClusterConfiguration.init(),
+                          List.of()))));
 
       // when - dryRun flag is forwarded
       final var response =
@@ -353,18 +354,11 @@ final class ClusterEndpointTest {
   @Nested
   class ConfigurationChangesEndpoint {
 
-    // ClusterConfiguration.init() starts at version 1, so a change started from it always gets
-    // changeId 2 (version + 1); tests below query that fixed id.
-    private static ClusterConfiguration configWithPendingChange() {
-      final var config = ClusterConfiguration.init();
-      return ClusterConfiguration.builder()
-          .from(config)
-          .version(config.version() + 1)
-          .pendingChanges(
-              Optional.of(
-                  DependencyChangePlan.sequential(
-                      config.version() + 1, List.of(new MemberJoinOperation(MemberId.from("1"))))))
-          .build();
+    // The first plan started on a configuration always gets the initial plan id; tests below
+    // query that fixed id.
+    private static CurrentClusterConfiguration configWithPendingChange() {
+      return CurrentClusterConfiguration.init()
+          .initPlan(List.of(new GlobalPhase(List.of(new MemberJoinOperation(MemberId.from("1"))))));
     }
 
     @Test
@@ -373,18 +367,16 @@ final class ClusterEndpointTest {
       final var sender = mock(ClusterConfigurationManagementRequestSender.class);
       final var endpoint = createEndpoint(sender);
       when(sender.getTopology())
-          .thenReturn(
-              CompletableFuture.completedFuture(
-                  Either.right(CurrentClusterConfiguration.fromLegacy(configWithPendingChange()))));
+          .thenReturn(CompletableFuture.completedFuture(Either.right(configWithPendingChange())));
 
       // when
-      final var response = endpoint.getConfigurationChange("2");
+      final var response = endpoint.getConfigurationChange("1");
 
       // then
       assertThat(response.getStatusCode().value()).isEqualTo(200);
       final var body = (ConfigurationChange) response.getBody();
       assertThat(body).isNotNull();
-      assertThat(body.getId()).isEqualTo(2L);
+      assertThat(body.getId()).isEqualTo(1L);
       assertThat(body.getStatus()).isEqualTo(ConfigurationChange.StatusEnum.IN_PROGRESS);
       verify(sender).getTopology();
     }
@@ -395,9 +387,7 @@ final class ClusterEndpointTest {
       final var sender = mock(ClusterConfigurationManagementRequestSender.class);
       final var endpoint = createEndpoint(sender);
       when(sender.getTopology())
-          .thenReturn(
-              CompletableFuture.completedFuture(
-                  Either.right(CurrentClusterConfiguration.fromLegacy(configWithPendingChange()))));
+          .thenReturn(CompletableFuture.completedFuture(Either.right(configWithPendingChange())));
 
       // when
       final var response = endpoint.getConfigurationChange("999");
@@ -426,9 +416,7 @@ final class ClusterEndpointTest {
       final var sender = mock(ClusterConfigurationManagementRequestSender.class);
       final var endpoint = createEndpoint(sender);
       when(sender.getTopology())
-          .thenReturn(
-              CompletableFuture.completedFuture(
-                  Either.right(CurrentClusterConfiguration.fromLegacy(configWithPendingChange()))));
+          .thenReturn(CompletableFuture.completedFuture(Either.right(configWithPendingChange())));
 
       // when
       final var response = endpoint.listConfigurationChanges();
@@ -437,7 +425,7 @@ final class ClusterEndpointTest {
       assertThat(response.getStatusCode().value()).isEqualTo(200);
       final var body = (GetConfigurationChangesResponse) response.getBody();
       assertThat(body).isNotNull();
-      assertThat(body.getChanges()).extracting(ConfigurationChange::getId).containsExactly(2L);
+      assertThat(body.getChanges()).extracting(ConfigurationChange::getId).containsExactly(1L);
       verify(sender).getTopology();
     }
   }
@@ -492,12 +480,7 @@ final class ClusterEndpointTest {
     }
 
     private CurrentClusterConfiguration configuration() {
-      return CurrentClusterConfiguration.fromLegacy(
-          ClusterConfiguration.init()
-              .addMember(
-                  MemberId.from("0"),
-                  MemberState.initializeAsActive(
-                      Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init())))));
+      return singleBrokerConfiguration();
     }
 
     private ClusterConfigurationManagementRequestSender senderReturning(
@@ -579,9 +562,9 @@ final class ClusterEndpointTest {
                   Either.right(
                       new ClusterConfigurationChangeResponse(
                           1L,
-                          new ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse(
-                              Map.of(), Map.of(), List.of()),
-                          null))));
+                          CurrentClusterConfiguration.init(),
+                          CurrentClusterConfiguration.init(),
+                          List.of()))));
       return sender;
     }
   }
@@ -614,9 +597,9 @@ final class ClusterEndpointTest {
                   Either.right(
                       new ClusterConfigurationChangeResponse(
                           1L,
-                          new ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse(
-                              Map.of(), Map.of(), List.of()),
-                          null))));
+                          CurrentClusterConfiguration.init(),
+                          CurrentClusterConfiguration.init(),
+                          List.of()))));
       return sender;
     }
   }
@@ -740,9 +723,9 @@ final class ClusterEndpointTest {
                   Either.right(
                       new ClusterConfigurationChangeResponse(
                           1L,
-                          new ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse(
-                              Map.of(), Map.of(), List.of()),
-                          null))));
+                          CurrentClusterConfiguration.init(),
+                          CurrentClusterConfiguration.init(),
+                          List.of()))));
       return sender;
     }
   }

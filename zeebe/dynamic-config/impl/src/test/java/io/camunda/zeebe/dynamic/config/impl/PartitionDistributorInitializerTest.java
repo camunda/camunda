@@ -47,7 +47,7 @@ final class PartitionDistributorInitializerTest {
                     global.setPartitionDistributorConfig(
                         new PartitionDistributorConfig.RoundRobinConfig()));
     final var initializer =
-        PartitionDistributorInitializer.currentClusterConfigurationPartitionDistributorInitializer(
+        new PartitionDistributorInitializer(
             staticConfigWith(new ZoneAwarePartitionDistributor(List.of())));
 
     // when
@@ -62,8 +62,7 @@ final class PartitionDistributorInitializerTest {
     // given
     final var configuration = CurrentClusterConfiguration.init();
     final var initializer =
-        PartitionDistributorInitializer.currentClusterConfigurationPartitionDistributorInitializer(
-            staticConfigWith(new RoundRobinPartitionDistributor()));
+        new PartitionDistributorInitializer(staticConfigWith(new RoundRobinPartitionDistributor()));
 
     // when
     final var result = initializer.modify(configuration).join();
@@ -79,7 +78,7 @@ final class PartitionDistributorInitializerTest {
     final var zoneSpecs = List.of(new ZoneSpec("zone-a", 2, 1000), new ZoneSpec("zone-b", 1, 500));
     final var configuration = CurrentClusterConfiguration.init();
     final var initializer =
-        PartitionDistributorInitializer.currentClusterConfigurationPartitionDistributorInitializer(
+        new PartitionDistributorInitializer(
             staticConfigWith(new ZoneAwarePartitionDistributor(zoneSpecs)));
 
     // when
@@ -106,8 +105,7 @@ final class PartitionDistributorInitializerTest {
         (members, partitionIds, replicationFactor) -> Set.of();
     final var configuration = CurrentClusterConfiguration.init();
     final var initializer =
-        PartitionDistributorInitializer.currentClusterConfigurationPartitionDistributorInitializer(
-            staticConfigWith(unknownDistributor));
+        new PartitionDistributorInitializer(staticConfigWith(unknownDistributor));
 
     // when
     final var result = initializer.modify(configuration).join();

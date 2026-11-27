@@ -15,11 +15,11 @@ import org.jspecify.annotations.Nullable;
 /**
  * Represents the cluster-wide lifecycle state of a single broker.
  *
- * <p>Unlike the legacy {@code MemberState}, this record carries <em>only</em> broker lifecycle
- * state and no partition assignment: which partitions a broker replicates within a group lives in
- * {@code BrokerPartitionState}, and per-broker recovery lives there too (as its {@code Mode}).
- * Accordingly the lifecycle {@link State} deliberately omits {@code RECOVERING} — recovery is
- * per-group, not a cluster-wide broker state.
+ * <p>This record carries <em>only</em> broker lifecycle state and no partition assignment: which
+ * partitions a broker replicates within a group lives in {@code BrokerPartitionState}, and
+ * per-broker recovery lives there too (as its {@code Mode}). Accordingly the lifecycle {@link
+ * State} deliberately omits {@code RECOVERING} — recovery is per-group, not a cluster-wide broker
+ * state.
  *
  * <p>{@code version} is incremented every time the state is updated. It is used to resolve
  * conflicts when members receive gossip updates out of order. Only a member updates its own state,

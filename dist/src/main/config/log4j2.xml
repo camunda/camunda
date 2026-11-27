@@ -55,6 +55,12 @@
     <Logger name="io.atomix" level="${env:ATOMIX_LOG_LEVEL:-${env:CAMUNDA_LOG_LEVEL:-INFO}}" />
     <Logger name="org.elasticsearch" level="${env:ES_LOG_LEVEL:-WARN}" />
     <Logger name="org.springframework" level="INFO" />
+    <!-- the Azure SDK logs unparsable sign-in responses verbatim, which can hold an access token:
+         while signing in, and again, at ERROR, in the token cache of every Azure client; the Azure
+         Key Vault secret store logs sign-in failures itself, redacted -->
+    <Logger name="com.azure.identity" level="OFF" />
+    <Logger name="com.microsoft.aad.msal4j" level="OFF" />
+    <Logger name="com.azure.core.credential.AccessTokenCache" level="OFF" />
 
     <Root level="WARN">
       <AppenderRef ref="RollingFile" />

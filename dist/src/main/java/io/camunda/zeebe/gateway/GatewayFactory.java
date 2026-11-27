@@ -8,9 +8,11 @@
 package io.camunda.zeebe.gateway;
 
 import io.camunda.application.commons.security.EngineSecurityConfigFactory;
+import io.camunda.authentication.config.SaasTokenValidators;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
+import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.security.spring.oidc.ScopedJwtDecoderFactory;
 import io.camunda.security.spring.oidc.ScopedOidcClaimsProviderFactory;
 import io.camunda.service.UserServices;
@@ -21,6 +23,7 @@ import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.transport.stream.api.ClientStreamer;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.observation.ObservationRegistry;
 import java.time.Duration;
 import java.util.function.Function;
 import org.agrona.CloseHelper;
@@ -55,11 +58,11 @@ public final class GatewayFactory {
       final int maxVariableNameLength,
       final @Nullable ServiceRegistry serviceRegistry,
       final @Nullable ScopedJwtDecoderFactory scopedJwtDecoderFactory,
-      final @Nullable ScopedOidcClaimsProviderFactory scopedOidcClaimsProviderFactory) {
+      final @Nullable CamundaSecurityLibraryProperties securityProperties,
+      final @Nullable ScopedOidcClaimsProviderFactory scopedOidcClaimsProviderFactory,
+      final @Nullable ObservationRegistry observationRegistry) {
     final Function<AuthenticationConfiguration, JwtDecoder> jwtDecoderFactory =
-        authConfig ->
-            required(scopedJwtDecoderFactory, "ScopedJwtDecoderFactory")
-                .buildIssuerAwareDecoder(authConfig);
+        jwtDecoderFactory(scopedJwtDecoderFactory, securityProperties);
     final Function<AuthenticationConfiguration, OidcClaimsProvider> oidcClaimsProviderFactory =
         authConfig ->
             required(scopedOidcClaimsProviderFactory, "ScopedOidcClaimsProviderFactory")
@@ -81,7 +84,23 @@ public final class GatewayFactory {
         passwordEncoder,
         meterRegistry,
         maxVariableNameLength,
-        physicalTenantResolver);
+        physicalTenantResolver,
+        observationRegistry != null ? observationRegistry : ObservationRegistry.NOOP);
+  }
+
+  /**
+   * Builds the gRPC access-token decoders. The CSL scoped decoder checks no SaaS claims, so this
+   * adds the organization and cluster checks of the REST API. Build every gRPC decoder through this
+   * method, not through {@link ScopedJwtDecoderFactory} directly.
+   */
+  public static Function<AuthenticationConfiguration, JwtDecoder> jwtDecoderFactory(
+      final @Nullable ScopedJwtDecoderFactory scopedJwtDecoderFactory,
+      final @Nullable CamundaSecurityLibraryProperties securityProperties) {
+    return authConfig ->
+        SaasTokenValidators.withSaasValidation(
+            required(scopedJwtDecoderFactory, "ScopedJwtDecoderFactory")
+                .buildIssuerAwareDecoder(authConfig),
+            required(securityProperties, "CamundaSecurityLibraryProperties").getSaas());
   }
 
   /**

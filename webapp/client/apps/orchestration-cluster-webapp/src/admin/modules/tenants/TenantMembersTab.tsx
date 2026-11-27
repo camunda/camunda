@@ -30,7 +30,7 @@ type Props<T> = {
 	tenantId: string;
 	rows: T[];
 	columns: DataTableColumn<T>[];
-	sortColumnId: string;
+	sortColumnIds: readonly [string, ...string[]];
 	getMemberId: (row: T) => string;
 	totalItems: number;
 	search: TenantDetailSearch;
@@ -43,7 +43,7 @@ function TenantMembersTab<T>({
 	tenantId,
 	rows,
 	columns,
-	sortColumnId,
+	sortColumnIds,
 	getMemberId,
 	totalItems,
 	search,
@@ -64,9 +64,11 @@ function TenantMembersTab<T>({
 		}
 	}, [page, lastPage, onSearchChange]);
 
+	const [defaultSortColumnId] = sortColumnIds;
+	const sortField = sortColumnIds.find((columnId) => columnId === search.sortField) ?? defaultSortColumnId;
 	const sortState = useMemo<SortingState>(
-		() => [{id: sortColumnId, desc: search.sortOrder === 'DESC'}],
-		[sortColumnId, search.sortOrder],
+		() => [{id: sortField, desc: search.sortOrder === 'DESC'}],
+		[sortField, search.sortOrder],
 	);
 
 	const rowActions = useMemo<DataTableRowAction<T>[]>(
@@ -112,7 +114,14 @@ function TenantMembersTab<T>({
 							manual: true,
 							sortState,
 							onSortingChange: ([sorted]) =>
-								onSearchChange({sortOrder: sorted?.desc ? 'DESC' : undefined, page: undefined}),
+								onSearchChange({
+									sortField:
+										sorted === undefined || sorted.id === defaultSortColumnId
+											? undefined
+											: (sorted.id as TenantDetailSearch['sortField']),
+									sortOrder: sorted?.desc ? 'DESC' : undefined,
+									page: undefined,
+								}),
 						}}
 						pagination={{
 							manual: true,

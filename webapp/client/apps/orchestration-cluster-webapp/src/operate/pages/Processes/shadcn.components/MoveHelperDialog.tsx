@@ -19,6 +19,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 	Label,
+	useResolvedTheme,
 } from '@camunda/design-system';
 import {themeStore} from '#/shared/theme/theme';
 import {storeStateLocally} from '#/shared/browser-storage/local-storage';
@@ -34,6 +35,7 @@ type Props = {
 
 const MoveHelperDialog: React.FC<Props> = observer(({open, onClose, onSubmit}) => {
 	const {t} = useTranslation();
+	const resolvedTheme = useResolvedTheme(themeStore.selectedTheme);
 
 	return (
 		<Dialog
@@ -52,7 +54,7 @@ const MoveHelperDialog: React.FC<Props> = observer(({open, onClose, onSubmit}) =
 				<DialogBody className="flex flex-col gap-4 pb-2 text-sm">
 					<p>{t('operate.processes.batchModification.helperSelectTarget')}</p>
 					<img
-						src={themeStore.actualTheme === 'light' ? modalDiagramImageLight : modalDiagramImageDark}
+						src={resolvedTheme === 'light' ? modalDiagramImageLight : modalDiagramImageDark}
 						alt={t('operate.processes.batchModification.helperImageAlt')}
 						className="w-[335px] max-w-full self-center"
 					/>

@@ -87,7 +87,9 @@ test.describe('Operate Processes DS preview (/operate-preview/processes)', () =>
 
 		await expect(operatePreviewProcessesPage.heading).toBeAttached();
 		await expect(operatePreviewProcessesPage.nameFilter).toBeVisible();
-		await expect(operatePreviewProcessesPage.diagramPanel.getByText('There is no Process selected')).toBeVisible();
+		await expect(
+			operatePreviewProcessesPage.diagramPanel.getByRole('heading', {name: 'Select a process'}),
+		).toBeVisible();
 		await expect(operatePreviewProcessesPage.instancesTable).toBeVisible();
 		await expect(operatePreviewProcessesPage.instancesTable.getByText('Order process')).toBeVisible();
 	});
@@ -115,7 +117,7 @@ test.describe('Operate Processes DS preview (/operate-preview/processes)', () =>
 		await expect(panel.getByText('Order process')).toBeVisible();
 		await expect(panel.getByRole('button', {name: /Process ID/})).toBeVisible();
 		await expect(panel.getByRole('region', {name: 'Diagram', exact: true})).toBeVisible();
-		await expect(panel.getByText('There is no Process selected')).toBeHidden();
+		await expect(panel.getByRole('heading', {name: 'Select a process'})).toBeHidden();
 	});
 
 	test('should keep the Carbon Processes route working', async ({network, operateProcessesPage, page}) => {

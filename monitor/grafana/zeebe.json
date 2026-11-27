@@ -16486,8 +16486,8 @@
                       "kind": "DataQuery",
                       "spec": {
                         "editorMode": "code",
-                        "expr": "sum(rate(zeebe_actor_task_execution_count_total{namespace=~\"$namespace\", pod=~\"$pod\"}[1m])) by (actorName)",
-                        "legendFormat": "{{actorName}}",
+                        "expr": "sum(rate(zeebe_actor_task_execution_count_total{namespace=~\"$namespace\", pod=~\"$pod\"}[1m])) by (scheduler, actorName)",
+                        "legendFormat": "{{scheduler}} {{actorName}}",
                         "range": true
                       },
                       "version": "v0"
@@ -16599,8 +16599,8 @@
                       "kind": "DataQuery",
                       "spec": {
                         "editorMode": "code",
-                        "expr": "sum(rate(zeebe_actor_task_queue_length{namespace=~\"$namespace\", pod=~\"$pod\"}[1m])) by (actorName)",
-                        "legendFormat": "{{topic}}: {{pod}} =\u003e {{address}}",
+                        "expr": "sum(rate(zeebe_actor_task_queue_length{namespace=~\"$namespace\", pod=~\"$pod\"}[1m])) by (scheduler, actorName)",
+                        "legendFormat": "{{scheduler}} {{actorName}}",
                         "range": true
                       },
                       "version": "v0"
@@ -16712,11 +16712,11 @@
                       "kind": "DataQuery",
                       "spec": {
                         "editorMode": "code",
-                        "expr": "histogram_quantile(0.50, sum(rate(zeebe_actor_task_execution_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}[$__rate_interval])) by (le, actorName) or sum(rate(zeebe_actor_task_execution_latency_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}[$__rate_interval])) by (le, actorName))",
+                        "expr": "histogram_quantile(0.50, sum(rate(zeebe_actor_task_execution_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}[$__rate_interval])) by (le, scheduler, actorName) or sum(rate(zeebe_actor_task_execution_latency_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}[$__rate_interval])) by (le, scheduler, actorName))",
                         "format": "heatmap",
                         "interval": "30s",
                         "intervalFactor": 1,
-                        "legendFormat": "p50 {{actorName}}",
+                        "legendFormat": "p50 {{scheduler}} {{actorName}}",
                         "range": true
                       },
                       "version": "v0"
@@ -16736,9 +16736,9 @@
                       "kind": "DataQuery",
                       "spec": {
                         "editorMode": "code",
-                        "expr": "histogram_quantile(0.99, sum(rate(zeebe_actor_task_execution_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}[$__rate_interval])) by (le, actorName) or sum(rate(zeebe_actor_task_execution_latency_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}[$__rate_interval])) by (le, actorName))",
+                        "expr": "histogram_quantile(0.99, sum(rate(zeebe_actor_task_execution_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}[$__rate_interval])) by (le, scheduler, actorName) or sum(rate(zeebe_actor_task_execution_latency_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}[$__rate_interval])) by (le, scheduler, actorName))",
                         "interval": "",
-                        "legendFormat": "p99 {{actorName}}",
+                        "legendFormat": "p99 {{scheduler}} {{actorName}}",
                         "range": true
                       },
                       "version": "v0"
@@ -16851,11 +16851,11 @@
                       "kind": "DataQuery",
                       "spec": {
                         "editorMode": "code",
-                        "expr": "histogram_quantile(0.50, sum(rate(zeebe_actor_job_scheduling_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}[$__rate_interval])) by (le, subscriptionType) or sum(rate(zeebe_actor_job_scheduling_latency_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}[$__rate_interval])) by (le, subscriptionType))",
+                        "expr": "histogram_quantile(0.50, sum(rate(zeebe_actor_job_scheduling_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}[$__rate_interval])) by (le, scheduler, subscriptionType) or sum(rate(zeebe_actor_job_scheduling_latency_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}[$__rate_interval])) by (le, scheduler, subscriptionType))",
                         "format": "heatmap",
                         "interval": "30s",
                         "intervalFactor": 1,
-                        "legendFormat": "p50 {{subscriptionType}}",
+                        "legendFormat": "p50 {{scheduler}} {{subscriptionType}}",
                         "range": true
                       },
                       "version": "v0"
@@ -16875,9 +16875,9 @@
                       "kind": "DataQuery",
                       "spec": {
                         "editorMode": "code",
-                        "expr": "histogram_quantile(0.99, sum(rate(zeebe_actor_job_scheduling_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}[$__rate_interval])) by (le, subscriptionType) or sum(rate(zeebe_actor_job_scheduling_latency_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}[$__rate_interval])) by (le, subscriptionType))",
+                        "expr": "histogram_quantile(0.99, sum(rate(zeebe_actor_job_scheduling_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}[$__rate_interval])) by (le, scheduler, subscriptionType) or sum(rate(zeebe_actor_job_scheduling_latency_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\"}[$__rate_interval])) by (le, scheduler, subscriptionType))",
                         "interval": "",
-                        "legendFormat": "p99 {{subscriptionType}}",
+                        "legendFormat": "p99 {{scheduler}} {{subscriptionType}}",
                         "range": true
                       },
                       "version": "v0"

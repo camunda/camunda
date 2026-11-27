@@ -42,7 +42,6 @@ import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.http.HttpClient;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -73,11 +72,9 @@ import org.springframework.security.oauth2.client.registration.ClientRegistratio
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizedClientManager;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
-import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.core.http.converter.OAuth2AccessTokenResponseHttpMessageConverter;
 import org.springframework.security.oauth2.jose.jws.JwsAlgorithm;
 import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoderFactory;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.web.client.RestClient;
@@ -433,13 +430,10 @@ public class OidcOverrideBeansConfiguration {
       final Map<String, OidcConfiguration> providers) {
     // SaaS validators stay in the host. The CSL factory composes the base validator chain
     // (timestamp + optional audience) and tacks on the host's SaaS validators via extras.
-    final List<OAuth2TokenValidator<Jwt>> extraValidators = new ArrayList<>();
-    if (cslProperties.getSaas().isConfigured()) {
-      extraValidators.add(new OrganizationValidator(cslProperties.getSaas().getOrganizationId()));
-      extraValidators.add(new ClusterValidator(cslProperties.getSaas().getClusterId()));
-    }
     return new TokenValidatorFactory(
-        providers, cslProperties.getAuthentication().getOidc().getClockSkew(), extraValidators);
+        providers,
+        cslProperties.getAuthentication().getOidc().getClockSkew(),
+        SaasTokenValidators.of(cslProperties.getSaas()));
   }
 
   /**

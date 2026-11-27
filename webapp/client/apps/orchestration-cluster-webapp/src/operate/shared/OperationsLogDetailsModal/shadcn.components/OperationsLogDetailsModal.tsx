@@ -7,16 +7,7 @@
  */
 
 import {OPERATE_BASE} from '#/shared/operateBase';
-import {
-	Dialog,
-	DialogBody,
-	DialogContent,
-	DialogHeader,
-	DialogTitle,
-	Heading,
-	InlineCode,
-	Link,
-} from '@camunda/design-system';
+import {Heading, InlineCode, Link, Sheet, SheetContent, SheetHeader, SheetTitle} from '@camunda/design-system';
 import {
 	ArrowRight,
 	CalendarClock,
@@ -167,7 +158,7 @@ const OperationsLogDetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog})
 	const detailsData = mapToCellDetailsData(t, auditLog);
 
 	return (
-		<Dialog
+		<Sheet
 			open={isOpen}
 			onOpenChange={(open) => {
 				if (!open) {
@@ -175,11 +166,11 @@ const OperationsLogDetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog})
 				}
 			}}
 		>
-			<DialogContent size="md" aria-describedby={undefined}>
-				<DialogHeader>
-					<DialogTitle>{formatModalHeading(auditLog)}</DialogTitle>
-				</DialogHeader>
-				<DialogBody className="space-y-4">
+			<SheetContent side="right" className="max-w-lg" aria-describedby={undefined}>
+				<SheetHeader>
+					<SheetTitle>{formatModalHeading(auditLog)}</SheetTitle>
+				</SheetHeader>
+				<div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 pb-4">
 					{auditLog.entityType !== 'BATCH' && auditLog.batchOperationKey ? (
 						<p className="flex items-center gap-2">
 							<Layers aria-hidden="true" className="size-4 shrink-0" />
@@ -330,9 +321,9 @@ const OperationsLogDetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog})
 							</dl>
 						</section>
 					) : null}
-				</DialogBody>
-			</DialogContent>
-		</Dialog>
+				</div>
+			</SheetContent>
+		</Sheet>
 	);
 };
 

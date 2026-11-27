@@ -30,6 +30,10 @@ public interface MutableElementInstanceState extends ElementInstanceState {
 
   void updateInstance(ElementInstance scopeInstance);
 
+  /**
+   * Applies the modifier to the stored instance and writes it back. The modifier must not call
+   * {@link #getInstanceState(long)}, which would overwrite the instance it is modifying.
+   */
   void updateInstance(long key, Consumer<ElementInstance> modifier);
 
   void setAwaitResultRequestMetadata(

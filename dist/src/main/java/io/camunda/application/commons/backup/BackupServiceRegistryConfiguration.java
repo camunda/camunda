@@ -70,6 +70,7 @@ import io.camunda.webapps.schema.descriptors.template.SnapshotTaskVariableTempla
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
+import io.camunda.webapps.schema.descriptors.template.VariableHistoryTemplate;
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
 import io.camunda.webapps.schema.descriptors.template.WaitStateTemplate;
 import io.camunda.zeebe.util.VersionUtil;
@@ -269,6 +270,8 @@ public class BackupServiceRegistryConfiguration {
             new DeployedResourceIndex(indexPrefix, isElasticsearch),
             new GlobalListenerIndex(indexPrefix, isElasticsearch),
             new JobMetricsBatchTemplate(indexPrefix, isElasticsearch),
+            // VARIABLE HISTORY
+            new VariableHistoryTemplate(indexPrefix, isElasticsearch),
             // WAIT STATE
             new WaitStateTemplate(indexPrefix, isElasticsearch));
 

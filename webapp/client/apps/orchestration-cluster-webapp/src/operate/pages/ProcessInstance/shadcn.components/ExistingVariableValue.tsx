@@ -6,15 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect} from 'react';
 import {Field} from 'react-final-form';
 import {useQuery} from '@tanstack/react-query';
 import {useTranslation} from 'react-i18next';
-import {Spinner} from '@camunda/design-system';
+import {Alert, Button, Spinner} from '@camunda/design-system';
 import {InlineJsonEditor} from '#/operate/shared/Editors/shadcn.components/InlineJsonEditor';
 import {useFieldError} from '#/operate/shared/hooks/useFieldError';
 import {mergeValidators} from '#/operate/shared/utils/mergeValidators';
-import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {useProcessInstanceModification} from '../useProcessInstanceModification';
 import {useExistingVariableEditor} from '../useExistingVariableEditor';
 import {variableQuery} from '../variables.queries';
@@ -33,19 +31,9 @@ const ExistingVariableValue: React.FC<Props> = ({variableKey, variableName, vari
 	const {t} = useTranslation();
 	const {isModificationModeEnabled} = useProcessInstanceModification();
 	const variableEditor = useExistingVariableEditor(variableName, variableValue);
-	const {data: variable, isLoading, error} = useQuery({...variableQuery(variableKey), enabled: isTruncated});
+	const {data: variable, isLoading, error, refetch} = useQuery({...variableQuery(variableKey), enabled: isTruncated});
 	const fieldError = useFieldError(variableEditor.fieldName);
 	const isFullValueMissing = isTruncated && variable === undefined;
-
-	useEffect(() => {
-		if (error !== null) {
-			notificationsStore.displayNotification({
-				kind: 'error',
-				title: t('operate.processInstance.variables.fetchFailed'),
-				isDismissable: true,
-			});
-		}
-	}, [error, t]);
 
 	return (
 		<Field
@@ -82,6 +70,20 @@ const ExistingVariableValue: React.FC<Props> = ({variableKey, variableName, vari
 							input.onBlur();
 						}}
 					/>
+					{error !== null && (
+						<Alert variant="destructive" title={t('operate.processInstance.variables.fetchFailed')}>
+							<Button
+								type="button"
+								variant="secondary"
+								size="sm"
+								onClick={() => {
+									void refetch();
+								}}
+							>
+								{t('errorGenericErrorPageButtonLabel')}
+							</Button>
+						</Alert>
+					)}
 				</div>
 			)}
 		</Field>

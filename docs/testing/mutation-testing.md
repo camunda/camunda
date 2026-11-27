@@ -12,7 +12,7 @@ CI test jobs; you run it on demand. A run is slow (minutes for a module), so sco
 ## Run it with Gradle
 
 ```bash
-# whole module, dynamic-config only (defaults to io.camunda.zeebe.dynamic.config.*)
+# whole module, dynamic-config and metadata-store only (defaults to the module's own packages)
 ./gradlew :zeebe-cluster-config-api:pitest -Ppit.threads=4
 
 # scoped run, required for every other module
@@ -21,14 +21,14 @@ CI test jobs; you run it on demand. A run is slow (minutes for a module), so sco
   -Ppit.targetTests='io.camunda.zeebe.journal.file.SparseJournalIndexTest'
 ```
 
-|       Property        |                                 Meaning                                  |
-|-----------------------|--------------------------------------------------------------------------|
-| `pit.targetClasses`   | comma-separated class globs to mutate; required outside dynamic-config   |
-| `pit.targetTests`     | comma-separated test class globs to run (default: derived by PIT)        |
-| `pit.threads`         | worker threads (default 8)                                               |
-| `pit.timeoutConstant` | timeout constant in milliseconds (default 30000)                         |
-| `pit.engine`          | `gregor` (default) or `descartes` (extreme mutation, far fewer mutants)  |
-| `pit.crossModule`     | `:zeebe-cluster-config-impl` also mutates the api classes (default true) |
+|       Property        |                                  Meaning                                  |
+|-----------------------|---------------------------------------------------------------------------|
+| `pit.targetClasses`   | class globs to mutate; required outside dynamic-config and metadata-store |
+| `pit.targetTests`     | comma-separated test class globs to run (default: derived by PIT)         |
+| `pit.threads`         | worker threads (default 8)                                                |
+| `pit.timeoutConstant` | timeout constant in milliseconds (default 30000)                          |
+| `pit.engine`          | `gregor` (default) or `descartes` (extreme mutation, far fewer mutants)   |
+| `pit.crossModule`     | `:zeebe-cluster-config-impl` also mutates the api classes (default true)  |
 
 The same properties work with Maven as `-Dpit.<name>=...`.
 

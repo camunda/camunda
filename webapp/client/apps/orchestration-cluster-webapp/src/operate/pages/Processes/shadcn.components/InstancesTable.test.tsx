@@ -8,7 +8,8 @@
 
 import {afterEach, describe, expect, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
-import {http, HttpResponse} from 'msw';
+import {HttpResponse} from 'msw';
+import {z} from 'zod';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {
@@ -19,7 +20,6 @@ import {
 	createProcessInstance,
 	createQueryProcessInstancesResponse,
 } from '#/shared-test-modules/api-mocks/process-instances';
-import {endpoints} from '@camunda/camunda-api-zod-schemas/8.11';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import type {ProcessesSearch} from '../processesFilter';
 import {InstancesTable} from './InstancesTable';
@@ -61,6 +61,7 @@ describe('<InstancesTable /> (design system)', () => {
 	});
 
 	afterEach(() => {
+		vi.useRealTimers();
 		sessionStorage.clear();
 	});
 
@@ -167,22 +168,16 @@ describe('<InstancesTable /> (design system)', () => {
 				createProcessInstance({processInstanceKey: '1', processDefinitionName: 'Order process'}),
 				createProcessInstance({processInstanceKey: '2', processDefinitionName: 'Shipping process'}),
 			]),
-			http.post(endpoints.queryBatchOperationItems.getUrl(), async ({request}) => {
-				const {page} = (await request.json()) as {page?: {after?: string}};
-				return HttpResponse.json(
-					page?.after === undefined
-						? {
-								items: [
-									activeItem('a', '1', 'CANCEL_PROCESS_INSTANCE'),
-									activeItem('b', '1', 'SUSPEND_PROCESS_INSTANCE'),
-								],
-								page: {totalItems: 3, hasMoreTotalItems: true, endCursor: 'cursor-1'},
-							}
-						: {
-								items: [activeItem('c', '2', 'CANCEL_PROCESS_INSTANCE')],
-								page: {totalItems: 3, hasMoreTotalItems: false, endCursor: null},
-							},
-				);
+			mockQueryBatchOperationItemsEndpoint({
+				schema: z.object({page: z.object({after: z.literal('cursor-1')})}),
+				successResponse: HttpResponse.json({
+					items: [activeItem('c', '2', 'CANCEL_PROCESS_INSTANCE')],
+					page: {totalItems: 3, hasMoreTotalItems: false, endCursor: null},
+				}),
+				failureResponse: HttpResponse.json({
+					items: [activeItem('a', '1', 'CANCEL_PROCESS_INSTANCE'), activeItem('b', '1', 'SUSPEND_PROCESS_INSTANCE')],
+					page: {totalItems: 3, hasMoreTotalItems: true, endCursor: 'cursor-1'},
+				}),
 			}),
 		);
 
@@ -213,7 +208,7 @@ describe('<InstancesTable /> (design system)', () => {
 
 		const screen = await renderInstancesTable({...BASE_SEARCH, active: false, incidents: false, suspended: false});
 
-		await expect.element(screen.getByText('No instances match these filters')).toBeVisible();
+		await expect.element(screen.getByText('Select an instance state')).toBeVisible();
 		await expect.element(screen.getByText('To see results, select at least one instance state')).toBeVisible();
 	});
 
@@ -228,10 +223,11 @@ describe('<InstancesTable /> (design system)', () => {
 		const screen = await renderInstancesTable();
 
 		await expect.element(screen.getByRole('region', {name: 'Process instances panel'})).toBeVisible();
-		await expect.element(screen.getByText('No instances match these filters')).not.toBeInTheDocument();
+		await expect.element(screen.getByText('No running instances yet')).not.toBeInTheDocument();
 	});
 
 	it('should show the error message when the search fails', async ({worker}) => {
+		vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']}).setTimerTickMode('nextTimerAsync');
 		worker.use(
 			mockQueryProcessInstancesEndpoint({
 				successResponse: new HttpResponse(null, {status: 500}),
@@ -257,6 +253,7 @@ describe('<InstancesTable /> (design system)', () => {
 	});
 
 	it('should show the instances after trying again', async ({worker}) => {
+		vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']}).setTimerTickMode('nextTimerAsync');
 		worker.use(
 			mockQueryProcessInstancesEndpoint({
 				successResponse: new HttpResponse(null, {status: 500}),
@@ -273,22 +270,21 @@ describe('<InstancesTable /> (design system)', () => {
 		await expect.element(screen.getByText('Order process')).toBeVisible();
 	});
 
-	it(
-		'should replace the loaded rows with the error state when a refresh fails',
-		{timeout: 30_000},
-		async ({worker}) => {
-			worker.use(
-				mockInstances([createProcessInstance({processInstanceKey: '1', processDefinitionName: 'Order process'})]),
-			);
-			const screen = await renderInstancesTable();
-			await expect.element(screen.getByText('Order process')).toBeVisible();
+	it('should replace the loaded rows with the error state when a refresh fails', async ({worker}) => {
+		vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval']});
+		worker.use(
+			mockInstances([createProcessInstance({processInstanceKey: '1', processDefinitionName: 'Order process'})]),
+		);
+		const screen = await renderInstancesTable();
+		await expect.element(screen.getByText('Order process')).toBeVisible();
 
-			worker.use(mockQueryProcessInstancesEndpoint({successResponse: new HttpResponse(null, {status: 500})}));
+		worker.use(mockQueryProcessInstancesEndpoint({successResponse: new HttpResponse(null, {status: 500})}));
+		await vi.advanceTimersByTimeAsync(5000);
+		await vi.advanceTimersByTimeAsync(7000);
 
-			await expect.element(screen.getByText("Couldn't fetch data"), {timeout: 25_000}).toBeVisible();
-			await expect.element(screen.getByText('Order process')).not.toBeInTheDocument();
-		},
-	);
+		await expect.element(screen.getByText("Couldn't fetch data")).toBeVisible();
+		await expect.element(screen.getByText('Order process')).not.toBeInTheDocument();
+	});
 
 	it('should select a row and reflect it in the selection count', async ({worker}) => {
 		worker.use(mockInstances([createProcessInstance({processInstanceKey: '1'})]));

@@ -24,19 +24,22 @@ import java.util.Set;
 public record ExportingCfg(
     Map<Integer, Set<Long>> skipRecords,
     Duration distributionInterval,
-    int migrationStatusScanMaxRecords) {
+    int migrationStatusScanMaxRecords,
+    boolean exportOnlyBackedUpRecords) {
 
   public ExportingCfg(
       final Map<Integer, Set<Long>> skipRecords,
       final Duration distributionInterval,
-      final int migrationStatusScanMaxRecords) {
+      final int migrationStatusScanMaxRecords,
+      final boolean exportOnlyBackedUpRecords) {
     this.skipRecords = skipRecords == null ? Map.of() : skipRecords;
     this.distributionInterval =
         distributionInterval == null ? DEFAULT_DISTRIBUTION_INTERVAL : distributionInterval;
     this.migrationStatusScanMaxRecords = migrationStatusScanMaxRecords;
+    this.exportOnlyBackedUpRecords = exportOnlyBackedUpRecords;
   }
 
   public static ExportingCfg defaultExportingCfg() {
-    return new ExportingCfg(null, null, DEFAULT_MIGRATION_STATUS_SCAN_MAX_RECORDS);
+    return new ExportingCfg(null, null, DEFAULT_MIGRATION_STATUS_SCAN_MAX_RECORDS, false);
   }
 }

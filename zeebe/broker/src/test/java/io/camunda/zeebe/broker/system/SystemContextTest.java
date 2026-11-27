@@ -31,13 +31,16 @@ import io.camunda.security.validation.IdentityInitializationException;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
+import io.camunda.zeebe.broker.partitioning.PhysicalTenantActorSchedulers;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ConfigManagerCfg;
+import io.camunda.zeebe.broker.system.configuration.ExportingCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg.BackupStoreType;
 import io.camunda.zeebe.broker.system.configuration.engine.GlobalListenerCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionCfg.NodeCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
+import io.camunda.zeebe.broker.test.TestEngineFactory;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.scheduler.ActorScheduler;
@@ -571,6 +574,7 @@ final class SystemContextTest {
             SystemContext.DEFAULT_SHUTDOWN_TIMEOUT,
             new BrokerCfg(),
             mock(ActorScheduler.class),
+            PhysicalTenantActorSchedulers.shared(mock(ActorScheduler.class)),
             mock(AtomixCluster.class),
             mock(BrokerClient.class),
             new SimpleMeterRegistry(),
@@ -582,7 +586,8 @@ final class SystemContextTest {
                     flags,
                     new BrokerCfg(),
                     new ExporterRepository(),
-                    new SecretStoreRegistry(Map.of()))),
+                    new SecretStoreRegistry(Map.of()),
+                    TestEngineFactory.create())),
             ignored -> mock(UserServices.class),
             mock(PasswordEncoder.class),
             authConfig -> mock(JwtDecoder.class),
@@ -918,11 +923,13 @@ final class SystemContextTest {
                         FeatureFlags.createDefaultForTests(),
                         brokerCfg,
                         new ExporterRepository(),
-                        new SecretStoreRegistry(Map.of()))));
+                        new SecretStoreRegistry(Map.of()),
+                        TestEngineFactory.create())));
     return new SystemContext(
         SystemContext.DEFAULT_SHUTDOWN_TIMEOUT,
         brokerCfg,
         mock(ActorScheduler.class),
+        PhysicalTenantActorSchedulers.shared(mock(ActorScheduler.class)),
         mock(AtomixCluster.class),
         mock(BrokerClient.class),
         new SimpleMeterRegistry(),
@@ -1423,6 +1430,33 @@ final class SystemContextTest {
     final var backupCfg = brokerCfg.getData().getBackup();
     backupCfg.setRequired(false);
     backupCfg.setStore(BackupStoreType.NONE);
+
+    // when - then
+    assertThatNoException().isThrownBy(() -> initSystemContext(brokerCfg));
+  }
+
+  @Test
+  void shouldThrowWhenExportOnlyBackedUpRecordsIsEnabledButStoreIsNone() {
+    // given
+    final BrokerCfg brokerCfg = new BrokerCfg();
+    brokerCfg.setExporting(new ExportingCfg(null, null, 100_000, true));
+    brokerCfg.getData().getBackup().setStore(BackupStoreType.NONE);
+
+    // when - then
+    assertThatCode(() -> initSystemContext(brokerCfg))
+        .isInstanceOf(InvalidConfigurationException.class)
+        .hasMessageContaining("export-only-backed-up-records")
+        .hasMessageContaining("no backup store is configured");
+  }
+
+  @Test
+  void shouldNotThrowWhenExportOnlyBackedUpRecordsIsEnabledAndStoreIsConfigured() {
+    // given
+    final BrokerCfg brokerCfg = new BrokerCfg();
+    brokerCfg.setExporting(new ExportingCfg(null, null, 100_000, true));
+    final var backupCfg = brokerCfg.getData().getBackup();
+    backupCfg.setStore(BackupStoreType.FILESYSTEM);
+    backupCfg.getFilesystem().setBasePath("/tmp");
 
     // when - then
     assertThatNoException().isThrownBy(() -> initSystemContext(brokerCfg));

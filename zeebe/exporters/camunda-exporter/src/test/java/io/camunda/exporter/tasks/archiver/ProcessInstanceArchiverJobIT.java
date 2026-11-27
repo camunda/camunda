@@ -29,6 +29,7 @@ import io.camunda.webapps.schema.descriptors.template.PostImporterQueueTemplate;
 import io.camunda.webapps.schema.descriptors.template.SequenceFlowTemplate;
 import io.camunda.webapps.schema.descriptors.template.SnapshotTaskVariableTemplate;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
+import io.camunda.webapps.schema.descriptors.template.VariableHistoryTemplate;
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
 import io.camunda.webapps.schema.descriptors.template.WaitStateTemplate;
 import io.camunda.webapps.schema.entities.CorrelatedMessageSubscriptionEntity;
@@ -50,6 +51,7 @@ import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.post.PostImporterQueueEntity;
 import io.camunda.webapps.schema.entities.usertask.SnapshotTaskVariableEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
+import io.camunda.webapps.schema.entities.variablehistory.VariableHistoryEntity;
 import io.camunda.webapps.schema.entities.waitstate.WaitStateEntity;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -570,7 +572,10 @@ public class ProcessInstanceArchiverJobIT extends ArchiverJobIT<ProcessInstanceA
             List.of(agentInstanceEntity(processInstance))),
         new DependentEntities(
             resourceProvider.getIndexTemplateDescriptor(AgentHistoryTemplate.class),
-            List.of(agentHistoryEntity(processInstance))));
+            List.of(agentHistoryEntity(processInstance))),
+        new DependentEntities(
+            resourceProvider.getIndexTemplateDescriptor(VariableHistoryTemplate.class),
+            List.of(variableHistoryEntity(processInstance))));
   }
 
   private ProcessInstanceForListViewEntity processInstanceForListViewEntity(final String endDate) {
@@ -731,6 +736,14 @@ public class ProcessInstanceArchiverJobIT extends ArchiverJobIT<ProcessInstanceA
   private AgentHistoryEntity agentHistoryEntity(
       final ProcessInstanceForListViewEntity processInstance) {
     final AgentHistoryEntity entity = create(AgentHistoryEntity::new);
+    entity.setProcessInstanceKey(processInstance.getKey());
+    entity.setRootProcessInstanceKey(processInstance.getKey());
+    return entity;
+  }
+
+  private VariableHistoryEntity variableHistoryEntity(
+      final ProcessInstanceForListViewEntity processInstance) {
+    final VariableHistoryEntity entity = create(VariableHistoryEntity::new);
     entity.setProcessInstanceKey(processInstance.getKey());
     entity.setRootProcessInstanceKey(processInstance.getKey());
     return entity;

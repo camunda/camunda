@@ -19,17 +19,16 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.broker.client.impl.BrokerTopologyManagerImpl;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.BrokerState;
-import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.CompletedChange;
+import io.camunda.zeebe.dynamic.config.state.CompletedPhasedChange;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
-import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlanStatus;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
+import io.camunda.zeebe.dynamic.config.util.DefaultTenantConfiguration;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
@@ -415,15 +414,21 @@ final class BrokerTopologyManagerTest {
     addTopologyListener(listener);
 
     // when
-    final ClusterConfiguration clusterTopology =
-        ClusterConfiguration.builder()
-            .version(1)
-            .lastChange(
-                Optional.of(new CompletedChange(1, Status.COMPLETED, Instant.now(), Instant.now())))
-            .build();
+    final var clusterTopology =
+        new CurrentClusterConfiguration(
+            CurrentClusterConfiguration.INITIAL_VERSION,
+            GlobalConfiguration.init(),
+            Map.of(
+                DEFAULT_PHYSICAL_TENANT_ID,
+                PartitionGroupConfiguration.empty(PartitionGroupConfiguration.INITIAL_VERSION)),
+            new PhasedChangeState(
+                2,
+                Map.of(),
+                List.of(
+                    new CompletedPhasedChange(
+                        1, PhasedChangePlanStatus.COMPLETED, Instant.now(), Instant.now()))));
 
-    topologyManager.onClusterConfigurationUpdated(
-        CurrentClusterConfiguration.fromLegacy(clusterTopology));
+    topologyManager.onClusterConfigurationUpdated(clusterTopology);
     actorSchedulerRule.workUntilDone();
 
     // then
@@ -459,12 +464,12 @@ final class BrokerTopologyManagerTest {
     notifyEvent(createMemberAddedEvent(broker));
 
     // when
-    final ClusterConfiguration clusterTopologyWithTwoBrokers =
-        ClusterConfiguration.init()
-            .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()))
-            .addMember(MemberId.from("2"), MemberState.initializeAsActive(Map.of()));
-    topologyManager.onClusterConfigurationUpdated(
-        CurrentClusterConfiguration.fromLegacy(clusterTopologyWithTwoBrokers));
+    final var clusterTopologyWithTwoBrokers =
+        DefaultTenantConfiguration.init()
+            .addMember(MemberId.from("1"))
+            .addMember(MemberId.from("2"))
+            .configuration();
+    topologyManager.onClusterConfigurationUpdated(clusterTopologyWithTwoBrokers);
     actorSchedulerRule.workUntilDone();
 
     // then
@@ -476,12 +481,12 @@ final class BrokerTopologyManagerTest {
   @Test
   void shouldNotOverwriteClusterSizeFromBrokerInfo() {
     // given
-    final ClusterConfiguration clusterTopologyWithTwoBrokers =
-        ClusterConfiguration.init()
-            .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()))
-            .addMember(MemberId.from("2"), MemberState.initializeAsActive(Map.of()));
-    topologyManager.onClusterConfigurationUpdated(
-        CurrentClusterConfiguration.fromLegacy(clusterTopologyWithTwoBrokers));
+    final var clusterTopologyWithTwoBrokers =
+        DefaultTenantConfiguration.init()
+            .addMember(MemberId.from("1"))
+            .addMember(MemberId.from("2"))
+            .configuration();
+    topologyManager.onClusterConfigurationUpdated(clusterTopologyWithTwoBrokers);
     actorSchedulerRule.workUntilDone();
 
     // when
@@ -500,25 +505,23 @@ final class BrokerTopologyManagerTest {
 
     // when
     final var clusterTopologyWithTwoBrokers =
-        ClusterConfiguration.init()
+        DefaultTenantConfiguration.init()
             .addMember(
                 MemberId.from("1"),
-                MemberState.initializeAsActive(
-                    Map.of(
-                        1,
-                        PartitionState.active(1, DynamicPartitionConfig.init()),
-                        2,
-                        PartitionState.active(2, DynamicPartitionConfig.init()))))
+                Map.of(
+                    1,
+                    PartitionState.active(1, DynamicPartitionConfig.init()),
+                    2,
+                    PartitionState.active(2, DynamicPartitionConfig.init())))
             .addMember(
                 MemberId.from("2"),
-                MemberState.initializeAsActive(
-                    Map.of(
-                        1,
-                        PartitionState.active(2, DynamicPartitionConfig.init()),
-                        2,
-                        PartitionState.active(1, DynamicPartitionConfig.init()))));
-    topologyManager.onClusterConfigurationUpdated(
-        CurrentClusterConfiguration.fromLegacy(clusterTopologyWithTwoBrokers));
+                Map.of(
+                    1,
+                    PartitionState.active(2, DynamicPartitionConfig.init()),
+                    2,
+                    PartitionState.active(1, DynamicPartitionConfig.init())))
+            .configuration();
+    topologyManager.onClusterConfigurationUpdated(clusterTopologyWithTwoBrokers);
     actorSchedulerRule.workUntilDone();
 
     // then
@@ -533,25 +536,23 @@ final class BrokerTopologyManagerTest {
   void shouldNotOverwritePartitionsCountFromBrokerInfo() {
     // given
     final var clusterTopologyWithTwoBrokers =
-        ClusterConfiguration.init()
+        DefaultTenantConfiguration.init()
             .addMember(
                 MemberId.from("1"),
-                MemberState.initializeAsActive(
-                    Map.of(
-                        1,
-                        PartitionState.active(1, DynamicPartitionConfig.init()),
-                        2,
-                        PartitionState.active(2, DynamicPartitionConfig.init()))))
+                Map.of(
+                    1,
+                    PartitionState.active(1, DynamicPartitionConfig.init()),
+                    2,
+                    PartitionState.active(2, DynamicPartitionConfig.init())))
             .addMember(
                 MemberId.from("2"),
-                MemberState.initializeAsActive(
-                    Map.of(
-                        1,
-                        PartitionState.active(2, DynamicPartitionConfig.init()),
-                        2,
-                        PartitionState.active(1, DynamicPartitionConfig.init()))));
-    topologyManager.onClusterConfigurationUpdated(
-        CurrentClusterConfiguration.fromLegacy(clusterTopologyWithTwoBrokers));
+                Map.of(
+                    1,
+                    PartitionState.active(2, DynamicPartitionConfig.init()),
+                    2,
+                    PartitionState.active(1, DynamicPartitionConfig.init())))
+            .configuration();
+    topologyManager.onClusterConfigurationUpdated(clusterTopologyWithTwoBrokers);
     actorSchedulerRule.workUntilDone();
 
     // when
@@ -757,18 +758,17 @@ final class BrokerTopologyManagerTest {
     // given -- the cluster configuration is gossiped in before any local membership event for the
     // default group is observed
     final var clusterTopologyWithTwoBrokers =
-        ClusterConfiguration.init()
+        DefaultTenantConfiguration.init()
             .addMember(
                 MemberId.from("1"),
-                MemberState.initializeAsActive(
-                    Map.of(
-                        1,
-                        PartitionState.active(1, DynamicPartitionConfig.init()),
-                        2,
-                        PartitionState.active(2, DynamicPartitionConfig.init()))))
-            .addMember(MemberId.from("2"), MemberState.initializeAsActive(Map.of()));
-    topologyManager.onClusterConfigurationUpdated(
-        CurrentClusterConfiguration.fromLegacy(clusterTopologyWithTwoBrokers));
+                Map.of(
+                    1,
+                    PartitionState.active(1, DynamicPartitionConfig.init()),
+                    2,
+                    PartitionState.active(2, DynamicPartitionConfig.init())))
+            .addMember(MemberId.from("2"))
+            .configuration();
+    topologyManager.onClusterConfigurationUpdated(clusterTopologyWithTwoBrokers);
     actorSchedulerRule.workUntilDone();
 
     // when -- a broker for the default group joins afterward
@@ -787,8 +787,8 @@ final class BrokerTopologyManagerTest {
     final var tenant1Info = createBrokerWithGroup(brokerId, "tenant1");
     notifyEvent(createMemberAddedEvent(tenant1Info));
 
-    // when -- the new-model cluster configuration carries distinct partition groups for
-    // "default" and "tenant1", each with a different partition assignment
+    // when -- the cluster configuration carries distinct partition groups for "default" and
+    // "tenant1", each with a different partition assignment
     final var defaultGroup =
         new PartitionGroupConfiguration(
             PartitionGroupConfiguration.INITIAL_VERSION,
@@ -974,7 +974,7 @@ final class BrokerTopologyManagerTest {
     assertThat(topologyManager.getTopology("tenant1").getLeaderForPartition(1)).isEqualTo(brokerId);
 
     // when -- a cluster configuration update arrives whose partition groups do not contain
-    // "tenant1" at all (e.g. the group is not part of the new model config)
+    // "tenant1" at all
     final var configurationWithoutTenant1 =
         new CurrentClusterConfiguration(
             CurrentClusterConfiguration.INITIAL_VERSION,

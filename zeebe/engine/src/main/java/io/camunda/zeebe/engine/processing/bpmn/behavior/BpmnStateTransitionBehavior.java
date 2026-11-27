@@ -166,8 +166,8 @@ public final class BpmnStateTransitionBehavior {
   public BpmnElementContext transitionToCompleting(final BpmnElementContext context) {
     resetTreePathProperties(context);
 
-    final var elementInstance = stateBehavior.getElementInstance(context);
-    if (elementInstance.getState() == ProcessInstanceIntent.ELEMENT_COMPLETING) {
+    if (stateBehavior.getElementInstanceState(context.getElementInstanceKey())
+        == ProcessInstanceIntent.ELEMENT_COMPLETING) {
       verifyIncidentResolving(context, "#transitionToCompleting");
       // if the element is already completing, then the Complete_Element command is processed as a
       // result of resolving an incident. We don't have to transition again. Just update the
@@ -284,8 +284,8 @@ public final class BpmnStateTransitionBehavior {
               "#transitionToTerminating"));
     }
 
-    final var elementInstance = stateBehavior.getElementInstance(context);
-    if (elementInstance.getState() == ProcessInstanceIntent.ELEMENT_TERMINATING
+    if (stateBehavior.getElementInstanceState(context.getElementInstanceKey())
+            == ProcessInstanceIntent.ELEMENT_TERMINATING
         && isIncidentResolving()) {
       // if the element is already terminating, then the Terminate_Element command is processed as a
       // result of resolving an incident. We don't have to transition again. Just update the

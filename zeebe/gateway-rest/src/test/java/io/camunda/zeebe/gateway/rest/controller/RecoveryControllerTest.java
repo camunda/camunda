@@ -26,11 +26,11 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreParameters;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse.ErrorCode;
-import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CompletedChange;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DependencyChangePlan;
+import io.camunda.zeebe.dynamic.config.state.DependencyChangePlan.Status;
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.OperationGraph;
@@ -96,12 +96,9 @@ public class RecoveryControllerTest extends RestControllerTest {
                     Map.of(CurrentClusterConfiguration.DEFAULT_GROUP, plannedChanges)));
     return new ClusterConfigurationChangeResponse(
         changeId,
-        new ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse(
-            Map.of(), Map.of(), List.<ClusterConfigurationChangeOperation>copyOf(plannedChanges)),
-        new ClusterConfigurationChangeResponse.CurrentConfigurationChangeResponse(
-            CurrentClusterConfiguration.uninitialized(),
-            CurrentClusterConfiguration.uninitialized(),
-            phases));
+        CurrentClusterConfiguration.uninitialized(),
+        CurrentClusterConfiguration.uninitialized(),
+        phases);
   }
 
   @Test
@@ -116,14 +113,11 @@ public class RecoveryControllerTest extends RestControllerTest {
     final var changeResponse =
         new ClusterConfigurationChangeResponse(
             7L,
-            new ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse(
-                Map.of(), Map.of(), List.of()),
-            new ClusterConfigurationChangeResponse.CurrentConfigurationChangeResponse(
-                CurrentClusterConfiguration.uninitialized(),
-                CurrentClusterConfiguration.uninitialized(),
-                List.of(
-                    new PartitionGroupPhase(
-                        Map.of(CurrentClusterConfiguration.DEFAULT_GROUP, graph.build())))));
+            CurrentClusterConfiguration.uninitialized(),
+            CurrentClusterConfiguration.uninitialized(),
+            List.of(
+                new PartitionGroupPhase(
+                    Map.of(CurrentClusterConfiguration.DEFAULT_GROUP, graph.build()))));
     Mockito.when(
             recoveryServices.changeMode(
                 Mockito.eq(Mode.RECOVERING), Mockito.eq(false), Mockito.any()))

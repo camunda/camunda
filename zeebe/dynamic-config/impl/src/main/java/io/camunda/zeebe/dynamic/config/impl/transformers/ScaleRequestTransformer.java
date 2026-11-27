@@ -94,11 +94,8 @@ public class ScaleRequestTransformer implements ConfigurationChangeRequest {
    * {@link #members}, rather than distributing the default group's alone. The member operations
    * have no tenant dimension, so they are unchanged.
    *
-   * <p>The resulting phases are the same three {@code toPhases} derives from the flat operation
-   * list today — a global phase, a partition-group phase, a global phase — with the two global runs
-   * merged when there is no partition work, since {@code toPhases} would then see one uninterrupted
-   * run of global operations. A single-tenant cluster therefore plans exactly what it planned
-   * before.
+   * <p>The result is three phases — a global phase, a partition-group phase, a global phase — with
+   * the two global runs merged into one phase when there is no partition work between them.
    */
   @Override
   public Either<Exception, List<Phase>> phases(final CurrentClusterConfiguration configuration) {
@@ -158,8 +155,7 @@ public class ScaleRequestTransformer implements ConfigurationChangeRequest {
       final List<Phase> partitionPhases,
       final List<GlobalChangeOperation> after) {
     if (partitionPhases.isEmpty()) {
-      // Nothing separates the two runs of global operations, so they are one phase — exactly what
-      // toPhases yields for the equivalent flat operation list.
+      // Nothing separates the two runs of global operations, so they are one phase.
       final var merged = new ArrayList<>(before);
       merged.addAll(after);
       return merged.isEmpty() ? List.of() : List.of(new GlobalPhase(List.copyOf(merged)));

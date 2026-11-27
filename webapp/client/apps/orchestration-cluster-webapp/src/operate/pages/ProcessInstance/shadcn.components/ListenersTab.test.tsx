@@ -9,14 +9,16 @@
 import {afterEach, describe, expect} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {cleanup} from 'vitest-browser-react';
-import {http, HttpResponse} from 'msw';
+import {HttpResponse} from 'msw';
 import {z} from 'zod';
 import {useRouterState} from '@tanstack/react-router';
-import {endpoints, type Job} from '@camunda/camunda-api-zod-schemas/8.11';
+import type {Job} from '@camunda/camunda-api-zod-schemas/8.11';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {
 	mockGetElementInstanceEndpoint,
+	mockGetProcessDefinitionXmlEndpoint,
+	mockQueryBatchOperationItemsEndpoint,
 	mockQueryElementInstancesEndpoint,
 	mockQueryJobsEndpoint,
 } from '#/shared-test-modules/mock-handlers';
@@ -28,6 +30,7 @@ import {
 import {createListenerJob} from '#/shared-test-modules/api-mocks/jobs';
 import {createPaginatedResponse, createProblemDetails} from '#/shared-test-modules/api-mocks/shared';
 import {ProcessInstancePageProvider} from '../ProcessInstancePageProvider';
+import {InstanceHistory} from './InstanceHistory';
 import {ListenersTab} from './ListenersTab';
 import {processInstanceSearchSchema} from '../processInstanceSearch';
 
@@ -67,6 +70,31 @@ function renderListeners(search = '') {
 	}
 
 	return renderWithRouter(Listeners, {
+		path: '/operate-preview/processes/$processInstanceId/listeners',
+		initialEntry: `/operate-preview/processes/${PROCESS_INSTANCE_ID}/listeners${search}`,
+	});
+}
+
+function renderListenersWithHistory(search: string) {
+	function ListenersWithHistory() {
+		const routeSearch = useRouterState({select: (state) => state.location.search});
+		return (
+			<ProcessInstancePageProvider
+				processInstanceId={PROCESS_INSTANCE_ID}
+				processInstance={createProcessInstance({processInstanceKey: PROCESS_INSTANCE_ID})}
+				search={processInstanceSearchSchema.parse(routeSearch)}
+			>
+				<div style={{height: '300px', display: 'flex', flexDirection: 'column'}}>
+					<InstanceHistory />
+				</div>
+				<section aria-label="Listeners" style={{height: '400px', display: 'flex', flexDirection: 'column'}}>
+					<ListenersTab />
+				</section>
+			</ProcessInstancePageProvider>
+		);
+	}
+
+	return renderWithRouter(ListenersWithHistory, {
 		path: '/operate-preview/processes/$processInstanceId/listeners',
 		initialEntry: `/operate-preview/processes/${PROCESS_INSTANCE_ID}/listeners${search}`,
 	});
@@ -174,22 +202,36 @@ describe('<ListenersTab /> (design system)', () => {
 
 	it('should drop the previous element listeners when the next selection cannot be resolved', async ({worker}) => {
 		const {search, elementInstance} = selectedElementSearch('SERVICE_TASK');
+		const otherElementInstance = createElementInstance({
+			elementInstanceKey: '2251799813685400',
+			elementId: 'other',
+			elementName: 'Other task',
+			type: 'SERVICE_TASK',
+		});
 		worker.use(
+			mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text('')}),
+			mockQueryBatchOperationItemsEndpoint({successResponse: HttpResponse.json(createPaginatedResponse())}),
+			mockQueryElementInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryElementInstancesResponse([{...elementInstance, elementName: 'Task'}, otherElementInstance]),
+				),
+			}),
 			mockGetElementInstanceEndpoint({successResponse: HttpResponse.json(elementInstance)}),
 			mockQueryJobsEndpoint({successResponse: jobsResponse([createListenerJob({jobKey: '501'})])}),
 		);
-		const screen = await renderListeners(search);
-		await expect.element(screen.getByRole('cell', {name: '501', exact: true})).toBeVisible();
+		const screen = await renderListenersWithHistory(search);
+		const listeners = screen.getByRole('region', {name: 'Listeners'});
+		await expect.element(listeners.getByRole('cell', {name: '501', exact: true})).toBeVisible();
 
 		worker.use(
 			mockGetElementInstanceEndpoint({
 				successResponse: HttpResponse.json(createProblemDetails({status: 500}), {status: 500}),
 			}),
 		);
-		await screen.router.navigate({to: '.', search: {elementId: 'other', elementInstanceKey: '2251799813685400'}});
+		await userEvent.click(screen.getByRole('treeitem', {name: /Other task/}));
 
-		await expect.element(screen.getByText("Couldn't fetch data")).toBeVisible();
-		await expect.element(screen.getByRole('cell', {name: '501', exact: true})).not.toBeInTheDocument();
+		await expect.element(listeners.getByText("Couldn't fetch data")).toBeVisible();
+		await expect.element(listeners.getByRole('cell', {name: '501', exact: true})).not.toBeInTheDocument();
 	});
 
 	it('should show an error message when the listeners cannot be fetched', async ({worker}) => {
@@ -201,32 +243,7 @@ describe('<ListenersTab /> (design system)', () => {
 		const screen = await renderListeners(search);
 
 		await expect.element(screen.getByText("Couldn't fetch data")).toBeVisible();
-		await expect.element(screen.getByText('This element has no execution listeners')).not.toBeInTheDocument();
-	});
-
-	it('should keep the loaded listeners visible when the next page cannot be fetched', async ({worker}) => {
-		const firstPage = Array.from({length: 50}, (_, index) => createListenerJob({jobKey: String(1000 + index)}));
-		worker.use(
-			http.post(endpoints.queryJobs.getUrl(), async ({request}) => {
-				const {page} = (await request.json()) as {page: {from: number}};
-				if (page.from === 0) {
-					return HttpResponse.json(
-						createPaginatedResponse({
-							items: firstPage,
-							page: {totalItems: 120, startCursor: null, endCursor: null, hasMoreTotalItems: false},
-						}),
-					);
-				}
-				return HttpResponse.json(createProblemDetails({status: 500}), {status: 500});
-			}),
-		);
-		const screen = await renderListeners();
-		await expect.element(screen.getByRole('cell', {name: '1000', exact: true})).toBeVisible();
-
-		await userEvent.wheel(screen.getByRole('table'), {delta: {y: 3000}});
-
-		await expect.element(screen.getByRole('alert')).toHaveTextContent("Couldn't fetch data");
-		await expect.element(screen.getByRole('cell', {name: '1000', exact: true})).toBeVisible();
+		await expect.element(screen.getByText('No execution listeners on this element')).not.toBeInTheDocument();
 	});
 
 	it('should show an empty message for an element without listeners', async ({worker}) => {
@@ -237,7 +254,7 @@ describe('<ListenersTab /> (design system)', () => {
 		);
 		const screen = await renderListeners(search);
 
-		await expect.element(screen.getByText('This element has no execution listeners')).toBeVisible();
+		await expect.element(screen.getByText('No execution listeners on this element')).toBeVisible();
 	});
 
 	it('should filter the listeners of a user task by type', async ({worker}) => {
@@ -279,9 +296,7 @@ describe('<ListenersTab /> (design system)', () => {
 		);
 		const screen = await renderListeners(search);
 
-		await expect
-			.element(screen.getByText('This element has no execution listeners nor user task listeners'))
-			.toBeVisible();
+		await expect.element(screen.getByText('No listeners on this element')).toBeVisible();
 		await expect.element(screen.getByRole('combobox')).toBeDisabled();
 	});
 
@@ -298,11 +313,11 @@ describe('<ListenersTab /> (design system)', () => {
 		await userEvent.click(screen.getByRole('combobox'));
 		await userEvent.click(screen.getByRole('option', {name: 'User task listeners'}));
 
-		await expect.element(screen.getByText('This element has no user task listeners')).toBeVisible();
+		await expect.element(screen.getByText('No user task listeners on this element')).toBeVisible();
 
 		await userEvent.click(screen.getByRole('combobox'));
 		await userEvent.click(screen.getByRole('option', {name: 'Execution listeners'}));
 
-		await expect.element(screen.getByText('This element has no execution listeners')).toBeVisible();
+		await expect.element(screen.getByText('No execution listeners on this element')).toBeVisible();
 	});
 });

@@ -210,9 +210,7 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
     return future;
   }
 
-  ActorFuture<Void> start(
-      final ClusterConfigurationInitializer<CurrentClusterConfiguration>
-          clusterConfigurationInitializer) {
+  ActorFuture<Void> start(final ClusterConfigurationInitializer clusterConfigurationInitializer) {
     executor.run(
         () -> {
           if (startFuture.isDone()) {
@@ -224,9 +222,7 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
     return startFuture;
   }
 
-  private void initialize(
-      final ClusterConfigurationInitializer<CurrentClusterConfiguration>
-          clusterConfigurationInitializer) {
+  private void initialize(final ClusterConfigurationInitializer clusterConfigurationInitializer) {
     clusterConfigurationInitializer
         .initialize()
         .onComplete(

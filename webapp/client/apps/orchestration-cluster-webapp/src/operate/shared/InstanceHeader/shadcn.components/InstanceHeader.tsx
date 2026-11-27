@@ -10,6 +10,7 @@ import {useTranslation} from 'react-i18next';
 import {Badge, typographyVariants} from '@camunda/design-system';
 import {cn} from '#/shared/cn';
 import {mutedTitle} from '#/operate/shared/mutedTitle';
+import {TruncatedText} from '#/operate/shared/TruncatedText/shadcn.components/TruncatedText';
 import {StateIcon} from '#/operate/shared/StateIcon/shadcn.components/StateIcon';
 
 type Column = {
@@ -56,14 +57,15 @@ const InstanceHeader: React.FC<InstanceHeaderProps> = ({
 		>
 			<StateIcon state={state} size={24} />
 
-			<div title={instanceName} className="mr-4 flex min-w-24 shrink flex-col gap-0.5">
-				<span className={mutedTitle(hasSubtitleRow ? 'label-sm' : 'label-md')}>{instanceName}</span>
+			<div className="mr-4 flex min-w-24 shrink flex-col gap-0.5">
+				<TruncatedText text={instanceName} className={mutedTitle(hasSubtitleRow ? 'label-sm' : 'label-md')} />
 				{hasSubtitleRow && (
 					<div className="flex min-w-0 items-center gap-2">
 						{incidentsCount > 0 && (
-							<span className={cn('truncate text-danger-foreground-subtle', typographyVariants({variant: 'label-md'}))}>
-								{t('operate.shared.instanceHeader.incidentsCount', {count: incidentsCount})}
-							</span>
+							<TruncatedText
+								text={t('operate.shared.instanceHeader.incidentsCount', {count: incidentsCount})}
+								className={cn('text-danger-foreground-subtle', typographyVariants({variant: 'label-md'}))}
+							/>
 						)}
 						{nameSubtitle && <Badge variant="warning">{nameSubtitle}</Badge>}
 					</div>
@@ -87,14 +89,19 @@ const InstanceHeader: React.FC<InstanceHeaderProps> = ({
 								return null;
 							}
 							const hideOverflowingContent = column.hideOverflowingContent ?? true;
+							// Plain-text cells reveal their full text via TruncatedText; other content keeps the cell-level truncate.
+							const isTruncatedText = hideOverflowingContent && typeof column.content === 'string';
 							return (
 								<td
 									key={index}
-									title={column.title}
+									title={isTruncatedText && column.title === column.content ? undefined : column.title}
 									data-testid={column.dataTestId}
-									className={cn(typographyVariants({variant: 'label-md'}), hideOverflowingContent && 'truncate')}
+									className={cn(
+										typographyVariants({variant: 'label-md'}),
+										hideOverflowingContent && !isTruncatedText && 'truncate',
+									)}
 								>
-									{column.content}
+									{isTruncatedText ? <TruncatedText text={column.content as string} /> : column.content}
 								</td>
 							);
 						})}

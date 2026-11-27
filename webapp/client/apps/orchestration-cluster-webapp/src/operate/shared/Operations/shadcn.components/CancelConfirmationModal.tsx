@@ -23,12 +23,12 @@ import {
 	DialogHeader,
 	DialogTitle,
 	Link,
+	Spinner,
 } from '@camunda/design-system';
-import {LoaderCircle} from '@camunda/design-system/icons';
+import {createLink} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
 import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.11';
-import {getBootConfig} from '#/shared/config/getBootConfig';
-import {mergePathname} from '#/shared/http/mergePathname';
+import {OPERATE_BASE} from '#/shared/operateBase';
 import {useCallHierarchy} from '#/operate/shared/Operations/Operations.queries';
 
 type Props = {
@@ -36,23 +36,16 @@ type Props = {
 	open: boolean;
 	onConfirm: () => void;
 	onCancel: () => void;
-	getRootInstancePath: (rootInstanceId: string) => string;
 };
 
-const CancelConfirmationModal: React.FC<Props> = ({
-	processInstanceKey,
-	open,
-	onConfirm,
-	onCancel,
-	getRootInstancePath,
-}) => {
+const RootInstanceLink = createLink(Link);
+
+const CancelConfirmationModal: React.FC<Props> = ({processInstanceKey, open, onConfirm, onCancel}) => {
 	const {t} = useTranslation();
 	const {data: callHierarchy, isError, isPending} = useCallHierarchy(processInstanceKey, {enabled: open});
 	const rootInstanceId = callHierarchy?.[0]?.processInstanceKey;
 
 	if (rootInstanceId) {
-		const rootInstancePath = mergePathname(getBootConfig().contextPath, getRootInstancePath(rootInstanceId));
-
 		return (
 			<Dialog
 				open={open}
@@ -73,12 +66,13 @@ const CancelConfirmationModal: React.FC<Props> = ({
 					<DialogBody>
 						<DialogDescription className="text-sm leading-5 text-foreground">
 							{t('operate.shared.operations.cancelRootInstanceModal.bodyBeforeLink')}{' '}
-							<Link
-								href={rootInstancePath}
+							<RootInstanceLink
+								to={`${OPERATE_BASE}/processes/$processInstanceId` as const}
+								params={{processInstanceId: rootInstanceId}}
 								title={t('operate.shared.operations.cancelRootInstanceModal.linkTitle', {rootInstanceId})}
 							>
 								{rootInstanceId}
-							</Link>{' '}
+							</RootInstanceLink>{' '}
 							{t('operate.shared.operations.cancelRootInstanceModal.bodyAfterLink')}
 						</DialogDescription>
 					</DialogBody>
@@ -105,10 +99,7 @@ const CancelConfirmationModal: React.FC<Props> = ({
 				</AlertDialogDescription>
 				<p>{t('operate.shared.operations.cancelConfirmationModal.hint')}</p>
 				{isPending ? (
-					<div className="flex flex-row items-center gap-2" role="status" aria-live="polite">
-						<LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
-						<span>{t('operate.shared.operations.cancelConfirmationModal.verificationLoading')}</span>
-					</div>
+					<Spinner label={t('operate.shared.operations.cancelConfirmationModal.verificationLoading')} />
 				) : null}
 				{isError ? (
 					<Alert

@@ -608,6 +608,11 @@ const mockCreateUserEndpoint = createEndpointMock({
 	method: endpoints.createUser.method,
 });
 
+const mockCreateAdminUserEndpoint = createEndpointMock({
+	endpoint: '/v2/setup/user',
+	method: 'POST',
+});
+
 const mockUpdateUserEndpoint = createEndpointMock({
 	endpoint: endpoints.updateUser.getUrl({username: ':username'}),
 	method: endpoints.updateUser.method,
@@ -895,6 +900,7 @@ export {
 	mockQueryGroupsEndpoint,
 	mockGetUserEndpoint,
 	mockCreateUserEndpoint,
+	mockCreateAdminUserEndpoint,
 	mockUpdateUserEndpoint,
 	mockDeleteUserEndpoint,
 	mockGetGroupEndpoint,

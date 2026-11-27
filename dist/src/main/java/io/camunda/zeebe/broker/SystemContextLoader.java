@@ -22,11 +22,13 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterLoadException;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
+import io.camunda.zeebe.broker.partitioning.PhysicalTenantActorSchedulers;
 import io.camunda.zeebe.broker.system.PhysicalTenantContext;
 import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
+import io.camunda.zeebe.engine.DefaultEngineFactory;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.jar.ExternalJarLoadException;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -63,6 +65,7 @@ public final class SystemContextLoader {
   private BrokerCfg rootBrokerCfg;
   private Camunda rootCamunda;
   private ActorScheduler actorScheduler;
+  private PhysicalTenantActorSchedulers physicalTenantActorSchedulers;
   private AtomixCluster cluster;
   private BrokerClient brokerClient;
   private MeterRegistry meterRegistry;
@@ -106,6 +109,12 @@ public final class SystemContextLoader {
 
   public SystemContextLoader withActorScheduler(final ActorScheduler actorScheduler) {
     this.actorScheduler = actorScheduler;
+    return this;
+  }
+
+  public SystemContextLoader withPhysicalTenantActorSchedulers(
+      final PhysicalTenantActorSchedulers physicalTenantActorSchedulers) {
+    this.physicalTenantActorSchedulers = physicalTenantActorSchedulers;
     return this;
   }
 
@@ -221,6 +230,7 @@ public final class SystemContextLoader {
         shutdownTimeout,
         rootBrokerCfg,
         actorScheduler,
+        physicalTenantActorSchedulers,
         cluster,
         brokerClient,
         meterRegistry,
@@ -275,7 +285,8 @@ public final class SystemContextLoader {
         featureFlags,
         brokerConfig,
         exporterRepository,
-        secretStoreRegistries.forPhysicalTenant(physicalTenantId));
+        secretStoreRegistries.forPhysicalTenant(physicalTenantId),
+        new DefaultEngineFactory());
   }
 
   private ExporterRepository predefinedExporterRepository() {

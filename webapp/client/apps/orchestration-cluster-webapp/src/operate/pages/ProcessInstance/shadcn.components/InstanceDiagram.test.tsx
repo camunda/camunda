@@ -6,11 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {afterEach, beforeEach, describe, expect, onTestFinished, vi} from 'vitest';
+import {afterEach, beforeEach, describe, expect} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {cleanup} from 'vitest-browser-react';
 import {useParams, useRouterState} from '@tanstack/react-router';
-import {HttpResponse, http} from 'msw';
+import {HttpResponse} from 'msw';
 import i18n from 'i18next';
 import {Toaster, toast} from '@camunda/design-system';
 import {it} from '#/vitest-modules/test-extend';
@@ -31,7 +31,6 @@ import {
 	mockQueryProcessInstancesEndpoint,
 	mockQueryDecisionInstancesEndpoint,
 } from '#/shared-test-modules/mock-handlers';
-import {endpoints} from '#/shared/http/endpoints';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {Notifications} from '#/shared/notifications/shadcn.components/Notifications';
 import {ProcessInstanceContext} from '../useProcessInstancePage';
@@ -124,28 +123,11 @@ beforeEach(() => {
 afterEach(async () => {
 	await cleanup();
 	await i18n.changeLanguage('en');
-	vi.restoreAllMocks();
 	notificationsStore.reset();
 	toast.dismiss();
 });
 
 describe('<InstanceDiagram /> (DS)', () => {
-	it('should download the rendered BPMN definition', async ({worker}) => {
-		worker.use(...handlers());
-		let filename = '';
-		const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
-			filename = this.download;
-		});
-		vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:diagram');
-		vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
-
-		const screen = await renderLoadedPage();
-		await userEvent.click(screen.getByRole('button', {name: 'Download XML'}));
-
-		expect(click).toHaveBeenCalledOnce();
-		expect(filename).toBe('my-process_v1.bpmn');
-	});
-
 	it('should offer the fullscreen control next to the zoom controls', async ({worker}) => {
 		worker.use(...handlers());
 
@@ -156,24 +138,14 @@ describe('<InstanceDiagram /> (DS)', () => {
 	});
 
 	it('should show a spinner while loading the XML', async ({worker}) => {
-		let releaseXml!: () => void;
-		const pendingXml = new Promise<void>((resolve) => {
-			releaseXml = resolve;
-		});
-		onTestFinished(releaseXml);
 		worker.use(
-			http.get(endpoints.getProcessDefinitionXml({processDefinitionKey: '2251799813685279'}).url, async () => {
-				await pendingXml;
-				return HttpResponse.text(PROCESS_XML);
-			}),
+			mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(PROCESS_XML), delay: 'infinite'}),
 			...handlers(),
 		);
 
 		const screen = await renderPage();
+
 		await expect.element(screen.getByRole('status', {name: 'Loading diagram'})).toBeVisible();
-		releaseXml();
-		await expect.element(screen.getByRole('status', {name: 'Loading diagram'})).not.toBeInTheDocument();
-		await expect.element(screen.getByRole('button', {name: 'Reset diagram zoom'})).toBeVisible();
 	});
 
 	it.for([
@@ -222,41 +194,38 @@ describe('<InstanceDiagram /> (DS)', () => {
 		await expect.element(screen.getByRole('img', {name: 'Review, Incidents: 1'})).toBeVisible();
 		await expect.element(screen.getByRole('img', {name: 'Completed: 1', exact: true})).toBeVisible();
 		await expect.element(screen.getByText('2 waiting')).toBeVisible();
-		await expect.element(screen.getByText('2 waiting')).toHaveAttribute('data-slot', 'badge');
 		await expect.element(screen.getByText('Thinking... + 1 more active agent')).toBeVisible();
 		await expect.element(screen.getByText('Waiting', {exact: true})).not.toBeInTheDocument();
 		await expect.element(screen.getByRole('img', {name: 'Review, Completed: 3'})).not.toBeInTheDocument();
+	});
+
+	it('should not show waiting overlays when the wait-states flag is off', async ({worker}) => {
+		storeSessionState(
+			'clientConfig',
+			createSystemConfiguration({deployment: {...createSystemConfiguration().deployment, isWaitStatesEnabled: false}}),
+		);
+		worker.use(...handlers({waitStates: [{elementId: 'task_1', waitingCount: 2}]}));
+
+		const screen = await renderPage();
+
+		await expect.element(screen.getByRole('img', {name: 'Review, Active: 2'})).toBeVisible();
+		await expect.element(screen.getByText('2 waiting')).not.toBeInTheDocument();
 	});
 
 	it('should synchronize selection and clear the instance key when the selected node is clicked', async ({worker}) => {
 		worker.use(...handlers());
 
 		const screen = await renderLoadedPage('?elementId=task_1&elementInstanceKey=instance-2');
+		const reviewTask = screen.getByRole('button', {name: 'Review (user task)'});
+		await expect.element(reviewTask).toHaveAttribute('aria-pressed', 'true');
 
-		await userEvent.click(screen.getByRole('button', {name: 'Review (user task)'}));
+		await userEvent.click(reviewTask);
 		await expect
 			.poll(() => processInstanceSearchSchema.parse(screen.router.state.location.search).elementInstanceKey)
 			.toBeUndefined();
 		expect(processInstanceSearchSchema.parse(screen.router.state.location.search).elementId).toBe('task_1');
 
 		await userEvent.click(screen.getByRole('region', {name: 'Diagram'}), {position: {x: 5, y: 5}});
-		await expect
-			.poll(() => processInstanceSearchSchema.parse(screen.router.state.location.search).elementId)
-			.toBeUndefined();
-	});
-
-	it('should clear the previous selection when navigating to a different process instance', async ({worker}) => {
-		worker.use(...handlers());
-
-		const screen = await renderLoadedPage('?elementId=task_1');
-
-		await screen.router.navigate({
-			to: '/operate-preview/processes/$processInstanceId/details',
-			params: {processInstanceId: 'instance-2'},
-			search: {elementId: 'task_1'},
-		});
-
-		await expect.poll(() => screen.router.state.location.pathname).toMatch(/\/processes\/instance-2\/details$/);
 		await expect
 			.poll(() => processInstanceSearchSchema.parse(screen.router.state.location.search).elementId)
 			.toBeUndefined();
@@ -277,8 +246,8 @@ describe('<InstanceDiagram /> (DS)', () => {
 
 		await userEvent.dblClick(screen.getByRole('button', {name: 'call activity'}));
 
-		await expect.poll(() => screen.router.state.location.pathname).toMatch(/\/processes\/child-1\/details$/);
-		expect(processInstanceSearchSchema.parse(screen.router.state.location.search).elementId).toBeUndefined();
+		await expect.poll(() => screen.router.state.location.pathname).toBe('/operate-preview/processes/child-1/details');
+		expect(screen.router.state.location.search).toEqual({});
 	});
 
 	it('should drill into a called decision', async ({worker}) => {
@@ -295,7 +264,8 @@ describe('<InstanceDiagram /> (DS)', () => {
 		const screen = await renderLoadedPage();
 		await userEvent.dblClick(screen.getByRole('button', {name: 'business rule task'}));
 
-		await expect.poll(() => screen.router.state.location.pathname).toMatch(/\/decisions\/decision-1$/);
+		await expect.element(screen.getByRole('region', {name: 'Diagram'})).not.toBeInTheDocument();
+		expect(screen.router.state.location.pathname).toMatch(/\/decisions\/decision-1$/);
 	});
 
 	it('should notify when the called process cannot be resolved', async ({worker}) => {

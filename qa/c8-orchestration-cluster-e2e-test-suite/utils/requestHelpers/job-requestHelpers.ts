@@ -172,6 +172,22 @@ export async function completeJob(
 }
 
 /**
+ * Completes a task listener job with a user task result, for example
+ * `{type: 'userTask', denied: true}` or `{type: 'userTask', corrections: {...}}`.
+ */
+export async function completeJobWithResult(
+  request: APIRequestContext,
+  jobKey: number,
+  result: Record<string, unknown>,
+): Promise<void> {
+  const res = await request.post(
+    buildUrl('/jobs/{jobKey}/completion', {jobKey}),
+    {headers: jsonHeaders(), data: {result}},
+  );
+  await assertStatusCode(res, 204);
+}
+
+/**
  * Activates jobs of a given type and returns those belonging to the given
  * process instance, filtered client-side since /jobs/activation has no
  * processInstanceKey filter. Optionally fetches specific variables per job.

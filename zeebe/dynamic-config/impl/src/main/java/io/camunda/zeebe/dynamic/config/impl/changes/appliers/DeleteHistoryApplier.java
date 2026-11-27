@@ -17,9 +17,8 @@ import io.camunda.zeebe.util.Either;
 import java.util.function.UnaryOperator;
 
 /**
- * New-model applier for {@code PartitionGroupOperation.DeleteHistoryOperation}, operating on a
- * single named {@link PartitionGroupConfiguration} as a whole. Mirrors the legacy {@code
- * DeleteHistoryApplier} in {@code changes/}, which this does not replace or modify.
+ * Applier for {@code PartitionGroupOperation.DeleteHistoryOperation}, operating on a single named
+ * {@link PartitionGroupConfiguration} as a whole.
  *
  * <p>History deletion is executed through the {@link PartitionChangeExecutor} of this partition
  * group, so that only the history exported by this group is purged.

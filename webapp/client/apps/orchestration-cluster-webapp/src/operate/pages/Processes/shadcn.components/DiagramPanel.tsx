@@ -113,7 +113,12 @@ const DiagramPanel: React.FC<Props> = ({
 			? t('operate.processes.diagramHeader.title')
 			: getProcessDefinitionName(processDefinitionSelection.definition);
 
-	const {data: diagramData, isFetching: isXmlFetching, isError: isXmlError} = useDiagramXml(selectedDefinitionKey);
+	const {
+		data: diagramData,
+		isFetching: isXmlFetching,
+		isError: isXmlError,
+		refetch: refetchXml,
+	} = useDiagramXml(selectedDefinitionKey);
 	const [failedXml, setFailedXml] = useState<string>();
 	const isRenderError = failedXml !== undefined && failedXml === diagramData?.xml;
 
@@ -185,20 +190,23 @@ const DiagramPanel: React.FC<Props> = ({
 		switch (processDefinitionSelection.kind) {
 			case 'all-versions':
 				return {
-					message: t('operate.processes.ds.diagramPanel.multipleVersionsSelected', {name: selectedDefinitionName}),
-					additionalInfo: t('operate.processes.ds.diagramPanel.selectSingleVersion'),
+					heading: t('operate.processes.ds.diagramPanel.multipleVersionsSelected', {name: selectedDefinitionName}),
+					description: t('operate.processes.ds.diagramPanel.selectSingleVersion'),
 				};
 			case 'multiple-tenants':
 				return {
-					message: t('operate.processes.ds.diagramPanel.multipleTenantsSelected', {name: selectedDefinitionName}),
-					additionalInfo: t('operate.processes.ds.diagramPanel.selectSingleTenant'),
+					heading: t('operate.processes.ds.diagramPanel.multipleTenantsSelected', {name: selectedDefinitionName}),
+					description: t('operate.processes.ds.diagramPanel.selectSingleTenant'),
 				};
 			case 'single-version':
-				return {message: t('operate.processInstance.diagram.noDiagram')};
+				return {
+					heading: t('operate.processInstance.diagram.noDiagram'),
+					description: t('operate.processInstance.ds.diagram.noDiagramDescription'),
+				};
 			default:
 				return {
-					message: t('operate.processes.ds.diagramPanel.noProcessSelected'),
-					additionalInfo: t('operate.processes.ds.diagramPanel.selectProcessInFilters'),
+					heading: t('operate.processes.ds.diagramPanel.noProcessSelected'),
+					description: t('operate.processes.ds.diagramPanel.selectProcessInFilters'),
 				};
 		}
 	};
@@ -206,7 +214,11 @@ const DiagramPanel: React.FC<Props> = ({
 	return (
 		<section aria-label={t('operate.processes.ds.diagramPanel.ariaLabel')} className="flex h-full flex-col">
 			<DiagramHeader processDefinitionSelection={processDefinitionSelection} />
-			<DiagramShell status={getStatus()} emptyMessage={getEmptyMessage()}>
+			<DiagramShell
+				status={getStatus()}
+				emptyMessage={getEmptyMessage()}
+				onRetry={isXmlError ? () => void refetchXml() : undefined}
+			>
 				{diagramData?.xml && (
 					<Diagram
 						key={selectedDefinitionKey}

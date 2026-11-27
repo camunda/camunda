@@ -54,15 +54,6 @@ You are the **Frontend Development Specialist** for the orchestration cluster we
 
 ## Core Loop
 
-For tracked Operate work, choose one complete workflow instead of the generic sequence below:
-
-- Legacy-to-unified ports: [frontend-operate-migrator](../../.agents/skills/frontend-operate-migrator/SKILL.md)
-- Other Operate changes: [operate-engineering-loop](../../.agents/skills/operate-engineering-loop/SKILL.md)
-
-Never run both workflows for the same ticket.
-
-**For other frontend changes:**
-
 1. **Lint** → `npm run lint` (from `webapp/client/`)
 2. **Typecheck** → `npm run typecheck`
 3. **Unit test** → `npm run test:unit`
@@ -100,8 +91,7 @@ For detailed guidance, consult the frontend docs:
 
 ## Operate
 
-For Operate work, load `.agents/skills/operate-frontend/` for conventions and choose the single
-execution workflow above when the task calls for one.
+For Operate work, load `.agents/skills/operate-frontend/` for conventions.
 
 ## Tasklist Pod
 

@@ -54,10 +54,6 @@ import io.camunda.zeebe.dynamic.config.serializer.ClusterConfigurationSerializer
 import io.camunda.zeebe.dynamic.config.serializer.DecodingFailed;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.BrokerState;
-import io.camunda.zeebe.dynamic.config.state.ChangePlan;
-import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
-import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.CompletedOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CompletedPhasedChange;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
@@ -74,7 +70,6 @@ import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.PostScalingOp
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.PreScalingOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.UpdatePartitionDistributorConfigOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
-import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.OperationGraph;
 import io.camunda.zeebe.dynamic.config.state.OperationId;
@@ -176,25 +171,6 @@ public class ProtoBufSerializer
   }
 
   @Override
-  public byte[] encode(final ClusterConfiguration clusterConfiguration) {
-    return encodeClusterTopology(clusterConfiguration).toByteArray();
-  }
-
-  @Override
-  public ClusterConfiguration decodeClusterTopology(
-      final byte[] encodedClusterTopology, final int offset, final int length) {
-    try {
-      final var topology =
-          Topology.ClusterTopology.parseFrom(
-              ByteBuffer.wrap(encodedClusterTopology, offset, length));
-      return decodeClusterTopology(topology);
-
-    } catch (final InvalidProtocolBufferException e) {
-      throw new DecodingFailed(e);
-    }
-  }
-
-  @Override
   public byte[] encodeCurrentClusterConfiguration(final CurrentClusterConfiguration configuration) {
     return encodeCurrentClusterConfigurationProto(configuration).toByteArray();
   }
@@ -208,123 +184,6 @@ public class ProtoBufSerializer
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);
     }
-  }
-
-  private ClusterConfiguration decodeClusterTopology(
-      final Topology.ClusterTopology encodedClusterTopology) {
-
-    final var members = decodeMemberStateMap(encodedClusterTopology.getMembersMap());
-
-    final Optional<io.camunda.zeebe.dynamic.config.state.CompletedChange> completedChange =
-        encodedClusterTopology.hasLastChange()
-            ? Optional.of(decodeCompletedChange(encodedClusterTopology.getLastChange()))
-            : Optional.empty();
-    // Always a queue: it is the only shape the legacy message can carry.
-    final Optional<ChangePlan> currentChange =
-        encodedClusterTopology.hasCurrentChange()
-            ? Optional.of(decodeChangePlan(encodedClusterTopology.getCurrentChange()))
-            : Optional.empty();
-
-    final Optional<RoutingState> routingState =
-        encodedClusterTopology.hasRoutingState()
-            ? decodeRoutingState(encodedClusterTopology.getRoutingState())
-            : Optional.empty();
-
-    final Optional<PartitionDistributorConfig> partitionDistributorConfig =
-        encodedClusterTopology.hasPartitionDistributor()
-            ? decodePartitionDistributorConfig(encodedClusterTopology.getPartitionDistributor())
-            : Optional.empty();
-
-    final Optional<String> clusterId =
-        encodedClusterTopology.getClusterId().isEmpty()
-            ? Optional.empty()
-            : Optional.of(encodedClusterTopology.getClusterId());
-
-    final long incarnationNumber = encodedClusterTopology.getIncarnationNumber();
-
-    return new ClusterConfiguration(
-        encodedClusterTopology.getVersion(),
-        members,
-        completedChange,
-        currentChange,
-        routingState,
-        clusterId,
-        incarnationNumber,
-        partitionDistributorConfig);
-  }
-
-  private Map<MemberId, io.camunda.zeebe.dynamic.config.state.MemberState> decodeMemberStateMap(
-      final Map<String, Topology.MemberState> membersMap) {
-    return membersMap.entrySet().stream()
-        .map(e -> Map.entry(MemberId.from(e.getKey()), decodeMemberState(e.getValue())))
-        .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
-  }
-
-  private Topology.ClusterTopology encodeClusterTopology(
-      final ClusterConfiguration clusterConfiguration) {
-    final var members = encodeMemberStateMap(clusterConfiguration.members());
-
-    final var builder =
-        Topology.ClusterTopology.newBuilder()
-            .setVersion(clusterConfiguration.version())
-            .putAllMembers(members)
-            .setIncarnationNumber(clusterConfiguration.incarnationNumber());
-
-    clusterConfiguration
-        .lastChange()
-        .ifPresent(lastChange -> builder.setLastChange(encodeCompletedChange(lastChange)));
-    // The legacy message's currentChange field can only carry a queue, so a dependency-graph change
-    // is flattened into one here. This is the only place that shape is required, and the only place
-    // the flattening happens: a consumer reading the configuration in-process sees the real change.
-    clusterConfiguration
-        .pendingChanges()
-        .ifPresent(
-            changePlan ->
-                builder.setCurrentChange(encodeChangePlan(ClusterChangePlan.flatten(changePlan))));
-    clusterConfiguration
-        .routingState()
-        .ifPresent(routingState -> builder.setRoutingState(encodeRoutingState(routingState)));
-    clusterConfiguration
-        .partitionDistributorConfig()
-        .ifPresent(
-            config -> builder.setPartitionDistributor(encodePartitionDistributorConfig(config)));
-    clusterConfiguration.clusterId().ifPresent(builder::setClusterId);
-
-    return builder.build();
-  }
-
-  private Topology.ClusterChangePlan encodeChangePlan(final ClusterChangePlan changes) {
-    final var builder =
-        Topology.ClusterChangePlan.newBuilder()
-            .setVersion(changes.version())
-            .setId(changes.id())
-            .setStatus(fromTopologyChangeStatus(changes.status()))
-            .setStartedAt(
-                Timestamp.newBuilder()
-                    .setSeconds(changes.startedAt().getEpochSecond())
-                    .setNanos(changes.startedAt().getNano())
-                    .build());
-    changes
-        .pendingOperations()
-        .forEach(operation -> builder.addPendingOperations(encodeOperation(operation)));
-    changes
-        .completedOperations()
-        .forEach(operation -> builder.addCompletedOperations(encodeCompletedOperation(operation)));
-
-    return builder.build();
-  }
-
-  private MemberState decodeMemberState(final Topology.MemberState memberState) {
-    final var partitions =
-        memberState.getPartitionsMap().entrySet().stream()
-            .map(e -> Map.entry(e.getKey(), decodePartitionState(e.getValue())))
-            .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
-    final Timestamp lastUpdated = memberState.getLastUpdated();
-    return new MemberState(
-        memberState.getVersion(),
-        Instant.ofEpochSecond(lastUpdated.getSeconds(), lastUpdated.getNanos()),
-        toMemberState(memberState.getState()),
-        partitions);
   }
 
   private PartitionState decodePartitionState(final Topology.PartitionState partitionState) {
@@ -380,24 +239,6 @@ public class ProtoBufSerializer
       case UNRECOGNIZED, ENABLED_DISBALED_UNKNOWN ->
           throw new IllegalStateException("Unknown exporter state " + value.getState());
     };
-  }
-
-  private Topology.MemberState encodeMemberState(final MemberState memberState) {
-    final var partitions =
-        memberState.partitions().entrySet().stream()
-            .map(e -> Map.entry(e.getKey(), encodePartitions(e.getValue())))
-            .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
-    final Instant lastUpdated = memberState.lastUpdated();
-    return Topology.MemberState.newBuilder()
-        .setVersion(memberState.version())
-        .setLastUpdated(
-            Timestamp.newBuilder()
-                .setSeconds(lastUpdated.getEpochSecond())
-                .setNanos(lastUpdated.getNano())
-                .build())
-        .setState(toSerializedState(memberState.state()))
-        .putAllPartitions(partitions)
-        .build();
   }
 
   private Topology.PartitionState encodePartitions(final PartitionState partitionState) {
@@ -456,30 +297,6 @@ public class ProtoBufSerializer
     return builder.build();
   }
 
-  private Topology.State toSerializedState(final MemberState.State state) {
-    return switch (state) {
-      case UNINITIALIZED -> Topology.State.UNKNOWN;
-      case ACTIVE -> Topology.State.ACTIVE;
-      case JOINING -> Topology.State.JOINING;
-      case LEAVING -> Topology.State.LEAVING;
-      case LEFT -> Topology.State.LEFT;
-      case RECOVERING -> Topology.State.RECOVERING;
-    };
-  }
-
-  private MemberState.State toMemberState(final Topology.State state) {
-    return switch (state) {
-      case UNRECOGNIZED, UNKNOWN -> MemberState.State.UNINITIALIZED;
-      case ACTIVE -> MemberState.State.ACTIVE;
-      case JOINING -> MemberState.State.JOINING;
-      case LEAVING -> MemberState.State.LEAVING;
-      case LEFT -> MemberState.State.LEFT;
-      case RECOVERING -> MemberState.State.RECOVERING;
-      case BOOTSTRAPPING, LEARNER ->
-          throw new IllegalStateException("Member cannot be in %s state".formatted(state));
-    };
-  }
-
   private PartitionState.State toPartitionState(final Topology.State state) {
     return switch (state) {
       case UNRECOGNIZED, UNKNOWN, LEFT -> PartitionState.State.UNKNOWN;
@@ -524,143 +341,6 @@ public class ProtoBufSerializer
     return builder.build();
   }
 
-  private Topology.TopologyChangeOperation encodeOperation(
-      final ClusterConfigurationChangeOperation operation) {
-    final var builder =
-        Topology.TopologyChangeOperation.newBuilder().setMemberId(operation.memberId().id());
-    switch (operation) {
-      case final PartitionJoinOperation joinOperation ->
-          builder.setPartitionJoin(
-              Topology.PartitionJoinOperation.newBuilder()
-                  .setPartitionId(joinOperation.partitionId())
-                  .setPriority(joinOperation.priority())
-                  .setAsLearner(joinOperation.asLearner()));
-      case final PartitionLeaveOperation leaveOperation ->
-          builder.setPartitionLeave(
-              Topology.PartitionLeaveOperation.newBuilder()
-                  .setPartitionId(leaveOperation.partitionId())
-                  .setMinimumAllowedReplicas(leaveOperation.minimumAllowedReplicas()));
-      case final PartitionPromoteOperation promoteOperation ->
-          builder.setPartitionPromote(
-              Topology.PartitionPromoteOperation.newBuilder()
-                  .setPartitionId(promoteOperation.partitionId()));
-      case final PartitionDemoteOperation demoteOperation ->
-          builder.setPartitionDemote(
-              Topology.PartitionDemoteOperation.newBuilder()
-                  .setPartitionId(demoteOperation.partitionId()));
-      case final MemberJoinOperation memberJoinOperation ->
-          builder.setMemberJoin(Topology.MemberJoinOperation.newBuilder().build());
-      case final MemberLeaveOperation memberLeaveOperation ->
-          builder.setMemberLeave(Topology.MemberLeaveOperation.newBuilder().build());
-      case final PartitionReconfigurePriorityOperation reconfigurePriorityOperation ->
-          builder.setPartitionReconfigurePriority(
-              Topology.PartitionReconfigurePriorityOperation.newBuilder()
-                  .setPartitionId(reconfigurePriorityOperation.partitionId())
-                  .setPriority(reconfigurePriorityOperation.priority())
-                  .build());
-      case final PartitionForceReconfigureOperation forceReconfigureOperation ->
-          builder.setPartitionForceReconfigure(
-              Topology.PartitionForceReconfigureOperation.newBuilder()
-                  .setPartitionId(forceReconfigureOperation.partitionId())
-                  .addAllMembers(
-                      forceReconfigureOperation.members().stream().map(MemberId::id).toList())
-                  .build());
-      case final MemberRemoveOperation memberRemoveOperation ->
-          builder.setMemberRemove(
-              Topology.MemberRemoveOperation.newBuilder()
-                  .setMemberToRemove(memberRemoveOperation.memberToRemove().id())
-                  .build());
-      case final PartitionDisableExporterOperation disableExporterOperation ->
-          builder.setPartitionDisableExporter(
-              Topology.PartitionDisableExporterOperation.newBuilder()
-                  .setPartitionId(disableExporterOperation.partitionId())
-                  .setExporterId(disableExporterOperation.exporterId())
-                  .build());
-      case final PartitionDeleteExporterOperation deleteExporterOperation ->
-          builder.setPartitionDeleteExporter(
-              Topology.PartitionDeleteExporterOperation.newBuilder()
-                  .setPartitionId(deleteExporterOperation.partitionId())
-                  .setExporterId(deleteExporterOperation.exporterId())
-                  .build());
-      case final PartitionEnableExporterOperation enableExporterOperation ->
-          builder.setPartitionEnableExporter(
-              encodeEnabledExporterOperation(enableExporterOperation));
-      case final PartitionBootstrapOperation bootstrapOperation ->
-          builder.setPartitionBootstrap(encodePartitionBootstrapOperation(bootstrapOperation));
-      case final DeleteHistoryOperation deleteHistoryOperation ->
-          builder.setDeleteHistory(Topology.DeleteHistoryOperation.newBuilder().build());
-      case StartPartitionScaleUp(final var ignoredMemberId, final var desiredPartitionCount) ->
-          builder.setInitiateScaleUpPartitions(
-              Topology.StartPartitionScaleUpOperation.newBuilder()
-                  .setDesiredPartitionCount(desiredPartitionCount)
-                  .build());
-      case final AwaitRedistributionCompletion msg ->
-          builder.setAwaitRedistributionCompletion(
-              Topology.AwaitRedistributionCompletion.newBuilder()
-                  .setDesiredPartitionCount(msg.desiredPartitionCount())
-                  .addAllPartitionsToRedistribute(msg.partitionsToRedistribute())
-                  .build());
-      case final AwaitRelocationCompletion msg ->
-          builder.setAwaitRelocationCompletion(
-              Topology.AwaitRelocationCompletion.newBuilder()
-                  .setDesiredPartitionCount(msg.desiredPartitionCount())
-                  .addAllPartitionsToRelocate(msg.partitionsToRelocate())
-                  .build());
-      case final UpdateRoutingState msg -> {
-        final var b = Topology.UpdateRoutingState.newBuilder();
-        msg.routingState().ifPresent(s -> b.setRoutingState(encodeRoutingState(s)));
-        builder.setUpdateRoutingState(b);
-      }
-      case final UpdateIncarnationNumberOperation msg ->
-          builder.setUpdateIncarnationNumber(
-              Topology.UpdateIncarnationNumberOperation.newBuilder().build());
-      case final PreScalingOperation preScalingOperation ->
-          builder.setPreScaling(
-              Topology.PreScalingOperation.newBuilder()
-                  .addAllClusterMembers(
-                      preScalingOperation.clusterMembers().stream().map(MemberId::id).toList())
-                  .build());
-      case final PostScalingOperation postScalingOperation ->
-          builder.setPostScaling(
-              Topology.PostScalingOperation.newBuilder()
-                  .addAllClusterMembers(
-                      postScalingOperation.clusterMembers().stream().map(MemberId::id).toList())
-                  .build());
-      case final UpdatePartitionDistributorConfigOperation msg ->
-          builder.setUpdatePartitionDistributorConfig(
-              Topology.UpdatePartitionDistributorConfigOperation.newBuilder()
-                  .setConfig(encodePartitionDistributorConfig(msg.config()))
-                  .build());
-      case final RemovePhysicalTenantOperation ignored ->
-          builder.setRemovePhysicalTenant(Topology.RemovePhysicalTenantOperation.newBuilder());
-      case final ModeChangeOperation modeChangeOperation ->
-          builder.setModeChange(
-              Topology.ModeChangeOperation.newBuilder()
-                  .setMode(toProtoTopologyMode(modeChangeOperation.mode()))
-                  .build());
-      case final AwaitModeChangeOperation awaitModeChangeOperation ->
-          builder.setAwaitModeChange(
-              Topology.AwaitModeChangeOperation.newBuilder()
-                  .setMode(toProtoTopologyMode(awaitModeChangeOperation.mode()))
-                  .build());
-      case final ExportingStateChangeOperation exportingStateChangeOperation ->
-          builder.setExporterStateChange(
-              Topology.ExportingStateChangeOperation.newBuilder()
-                  .setState(encodeExportingState(exportingStateChangeOperation.state()))
-                  .build());
-      case final PartitionPreRestoreOperation op ->
-          builder.setPartitionPreRestore(
-              Topology.PartitionPreRestoreOperation.newBuilder()
-                  .setPartitionId(op.partitionId())
-                  .build());
-      case final PartitionRestoreOperation op ->
-          builder.setPartitionRestore(encodePartitionRestore(op));
-      case final SchemaInitializationOperation ignored ->
-          builder.setSchemaInitialization(Topology.SchemaInitializationOperation.newBuilder());
-    }
-    return builder.build();
-  }
-
   private Topology.PartitionBootstrapOperation encodePartitionBootstrapOperation(
       final PartitionBootstrapOperation bootstrapOperation) {
     final var builder =
@@ -684,37 +364,6 @@ public class ProtoBufSerializer
         .initializeFrom()
         .ifPresent(enableExporterOperationBuilder::setInitializeFrom);
     return enableExporterOperationBuilder.build();
-  }
-
-  private Topology.CompletedTopologyChangeOperation encodeCompletedOperation(
-      final ClusterChangePlan.CompletedOperation completedOperation) {
-    return Topology.CompletedTopologyChangeOperation.newBuilder()
-        .setOperation(encodeOperation(completedOperation.operation()))
-        .setCompletedAt(
-            Timestamp.newBuilder()
-                .setSeconds(completedOperation.completedAt().getEpochSecond())
-                .setNanos(completedOperation.completedAt().getNano())
-                .build())
-        .build();
-  }
-
-  private ClusterChangePlan decodeChangePlan(final Topology.ClusterChangePlan clusterChangePlan) {
-    final var pendingOperations =
-        clusterChangePlan.getPendingOperationsList().stream().map(this::decodeOperation).toList();
-    final var completedOperations =
-        clusterChangePlan.getCompletedOperationsList().stream()
-            .map(this::decodeCompletedOperation)
-            .toList();
-
-    return new ClusterChangePlan(
-        clusterChangePlan.getId(),
-        clusterChangePlan.getVersion(),
-        toChangeStatus(clusterChangePlan.getStatus()),
-        Instant.ofEpochSecond(
-            clusterChangePlan.getStartedAt().getSeconds(),
-            clusterChangePlan.getStartedAt().getNanos()),
-        completedOperations,
-        pendingOperations);
   }
 
   Optional<RoutingState> decodeRoutingState(final Topology.RoutingState routingState) {
@@ -865,163 +514,6 @@ public class ProtoBufSerializer
         Instant.ofEpochSecond(
             completedChange.getCompletedAt().getSeconds(),
             completedChange.getCompletedAt().getNanos()));
-  }
-
-  private ClusterConfigurationChangeOperation decodeOperation(
-      final Topology.TopologyChangeOperation topologyChangeOperation) {
-    final var memberId = MemberId.from(topologyChangeOperation.getMemberId());
-    if (topologyChangeOperation.hasPartitionJoin()) {
-      return new PartitionJoinOperation(
-          memberId,
-          topologyChangeOperation.getPartitionJoin().getPartitionId(),
-          topologyChangeOperation.getPartitionJoin().getPriority(),
-          topologyChangeOperation.getPartitionJoin().getAsLearner());
-    } else if (topologyChangeOperation.hasPartitionLeave()) {
-      return new PartitionLeaveOperation(
-          memberId,
-          topologyChangeOperation.getPartitionLeave().getPartitionId(),
-          topologyChangeOperation.getPartitionLeave().getMinimumAllowedReplicas());
-    } else if (topologyChangeOperation.hasPartitionPromote()) {
-      return new PartitionPromoteOperation(
-          memberId, topologyChangeOperation.getPartitionPromote().getPartitionId());
-    } else if (topologyChangeOperation.hasPartitionDemote()) {
-      return new PartitionDemoteOperation(
-          memberId, topologyChangeOperation.getPartitionDemote().getPartitionId());
-    } else if (topologyChangeOperation.hasMemberJoin()) {
-      return new MemberJoinOperation(memberId);
-    } else if (topologyChangeOperation.hasMemberLeave()) {
-      return new MemberLeaveOperation(memberId);
-    } else if (topologyChangeOperation.hasPartitionReconfigurePriority()) {
-      return new PartitionReconfigurePriorityOperation(
-          memberId,
-          topologyChangeOperation.getPartitionReconfigurePriority().getPartitionId(),
-          topologyChangeOperation.getPartitionReconfigurePriority().getPriority());
-    } else if (topologyChangeOperation.hasPartitionForceReconfigure()) {
-      return new PartitionForceReconfigureOperation(
-          memberId,
-          topologyChangeOperation.getPartitionForceReconfigure().getPartitionId(),
-          topologyChangeOperation.getPartitionForceReconfigure().getMembersList().stream()
-              .map(MemberId::from)
-              .collect(Collectors.toSet()));
-    } else if (topologyChangeOperation.hasMemberRemove()) {
-      return new MemberRemoveOperation(
-          memberId, MemberId.from(topologyChangeOperation.getMemberRemove().getMemberToRemove()));
-    } else if (topologyChangeOperation.hasPartitionDisableExporter()) {
-      return new PartitionDisableExporterOperation(
-          memberId,
-          topologyChangeOperation.getPartitionDisableExporter().getPartitionId(),
-          topologyChangeOperation.getPartitionDisableExporter().getExporterId());
-    } else if (topologyChangeOperation.hasPartitionDeleteExporter()) {
-      return new PartitionDeleteExporterOperation(
-          memberId,
-          topologyChangeOperation.getPartitionDeleteExporter().getPartitionId(),
-          topologyChangeOperation.getPartitionDeleteExporter().getExporterId());
-    } else if (topologyChangeOperation.hasPartitionEnableExporter()) {
-      final var enableExporterOperation = topologyChangeOperation.getPartitionEnableExporter();
-      final Optional<String> initializeFrom =
-          enableExporterOperation.hasInitializeFrom()
-              ? Optional.of(enableExporterOperation.getInitializeFrom())
-              : Optional.empty();
-      return new PartitionEnableExporterOperation(
-          memberId,
-          enableExporterOperation.getPartitionId(),
-          enableExporterOperation.getExporterId(),
-          initializeFrom);
-    } else if (topologyChangeOperation.hasPartitionBootstrap()) {
-      final var bootstrapOperation = topologyChangeOperation.getPartitionBootstrap();
-      final Optional<DynamicPartitionConfig> partitionConfig =
-          bootstrapOperation.hasConfig()
-              ? Optional.of(decodePartitionConfig(bootstrapOperation.getConfig()))
-              : Optional.empty();
-      return new PartitionBootstrapOperation(
-          memberId,
-          bootstrapOperation.getPartitionId(),
-          bootstrapOperation.getPriority(),
-          partitionConfig,
-          bootstrapOperation.getInitializeFromConfig());
-    } else if (topologyChangeOperation.hasInitiateScaleUpPartitions()) {
-      return new StartPartitionScaleUp(
-          memberId,
-          topologyChangeOperation.getInitiateScaleUpPartitions().getDesiredPartitionCount());
-    } else if (topologyChangeOperation.hasDeleteHistory()) {
-      return new DeleteHistoryOperation(memberId);
-    } else if (topologyChangeOperation.hasAwaitRedistributionCompletion()) {
-      final var redistribution = topologyChangeOperation.getAwaitRedistributionCompletion();
-      return new AwaitRedistributionCompletion(
-          memberId,
-          redistribution.getDesiredPartitionCount(),
-          new TreeSet<>(redistribution.getPartitionsToRedistributeList()));
-    } else if (topologyChangeOperation.hasAwaitRelocationCompletion()) {
-      final var relocation = topologyChangeOperation.getAwaitRelocationCompletion();
-      return new AwaitRelocationCompletion(
-          memberId,
-          relocation.getDesiredPartitionCount(),
-          new TreeSet<>(relocation.getPartitionsToRelocateList()));
-    } else if (topologyChangeOperation.hasUpdateRoutingState()) {
-      final var protoRoutingState =
-          topologyChangeOperation.getUpdateRoutingState().getRoutingState();
-      final var routingState = decodeRoutingState(protoRoutingState);
-      return new UpdateRoutingState(memberId, routingState);
-    } else if (topologyChangeOperation.hasUpdateIncarnationNumber()) {
-      return new UpdateIncarnationNumberOperation(memberId);
-    } else if (topologyChangeOperation.hasPreScaling()) {
-      final var preScalingOperation = topologyChangeOperation.getPreScaling();
-      return new PreScalingOperation(
-          memberId,
-          preScalingOperation.getClusterMembersList().stream()
-              .map(MemberId::from)
-              .collect(Collectors.toSet()));
-    } else if (topologyChangeOperation.hasPostScaling()) {
-      final var postScalingOperation = topologyChangeOperation.getPostScaling();
-      return new PostScalingOperation(
-          memberId,
-          postScalingOperation.getClusterMembersList().stream()
-              .map(MemberId::from)
-              .collect(Collectors.toSet()));
-    } else if (topologyChangeOperation.hasUpdatePartitionDistributorConfig()) {
-      final var proto = topologyChangeOperation.getUpdatePartitionDistributorConfig().getConfig();
-      return decodePartitionDistributorConfig(proto)
-          .map(config -> new UpdatePartitionDistributorConfigOperation(memberId, config))
-          .orElseThrow(
-              () ->
-                  new IllegalStateException(
-                      "UpdatePartitionDistributorConfig operation has empty config"));
-    } else if (topologyChangeOperation.hasRemovePhysicalTenant()) {
-      return new RemovePhysicalTenantOperation(memberId);
-    } else if (topologyChangeOperation.hasModeChange()) {
-      final var modeChangeProto = topologyChangeOperation.getModeChange();
-      return new ModeChangeOperation(memberId, fromProtoTopologyMode(modeChangeProto.getMode()));
-    } else if (topologyChangeOperation.hasAwaitModeChange()) {
-      final var awaitModeChangeProto = topologyChangeOperation.getAwaitModeChange();
-      return new AwaitModeChangeOperation(
-          memberId, fromProtoTopologyMode(awaitModeChangeProto.getMode()));
-    } else if (topologyChangeOperation.hasExporterStateChange()) {
-      final var exporterStateChangeProto = topologyChangeOperation.getExporterStateChange();
-      return new ExportingStateChangeOperation(
-          memberId, decodeExportingState(exporterStateChangeProto.getState()));
-    } else if (topologyChangeOperation.hasPartitionPreRestore()) {
-      return new PartitionPreRestoreOperation(
-          memberId, topologyChangeOperation.getPartitionPreRestore().getPartitionId());
-    } else if (topologyChangeOperation.hasPartitionRestore()) {
-      return decodePartitionRestore(memberId, topologyChangeOperation.getPartitionRestore());
-    } else if (topologyChangeOperation.hasSchemaInitialization()) {
-      return new SchemaInitializationOperation(memberId);
-    } else {
-      // If the node does not know of a type, the exception thrown will prevent
-      // ClusterTopologyGossiper from processing the incoming topology. This helps to prevent any
-      // incorrect or partial topology to be stored locally and later propagated to other nodes.
-      // Ideally, it is better not to any cluster topology change operations execute during a
-      // rolling update.
-      throw new IllegalStateException("Unknown operation: " + topologyChangeOperation);
-    }
-  }
-
-  private CompletedOperation decodeCompletedOperation(
-      final Topology.CompletedTopologyChangeOperation operation) {
-    return new CompletedOperation(
-        decodeOperation(operation.getOperation()),
-        Instant.ofEpochSecond(
-            operation.getCompletedAt().getSeconds(), operation.getCompletedAt().getNanos()));
   }
 
   @Override
@@ -1823,51 +1315,34 @@ public class ProtoBufSerializer
 
   public Builder encodeTopologyChangeResponse(
       final ClusterConfigurationChangeResponse clusterConfigurationChangeResponse) {
-    final var builder = Requests.TopologyChangeResponse.newBuilder();
-    final var legacyResponse = clusterConfigurationChangeResponse.legacyResponse();
-
-    builder
-        .setChangeId(clusterConfigurationChangeResponse.changeId())
-        .addAllPlannedChanges(
-            legacyResponse.plannedChanges().stream().map(this::encodeOperation).toList())
-        .putAllCurrentTopology(encodeMemberStateMap(legacyResponse.currentConfiguration()))
-        .putAllExpectedTopology(encodeMemberStateMap(legacyResponse.expectedConfiguration()));
-
-    final var response = clusterConfigurationChangeResponse.response();
-    if (response != null) {
-      builder
-          .setCurrentConfiguration(
-              encodeCurrentClusterConfigurationProto(response.currentConfiguration()))
-          .setExpectedConfiguration(
-              encodeCurrentClusterConfigurationProto(response.expectedConfiguration()));
-      response.phases().forEach(phase -> builder.addPhases(encodePhase(phase)));
-    }
-
+    final var builder =
+        Requests.TopologyChangeResponse.newBuilder()
+            .setChangeId(clusterConfigurationChangeResponse.changeId())
+            .setCurrentConfiguration(
+                encodeCurrentClusterConfigurationProto(
+                    clusterConfigurationChangeResponse.currentConfiguration()))
+            .setExpectedConfiguration(
+                encodeCurrentClusterConfigurationProto(
+                    clusterConfigurationChangeResponse.expectedConfiguration()));
+    clusterConfigurationChangeResponse
+        .phases()
+        .forEach(phase -> builder.addPhases(encodePhase(phase)));
     return builder;
   }
 
   public ClusterConfigurationChangeResponse decodeTopologyChangeResponse(
       final Requests.TopologyChangeResponse topologyChangeResponse) {
-    final var legacyResponse =
-        new ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse(
-            decodeMemberStateMap(topologyChangeResponse.getCurrentTopologyMap()),
-            decodeMemberStateMap(topologyChangeResponse.getExpectedTopologyMap()),
-            topologyChangeResponse.getPlannedChangesList().stream()
-                .map(this::decodeOperation)
-                .toList());
-
-    final var response =
-        topologyChangeResponse.hasCurrentConfiguration()
-                && topologyChangeResponse.hasExpectedConfiguration()
-            ? new ClusterConfigurationChangeResponse.CurrentConfigurationChangeResponse(
-                decodeCurrentClusterConfiguration(topologyChangeResponse.getCurrentConfiguration()),
-                decodeCurrentClusterConfiguration(
-                    topologyChangeResponse.getExpectedConfiguration()),
-                topologyChangeResponse.getPhasesList().stream().map(this::decodePhase).toList())
-            : null;
+    if (!topologyChangeResponse.hasCurrentConfiguration()
+        || !topologyChangeResponse.hasExpectedConfiguration()) {
+      throw new DecodingFailed(
+          "Topology change response does not have a current and an expected configuration");
+    }
 
     return new ClusterConfigurationChangeResponse(
-        topologyChangeResponse.getChangeId(), legacyResponse, response);
+        topologyChangeResponse.getChangeId(),
+        decodeCurrentClusterConfiguration(topologyChangeResponse.getCurrentConfiguration()),
+        decodeCurrentClusterConfiguration(topologyChangeResponse.getExpectedConfiguration()),
+        topologyChangeResponse.getPhasesList().stream().map(this::decodePhase).toList());
   }
 
   private ErrorCode encodeErrorCode(final ErrorResponse.ErrorCode status) {
@@ -1892,17 +1367,11 @@ public class ProtoBufSerializer
     };
   }
 
-  private Map<String, Topology.MemberState> encodeMemberStateMap(
-      final Map<MemberId, MemberState> topologyChangeResponse) {
-    return topologyChangeResponse.entrySet().stream()
-        .collect(Collectors.toMap(e -> e.getKey().id(), e -> encodeMemberState(e.getValue())));
-  }
-
   // ---- New multi-partition-group configuration model (8.10) ----
   // Additive encode/decode for CurrentClusterConfiguration and its sub-types. These are not yet
   // wired into gossip or persistence; they exist for the Phase-3 handoff.
 
-  private Topology.ChangeStatus fromTopologyChangeStatus(final ClusterChangePlan.Status status) {
+  private Topology.ChangeStatus fromTopologyChangeStatus(final DependencyChangePlan.Status status) {
     return switch (status) {
       case IN_PROGRESS -> Topology.ChangeStatus.IN_PROGRESS;
       case COMPLETED -> Topology.ChangeStatus.COMPLETED;
@@ -1911,12 +1380,12 @@ public class ProtoBufSerializer
     };
   }
 
-  private ClusterChangePlan.Status toChangeStatus(final Topology.ChangeStatus status) {
+  private DependencyChangePlan.Status toChangeStatus(final Topology.ChangeStatus status) {
     return switch (status) {
-      case IN_PROGRESS -> ClusterChangePlan.Status.IN_PROGRESS;
-      case COMPLETED -> ClusterChangePlan.Status.COMPLETED;
-      case FAILED -> ClusterChangePlan.Status.FAILED;
-      case CANCELLED -> ClusterChangePlan.Status.CANCELLED;
+      case IN_PROGRESS -> DependencyChangePlan.Status.IN_PROGRESS;
+      case COMPLETED -> DependencyChangePlan.Status.COMPLETED;
+      case FAILED -> DependencyChangePlan.Status.FAILED;
+      case CANCELLED -> DependencyChangePlan.Status.CANCELLED;
       default -> throw new IllegalStateException("Unknown status: " + status);
     };
   }

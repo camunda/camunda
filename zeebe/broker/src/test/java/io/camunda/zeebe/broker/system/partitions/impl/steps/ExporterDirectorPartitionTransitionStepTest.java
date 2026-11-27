@@ -19,13 +19,17 @@ import static org.mockito.Mockito.when;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.partition.RaftPartitionConfig;
+import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
+import io.camunda.zeebe.broker.exporter.stream.CommonBackupPositionSource;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext;
 import io.camunda.zeebe.broker.exporter.stream.ExporterPhase;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.configuration.ExportingCfg;
 import io.camunda.zeebe.broker.system.partitions.TestPartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.PartitionTransitionTestArgumentProviders.TransitionsThatShouldCloseService;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.PartitionTransitionTestArgumentProviders.TransitionsThatShouldDoNothing;
@@ -377,6 +381,65 @@ class ExporterDirectorPartitionTransitionStepTest {
 
     // then - the exporter observes the cluster-wide agreed id, not the diverged local candidate
     assertThat(capturedContext.get().getClusterId()).isEqualTo("gossip-resolved-cluster-id");
+  }
+
+  @Test
+  void shouldWireCommonBackupPositionSourceForLeaderWhenExportOnlyBackedUpRecordsEnabled() {
+    // given
+    final var brokerCfg = new BrokerCfg();
+    brokerCfg.setExporting(new ExportingCfg(null, null, 100_000, true));
+    transitionContext.setBrokerCfg(brokerCfg);
+
+    final var brokerClient = mock(BrokerClient.class);
+    when(brokerClient.getTopologyManager()).thenReturn(mock(BrokerTopologyManager.class));
+    transitionContext.setBrokerClient(brokerClient);
+
+    final AtomicReference<ExporterDirectorContext> capturedContext = new AtomicReference<>();
+    final var exporterDirectorStep = getExporterDirectorPartitionTransitionStep(capturedContext);
+
+    // when
+    exporterDirectorStep.prepareTransition(transitionContext, 1, Role.LEADER).join();
+    exporterDirectorStep.transitionTo(transitionContext, 1, Role.LEADER).join();
+
+    // then
+    assertThat(capturedContext.get().getBackedUpPositionSource())
+        .isInstanceOf(CommonBackupPositionSource.class);
+  }
+
+  @Test
+  void shouldNotWireBackedUpPositionSourceWhenExportOnlyBackedUpRecordsDisabled() {
+    // given
+    final var brokerCfg = new BrokerCfg();
+    brokerCfg.setExporting(new ExportingCfg(null, null, 100_000, false));
+    transitionContext.setBrokerCfg(brokerCfg);
+
+    final AtomicReference<ExporterDirectorContext> capturedContext = new AtomicReference<>();
+    final var exporterDirectorStep = getExporterDirectorPartitionTransitionStep(capturedContext);
+
+    // when
+    exporterDirectorStep.prepareTransition(transitionContext, 1, Role.LEADER).join();
+    exporterDirectorStep.transitionTo(transitionContext, 1, Role.LEADER).join();
+
+    // then
+    assertThat(capturedContext.get().getBackedUpPositionSource()).isNull();
+  }
+
+  @Test
+  void shouldNotWireBackedUpPositionSourceForFollower() {
+    // given
+    final var brokerCfg = new BrokerCfg();
+    brokerCfg.setExporting(new ExportingCfg(null, null, 100_000, true));
+    transitionContext.setBrokerCfg(brokerCfg);
+
+    final AtomicReference<ExporterDirectorContext> capturedContext = new AtomicReference<>();
+    final var exporterDirectorStep = getExporterDirectorPartitionTransitionStep(capturedContext);
+
+    // when
+    exporterDirectorStep.prepareTransition(transitionContext, 1, Role.FOLLOWER).join();
+    exporterDirectorStep.transitionTo(transitionContext, 1, Role.FOLLOWER).join();
+
+    // then
+    assertThat(capturedContext.get().getBackedUpPositionSource()).isNull();
   }
 
   private void setExportersInContext(

@@ -25,12 +25,11 @@ import org.jspecify.annotations.NullMarked;
  * that did not track exporting in the dynamic configuration keeps its paused partitions paused.
  *
  * <p>This initializer seeds every configured partition group from the legacy per-partition files.
- * Unlike the legacy configuration initializer, this has no after-restore branch, and needs none:
- * post-restore this is always a no-op, because a restored configuration is generated from static
- * configuration, whose exporting state is {@link ExportingState#EXPORTING} rather than {@link
- * ExportingState#UNKNOWN} — the only state this modifier writes over. A restore change plan on
- * {@link CurrentClusterConfiguration} is reachable (see {@link
- * CurrentClusterConfiguration#isAfterRestore()}); it is the write that cannot happen.
+ * It has no after-restore branch, and needs none: post-restore this is always a no-op, because a
+ * restored configuration is generated from static configuration, whose exporting state is {@link
+ * ExportingState#EXPORTING} rather than {@link ExportingState#UNKNOWN} — the only state this
+ * modifier writes over. A restore change plan on {@link CurrentClusterConfiguration} is reachable
+ * (see {@link CurrentClusterConfiguration#isAfterRestore()}); it is the write that cannot happen.
  *
  * <p>Nor could the branch take the shape {@link PartitionGroupExporterStateInitializer}'s does. The
  * states seeded here are read from this broker's own {@code .exporterPaused} files, so the
@@ -43,8 +42,7 @@ import org.jspecify.annotations.NullMarked;
  * against the statically configured exporters.
  */
 @NullMarked
-public class PartitionGroupExportingStateInitializer
-    implements ClusterConfigurationModifier<CurrentClusterConfiguration> {
+public class PartitionGroupExportingStateInitializer implements ClusterConfigurationModifier {
 
   private final Map<PartitionId, ExportingState> legacyExportingStates;
   private final MemberId localMemberId;

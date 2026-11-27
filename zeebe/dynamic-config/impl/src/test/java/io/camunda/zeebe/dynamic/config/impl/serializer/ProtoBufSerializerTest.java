@@ -41,19 +41,17 @@ import io.camunda.zeebe.dynamic.config.impl.protocol.Topology.ExporterStateEnum;
 import io.camunda.zeebe.dynamic.config.impl.protocol.Topology.MessageCorrelation;
 import io.camunda.zeebe.dynamic.config.impl.protocol.Topology.MessageCorrelation.HashMod;
 import io.camunda.zeebe.dynamic.config.impl.protocol.Topology.RoutingState;
+import io.camunda.zeebe.dynamic.config.serializer.DecodingFailed;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.BrokerState;
-import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
-import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DependencyChangePlan;
+import io.camunda.zeebe.dynamic.config.state.DependencyChangePlan.Status;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
-import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.OperationGraph;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
@@ -73,6 +71,7 @@ import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhas
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling;
+import io.camunda.zeebe.dynamic.config.util.DefaultTenantConfiguration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -595,22 +594,10 @@ final class ProtoBufSerializerTest {
                                 new TreeSet<>(List.of(1L, 2L)), OptionalLong.of(150L)))))));
     final var currentMultiConfiguration = CurrentClusterConfiguration.init();
     final var expectedMultiConfiguration =
-        CurrentClusterConfiguration.fromLegacy(
-            ClusterConfiguration.init()
-                .addMember(MemberId.from("9"), MemberState.initializeAsActive(Map.of())));
+        DefaultTenantConfiguration.init().addMember(MemberId.from("9")).configuration();
     final var topologyChangeResponse =
         new ClusterConfigurationChangeResponse(
-            2,
-            new ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse(
-                Map.of(
-                    MemberId.from("1"),
-                    MemberState.initializeAsActive(Map.of()),
-                    MemberId.from("2"),
-                    MemberState.initializeAsActive(Map.of())),
-                Map.of(MemberId.from("2"), MemberState.initializeAsActive(Map.of())),
-                plannedChanges),
-            new ClusterConfigurationChangeResponse.CurrentConfigurationChangeResponse(
-                currentMultiConfiguration, expectedMultiConfiguration, phases));
+            2, currentMultiConfiguration, expectedMultiConfiguration, phases);
 
     // when
     final var encodedResponse = protoBufSerializer.encodeResponse(topologyChangeResponse);
@@ -622,30 +609,9 @@ final class ProtoBufSerializerTest {
   }
 
   @Test
-  void shouldEncodeAndDecodeTopologyChangeResponseWithoutMultiConfiguration() {
-    // given — a response with no new multi-partition-group data (e.g. produced by a caller that
-    // doesn't populate it) round-trips with a null response.
-    final var topologyChangeResponse =
-        new ClusterConfigurationChangeResponse(
-            2,
-            new ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse(
-                Map.of(), Map.of(), List.of()),
-            null);
-
-    // when
-    final var encodedResponse = protoBufSerializer.encodeResponse(topologyChangeResponse);
-
-    // then
-    final var decodedResponse =
-        protoBufSerializer.decodeTopologyChangeResponse(encodedResponse).get();
-    assertThat(decodedResponse).isEqualTo(topologyChangeResponse);
-  }
-
-  @Test
-  void shouldDecodeNullResponseWhenMultiConfigurationIsOnlyPartiallyPresent() {
-    // given — a wire message where only the current multi-configuration field is set, not the
-    // expected one (e.g. from a peer running a mismatched version). This must not decode into a
-    // response with a real current configuration and a default/empty expected configuration.
+  void shouldRejectTopologyChangeResponseWithoutExpectedConfiguration() {
+    // given — a wire message where only the current configuration is set, not the expected one.
+    // This must not decode into a response with a default/empty expected configuration.
     final var partial =
         Requests.TopologyChangeResponse.newBuilder()
             .setChangeId(3)
@@ -654,11 +620,9 @@ final class ProtoBufSerializerTest {
     final var encoded =
         Requests.Response.newBuilder().setTopologyChangeResponse(partial).build().toByteArray();
 
-    // when
-    final var decoded = protoBufSerializer.decodeTopologyChangeResponse(encoded).get();
-
-    // then — the whole multi-config payload is treated as absent, not partially decoded
-    assertThat(decoded.response()).isNull();
+    // when - then
+    assertThatThrownBy(() -> protoBufSerializer.decodeTopologyChangeResponse(encoded))
+        .isInstanceOf(DecodingFailed.class);
   }
 
   @Test
@@ -892,48 +856,6 @@ final class ProtoBufSerializerTest {
   }
 
   @Test
-  void shouldEncodeAGraphChangeOnTheLegacyConfigurationAsAQueue() {
-    // given — a legacy configuration carrying a dependency-graph change, which is what projecting a
-    // partition group produces, with one operation already completed
-    final var startedAt = Instant.ofEpochSecond(1_700_000_000);
-    final var builder = OperationGraph.builder();
-    final var first = builder.add(new PartitionJoinOperation(MemberId.from("1"), 1, 1, true));
-    builder.add(new PartitionJoinOperation(MemberId.from("2"), 1, 1, true));
-    final var graph =
-        new DependencyChangePlan(
-            7,
-            Status.IN_PROGRESS,
-            startedAt,
-            builder.build(),
-            new TreeMap<>(Map.of(first, startedAt.plusSeconds(5))));
-    final var configuration =
-        ClusterConfiguration.builder()
-            .version(3)
-            .members(Map.of(MemberId.from("1"), MemberState.initializeAsActive(Map.of())))
-            .pendingChanges(Optional.of(graph))
-            .build();
-
-    // when
-    final var encoded = protoBufSerializer.encode(configuration);
-    final var decoded = protoBufSerializer.decodeClusterTopology(encoded, 0, encoded.length);
-
-    // then — the legacy message can only carry a queue, so the graph is flattened into one on the
-    // way out. A broker without the graph model reads this field, and would execute the queue one
-    // operation at a time.
-    assertThat(decoded.pendingChanges()).contains(ClusterChangePlan.flatten(graph));
-    assertThat(decoded.pendingChanges().orElseThrow())
-        .isInstanceOf(ClusterChangePlan.class)
-        .satisfies(
-            plan -> {
-              assertThat(plan.pendingOperations()).isEqualTo(graph.pendingOperations());
-              assertThat(plan.completedOperations()).isEqualTo(graph.completedOperations());
-              assertThat(plan.id()).isEqualTo(7);
-              // the queue's version is what an old broker merges by: one per completed operation
-              assertThat(plan.version()).isEqualTo(2);
-            });
-  }
-
-  @Test
   void shouldRoundTripAGraphWhoseNodesNameDifferentPartitionGroups() {
     // given — a graph spanning two groups, which is what collapsing phase boundaries into the graph
     // needs and what the per-node group id exists for. Nothing produces one yet; this pins that the
@@ -1093,12 +1015,11 @@ final class ProtoBufSerializerTest {
     // given
     final var partitionConfig = DynamicPartitionConfig.init();
     final var clusterConfiguration =
-        CurrentClusterConfiguration.fromLegacy(
-            ClusterConfiguration.init()
-                .addMember(
-                    MemberId.from("1"),
-                    MemberState.initializeAsActive(
-                        Map.of(1, PartitionState.active(1, partitionConfig).toRecovering()))));
+        DefaultTenantConfiguration.init()
+            .addMember(
+                MemberId.from("1"),
+                Map.of(1, PartitionState.active(1, partitionConfig).toRecovering()))
+            .configuration();
     final var gossipState = new ClusterConfigurationGossipState();
     gossipState.setCurrentClusterConfiguration(clusterConfiguration);
 

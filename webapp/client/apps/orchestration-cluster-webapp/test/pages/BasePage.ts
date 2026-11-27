@@ -28,8 +28,8 @@ abstract class BasePage extends View {
 			const response = await route.fetch();
 			const html = await response.text();
 			const body = html.replace(
-				'<html ',
-				`<html data-organization-id="${organizationId}" data-cluster-id="${clusterId}" `,
+				/<html(\s)/,
+				`<html data-organization-id="${organizationId}" data-cluster-id="${clusterId}"$1`,
 			);
 
 			return route.fulfill({response, body});

@@ -230,11 +230,13 @@ mwnw*                       @camunda/engineering-operations
 /zeebe/bpmn-model/          @camunda/core-features
 /zeebe/dmn/                 @camunda/core-features
 /zeebe/engine/              @camunda/core-features
+/zeebe/engine-api/          @camunda/core-features
 /zeebe/expression-language/ @camunda/core-features
 /zeebe/feel/                @camunda/core-features
 /zeebe/feel-tagged-parameters/ @camunda/core-features
 /zeebe/exporter-api/        @camunda/core-features
 /zeebe/exporter-config-support/ @camunda/core-features
+/zeebe/cluster-behavior/ @camunda/core-features
 
 # Engine-expert skill
 /.agents/skills/engine-expert/ @korthout @camunda/core-features
@@ -436,12 +438,10 @@ optimize.Dockerfile         @camunda/core-features
 # Experience FE frontend skills
 /.agents/skills/frontend-feature/          @camunda/orchestration-cluster-webapps
 /.agents/skills/frontend-integration-test/ @camunda/orchestration-cluster-webapps
-/.agents/skills/frontend-operate-migrator/ @camunda/orchestration-cluster-webapps
 /.agents/skills/frontend-unit-test/        @camunda/orchestration-cluster-webapps
 
 # Operate frontend skills
-/.agents/skills/operate-engineering-loop/ @camunda/operate-admin-pod
-/.agents/skills/operate-frontend/         @camunda/operate-admin-pod
+/.agents/skills/operate-frontend/ @camunda/operate-admin-pod
 
 # Tasklist frontend skills
 /.agents/skills/tasklist-frontend/ @camunda/employee-engagement-tasklist
@@ -482,6 +482,12 @@ optimize.Dockerfile         @camunda/core-features
 
 # Optimize frontend: overrides the broad /optimize/ rule above.
 /optimize/client/           @camunda/optimize
+
+# Optimize owns the Elasticsearch and OpenSearch exporters whose records it
+# imports. Overrides the broad /zeebe/exporters/ rule above (Data Layer), which
+# keeps the camunda-exporter and rdbms-exporter.
+/zeebe/exporters/elasticsearch-exporter/ @camunda/optimize
+/zeebe/exporters/opensearch-exporter/    @camunda/optimize
 
 # Unified webapp frontend: overrides the broad /webapp/ rule above, which covers
 # the Java BFF. Pod areas override the frontend default.

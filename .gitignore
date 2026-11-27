@@ -127,3 +127,6 @@ gradle/build-logic/.kotlin/
 # not a Gradle output directory; keep it trackable despite the build/ rule above.
 !/configuration/src/build/
 !/configuration/src/build/**
+
+# failsafe/surefire run-order statistics (runOrder=balanced, see parent/pom.xml)
+.surefire-*

@@ -387,6 +387,20 @@ camunda: # Type: io.camunda.configuration.Camunda
       # need to replay and export everything. It can for example can start from the last exported position
       # it has received by the distribution mechanism.
       distribution-interval: null # Type: Duration, Env: CAMUNDA_DATA_EXPORT_DISTRIBUTIONINTERVAL
+      # When enabled, exporters only receive records that are already contained in a confirmed backup common
+      # to all partitions of the physical tenant. The exporter reader never advances past this partition's
+      # checkpoint position for that backup, so no record reaches secondary storage before it can be
+      # restored from primary storage backups.
+      # Requires a configured backup store (`camunda.data.primary-storage.backup.store`) and regular
+      # backups; nothing is exported until a backup completes across all partitions, and exporting stalls
+      # whenever backups stop completing.
+      # Interferes with write-rate throttling (`camunda.processing.flow-control.write.throttle`), because
+      # delaying exporting grows the exporting backlog between backups and can trigger backpressure.
+      # After restoring from a backup, exporting stalls until a new backup completes across all partitions.
+      # A backup's confirmation record is written after its checkpoint position and is therefore truncated
+      # by the restore, so records already contained in the restored backup are held back until a new common
+      # backup is confirmed.
+      export-only-backed-up-records: false # Type: Boolean, Env: CAMUNDA_DATA_EXPORT_EXPORTONLYBACKEDUPRECORDS
       # The maximum number of not-yet-exported records to scan, starting from the oldest one still pending,
       # when checking whether every pending record on a partition is on the current application version.
       # This backs the `exporterMigrated` upgrade-readiness condition: if the backlog of not-yet-exported
@@ -548,6 +562,12 @@ camunda: # Type: io.camunda.configuration.Camunda
           # https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/region-selection.html#automatically-
           # determine-the-aws-region-from-the-environment
           region: null # Type: String, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_S3_REGION
+          # How often to check the replication status of backup objects that are still pending replication. Only
+          # used when wait-for-replication is enabled.
+          replication-poll-interval: null # Type: Duration, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_S3_REPLICATIONPOLLINTERVAL
+          # How long to wait for all objects of a backup to be replicated before the backup fails. Only used
+          # when wait-for-replication is enabled.
+          replication-timeout: null # Type: Duration, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_S3_REPLICATIONTIMEOUT
           # Configure access credentials. If either accessKey or secretKey is not provided, the credentials will
           # be determined as documented in
           # https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/credentials.html#credentials-chain
@@ -559,6 +579,12 @@ camunda: # Type: io.camunda.configuration.Camunda
           ssec-key: null # Type: String, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_S3_SSECKEY
           # Enable s3 md5 plugin for legacy support
           support-legacy-md5: false # Type: Boolean, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_S3_SUPPORTLEGACYMD5
+          # When enabled, a backup is only confirmed once every object of the backup has been replicated by the
+          # bucket's own replication (S3 replication or MinIO bucket replication) to the replica site, as
+          # reported by each object's replication status. If replication of an object fails, or does not
+          # complete within replication-timeout, the backup fails. Requires replication to be configured on the
+          # bucket.
+          wait-for-replication: false # Type: Boolean, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_S3_WAITFORREPLICATION
         
         schedule: null # Type: String, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_SCHEDULE
         # Set the backup store type. Supported values are [NONE, S3, GCS, AZURE, FILESYSTEM]. Default value is
@@ -879,6 +905,8 @@ camunda: # Type: io.camunda.configuration.Camunda
           user: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_USER
           # Primary shards for the variable index (variable).
           variable: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_VARIABLE
+          # Primary shards for the variable history index (variable-history).
+          variable-history: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_VARIABLEHISTORY
           # Primary shards for the wait state index (wait-state).
           wait-state: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_NUMBEROFSHARDSPERINDEX_WAITSTATE
           # Primary shards for the persistent web session index (web-session).
@@ -1127,6 +1155,8 @@ camunda: # Type: io.camunda.configuration.Camunda
           user: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_USER
           # Primary shards for the variable index (variable).
           variable: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_VARIABLE
+          # Primary shards for the variable history index (variable-history).
+          variable-history: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_VARIABLEHISTORY
           # Primary shards for the wait state index (wait-state).
           wait-state: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_NUMBEROFSHARDSPERINDEX_WAITSTATE
           # Primary shards for the persistent web session index (web-session).
@@ -1715,6 +1745,9 @@ camunda: # Type: io.camunda.configuration.Camunda
         authorizations-cache-ttl: null # Type: Duration, Env: CAMUNDA_PROCESSING_ENGINE_CACHES_AUTHORIZATIONSCACHETTL
         # Configures whether candidate group names are resolved.
         candidate-group-name-resolution: null # Type: Boolean, Env: CAMUNDA_PROCESSING_ENGINE_CACHES_CANDIDATEGROUPNAMERESOLUTION
+        # Configures how long a cached deployed resource (process, decision model, form, resource) stays
+        # cached after its last use.
+        deployment-cache-ttl: null # Type: Duration, Env: CAMUNDA_PROCESSING_ENGINE_CACHES_DEPLOYMENTCACHETTL
         # Configures the maximum number of parsed decision requirements graphs to cache.
         drg-cache-capacity: null # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_CACHES_DRGCACHECAPACITY
         # Configures the maximum number of parsed forms to cache.
@@ -2023,16 +2056,34 @@ camunda: # Type: io.camunda.configuration.Camunda
         max-yields: null # Type: Long, Env: CAMUNDA_SYSTEM_ACTOR_IDLE_MAXYIELDS
         min-park-period: null # Type: Duration, Env: CAMUNDA_SYSTEM_ACTOR_IDLE_MINPARKPERIOD
     
+    actor-pool: # Type: io.camunda.configuration.system.ActorPool  
+      # The default number of CPU-bound actor threads in each physical tenant's pool. A physical tenant can
+      # override this value in its own configuration. Must be positive when the pool is enabled.
+      # Experimental.
+      cpu-thread-count: 2 # Type: Integer, Env: CAMUNDA_SYSTEM_ACTORPOOL_CPUTHREADCOUNT
+      # Whether each physical tenant with partitions on this broker gets its own actor thread pool, in
+      # addition to the shared pool sized by cpu-thread-count and io-thread-count of the system. This switch
+      # applies to the whole broker. Experimental.
+      enabled: false # Type: Boolean, Env: CAMUNDA_SYSTEM_ACTORPOOL_ENABLED
+      # The default number of IO-bound actor threads in each physical tenant's pool. A physical tenant can
+      # override this value in its own configuration. Must be positive when the pool is enabled.
+      # Experimental.
+      io-thread-count: 2 # Type: Integer, Env: CAMUNDA_SYSTEM_ACTORPOOL_IOTHREADCOUNT
+    
     # Controls whether the system clock or mutable one. When enabled, time progression can be controlled
     # programmatically for testing purposes.
     clock-controlled: false # Type: Boolean, Env: CAMUNDA_SYSTEM_CLOCKCONTROLLED
-    # Controls the number of non-blocking CPU threads to be used. WARNING: You should never specify a
-    # value that is larger than the number of physical cores available. Good practice is to leave 1-2
-    # cores for IO threads and the operating system (it has to run somewhere). For example, when running
-    # Zeebe on a machine which has 4 cores, a good value would be 2.
+    # Controls the number of non-blocking CPU threads in the broker-wide actor pool. When
+    # `camunda.system.actor-pool.enabled` is true, this still sizes the shared pool for actors that are
+    # not specific to a physical tenant; each tenant's pool is additional. WARNING: You should never
+    # specify a value that is larger than the number of physical cores available. Good practice is to
+    # leave 1-2 cores for IO threads and the operating system (it has to run somewhere). For example, when
+    # running Zeebe on a machine which has 4 cores, a good value would be 2.
     cpu-thread-count: 2 # Type: Integer, Env: CAMUNDA_SYSTEM_CPUTHREADCOUNT
-    # Controls the number of io threads to be used. These threads are used for workloads that write data
-    # to disk. While writing, these threads are blocked which means that they yield the CPU.
+    # Controls the number of IO threads in the broker-wide actor pool. These threads are used for
+    # workloads that write data to disk. While writing, these threads are blocked which means that they
+    # yield the CPU. When `camunda.system.actor-pool.enabled` is true, this still sizes the shared pool
+    # for actors that are not specific to a physical tenant; each tenant's pool is additional.
     io-thread-count: 2 # Type: Integer, Env: CAMUNDA_SYSTEM_IOTHREADCOUNT
     legacy-query-api: # Type: io.camunda.configuration.system.LegacyQueryApi  
       # Enables the broker's internal legacy query API.

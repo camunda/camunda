@@ -17,9 +17,12 @@ import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
 import java.time.OffsetDateTime;
 import java.util.List;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@NullMarked
 public interface BatchOperationMapper extends HistoryCleanupMapper {
 
   void createIfNotExists(BatchOperationDbModel batchOperationDbModel);
@@ -31,6 +34,8 @@ public interface BatchOperationMapper extends HistoryCleanupMapper {
   void activate(BatchOperationActivateDto dto);
 
   void updateCompleted(BatchOperationUpdateDto dto);
+
+  void finalizeEndDate(BatchOperationFinalizeEndDateDto dto);
 
   void updateItemsWithState(BatchOperationItemStatusUpdateDto dto);
 
@@ -63,7 +68,9 @@ public interface BatchOperationMapper extends HistoryCleanupMapper {
   record BatchOperationActivateDto(String batchOperationKey, OffsetDateTime startDate) {}
 
   record BatchOperationUpdateDto(
-      String batchOperationKey, BatchOperationState state, OffsetDateTime endDate) {}
+      String batchOperationKey, BatchOperationState state, @Nullable OffsetDateTime endDate) {}
+
+  record BatchOperationFinalizeEndDateDto(String batchOperationKey, OffsetDateTime endDate) {}
 
   record BatchOperationUpdateTotalCountDto(String batchOperationKey, int operationsTotalCount) {}
 
@@ -75,8 +82,8 @@ public interface BatchOperationMapper extends HistoryCleanupMapper {
       String batchOperationKey,
       Long itemKey,
       BatchOperationEntity.BatchOperationItemState state,
-      OffsetDateTime processedDate,
-      String errorMessage) {}
+      @Nullable OffsetDateTime processedDate,
+      @Nullable String errorMessage) {}
 
   record BatchOperationItemStatusUpdateDto(
       String batchOperationKey,
@@ -90,11 +97,11 @@ public interface BatchOperationMapper extends HistoryCleanupMapper {
 
   record BatchOperationErrorsDto(String batchOperationKey, List<BatchOperationErrorDto> errors) {}
 
-  record BatchOperationErrorDto(Integer partitionId, String type, String message) {
+  record BatchOperationErrorDto(Integer partitionId, String type, @Nullable String message) {
     public static final Logger LOG = LoggerFactory.getLogger(BatchOperationErrorDto.class);
 
     public BatchOperationErrorDto truncateErrorMessage(
-        final int sizeLimit, final Integer byteLimit) {
+        final int sizeLimit, final @Nullable Integer byteLimit) {
       if (message == null) {
         return this;
       }

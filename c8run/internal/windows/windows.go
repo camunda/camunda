@@ -39,7 +39,7 @@ func (w *WindowsC8Run) ConnectorsCmd(ctx context.Context, javaBinary string, par
 	if connectors.UsePropertiesLauncher(connectorsVersion) {
 		mainClass = "org.springframework.boot.loader.launch.PropertiesLauncher"
 	}
-	connectorsCmd := exec.CommandContext(ctx, javaBinary, "-classpath", parentDir+"\\*;"+parentDir+"\\custom_connectors\\*", mainClass, "--spring.config.additional-location="+parentDir+"\\connectors-application.properties")
+	connectorsCmd := exec.CommandContext(ctx, javaBinary, "-XX:-UseBASE64Intrinsics", "-classpath", parentDir+"\\*;"+parentDir+"\\custom_connectors\\*", mainClass, "--spring.config.additional-location="+parentDir+"\\connectors-application.properties")
 	connectorsCmd.SysProcAttr = &syscall.SysProcAttr{
 		CreationFlags: 0x08000000 | 0x00000200, // CREATE_NO_WINDOW, CREATE_NEW_PROCESS_GROUP : https://learn.microsoft.com/en-us/windows/win32/procthread/process-creation-flags
 		// CreationFlags: 0x00000008 | 0x00000200, // DETACHED_PROCESS, CREATE_NEW_PROCESS_GROUP : https://learn.microsoft.com/en-us/windows/win32/procthread/process-creation-flags

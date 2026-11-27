@@ -48,7 +48,7 @@ describe('<TenantField />', () => {
 		await userEvent.click(screen.getByRole('combobox', {name: 'Select a tenant'}));
 
 		await expect.element(screen.getByRole('option', {name: 'All tenants'})).toBeVisible();
-		await expect.poll(() => screen.getByRole('option').elements().length).toBe(1);
+		await expect.element(screen.getByRole('option')).toHaveLength(1);
 	});
 
 	it('should contain list of tenants', async ({worker}) => {

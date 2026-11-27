@@ -19,6 +19,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 	Label,
+	useResolvedTheme,
 } from '@camunda/design-system';
 import {ArrowRight, Ban, Plus} from '@camunda/design-system/icons';
 import {themeStore} from '#/shared/theme/theme';
@@ -34,6 +35,7 @@ type Props = {
 
 const ModificationHelperModal: React.FC<Props> = observer(({open, onClose, onSubmit}) => {
 	const {t} = useTranslation();
+	const resolvedTheme = useResolvedTheme(themeStore.selectedTheme);
 	const rows = [
 		{
 			Icon: Plus,
@@ -81,11 +83,7 @@ const ModificationHelperModal: React.FC<Props> = observer(({open, onClose, onSub
 					</ul>
 					<p>{t('operate.processInstance.modification.helperVariables')}</p>
 					<p>{t('operate.processInstance.modification.helperReview')}</p>
-					<img
-						src={themeStore.actualTheme === 'light' ? diagramLight : diagramDark}
-						alt=""
-						className="max-w-full self-center"
-					/>
+					<img src={resolvedTheme === 'light' ? diagramLight : diagramDark} alt="" className="max-w-full self-center" />
 					<div className="flex items-center gap-2">
 						<Checkbox
 							id="hide-modification-helper"

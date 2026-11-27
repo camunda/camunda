@@ -1,10 +1,10 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda",
-    "commit": "792ed164be397822f655f0ed36bb24b539bede86",
-    "generatedAt": "2026-11-24T12:08:58.525Z",
+    "commit": "d0114bbb807da0427a44163b22a6c3938497b6ea",
+    "generatedAt": "2026-11-26T11:01:41.046Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "cb5ac07ff4760a486286e93cc98f20a3142aa8b643db7bda19c2ca9c1d1d0d37"
+    "specSha256": "f0bc39925bcb98db3dc65a755e1df7fa14e9dd1c0f25f421b1828047624033e6"
   },
   "responses": [
     {
@@ -7072,6 +7072,66 @@
           {
             "name": "tenantId",
             "type": "string"
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/probes",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [],
+        "optional": []
+      }
+    },
+    {
+      "path": "/probes/activation",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "probes",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "deadline",
+                  "type": "number"
+                },
+                {
+                  "name": "input",
+                  "type": "object"
+                },
+                {
+                  "name": "physicalTenantId",
+                  "type": "string"
+                },
+                {
+                  "name": "probeId",
+                  "type": "string"
+                },
+                {
+                  "name": "probeKey",
+                  "type": "string"
+                },
+                {
+                  "name": "secretPointers",
+                  "type": "array<string>"
+                },
+                {
+                  "name": "tenantId",
+                  "type": "string"
+                },
+                {
+                  "name": "worker",
+                  "type": "string"
+                }
+              ],
+              "optional": []
+            }
           }
         ],
         "optional": []

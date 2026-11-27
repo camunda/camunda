@@ -229,6 +229,7 @@ public final class DbDecisionState implements MutableDecisionState {
     drgCache =
         CacheBuilder.newBuilder()
             .maximumSize(config.getDrgCacheCapacity())
+            .expireAfterAccess(config.getDeploymentCacheTtl())
             .build(
                 new CacheLoader<>() {
                   @Override
@@ -287,8 +288,15 @@ public final class DbDecisionState implements MutableDecisionState {
   }
 
   @Override
-  public Optional<DeployedDrg> findLatestDecisionRequirementsByTenantAndId(
-      final String tenantId, final DirectBuffer decisionRequirementsId) {
+  public Optional<DeployedDrg> findDecisionRequirementsByTenantAndKey(
+      final String tenantId, final long decisionRequirementsKey) {
+    return findDeployedDrg(decisionRequirementsKey, tenantId);
+  }
+
+  @Override
+  public Optional<PersistedDecisionRequirements>
+      findLatestPersistedDecisionRequirementsByTenantAndId(
+          final String tenantId, final DirectBuffer decisionRequirementsId) {
     tenantIdKey.wrapString(tenantId);
     dbDecisionRequirementsId.wrapBuffer(decisionRequirementsId);
 
@@ -297,13 +305,13 @@ public final class DbDecisionState implements MutableDecisionState {
         .map((requirementsKey) -> requirementsKey.inner().wrappedKey().getValue())
         .flatMap(
             decisionRequirementsKey ->
-                findDecisionRequirementsByTenantAndKey(tenantId, decisionRequirementsKey));
+                findPersistedDecisionRequirementsByTenantAndKey(tenantId, decisionRequirementsKey));
   }
 
   @Override
-  public Optional<DeployedDrg> findDecisionRequirementsByTenantAndKey(
+  public Optional<PersistedDecisionRequirements> findPersistedDecisionRequirementsByTenantAndKey(
       final String tenantId, final long decisionRequirementsKey) {
-    return findDeployedDrg(decisionRequirementsKey, tenantId);
+    return Optional.ofNullable(findPersistedDrg(decisionRequirementsKey, tenantId));
   }
 
   @Override
@@ -350,14 +358,24 @@ public final class DbDecisionState implements MutableDecisionState {
     drgCache.invalidateAll();
   }
 
-  private DeployedDrg findAndParseDecisionRequirementsByKeyFromDb(
-      final long decisionRequirementsKey, final String tenantId) throws DrgNotFoundException {
+  /**
+   * Reads the stored DRG metadata. Uses the supplier form so that the result is a fresh instance,
+   * not the shared buffer that {@code storeDecisionRequirements} overwrites.
+   *
+   * @return the stored DRG, or null if no DRG is stored with the given key
+   */
+  private PersistedDecisionRequirements findPersistedDrg(
+      final long decisionRequirementsKey, final String tenantId) {
     tenantIdKey.wrapString(tenantId);
     dbDecisionRequirementsKey.wrapLong(decisionRequirementsKey);
+    return decisionRequirementsByKey.get(
+        tenantAwareDecisionRequirementsKey, PersistedDecisionRequirements::new);
+  }
 
+  private DeployedDrg findAndParseDecisionRequirementsByKeyFromDb(
+      final long decisionRequirementsKey, final String tenantId) throws DrgNotFoundException {
     final PersistedDecisionRequirements persistedDrg =
-        decisionRequirementsByKey.get(
-            tenantAwareDecisionRequirementsKey, PersistedDecisionRequirements::new);
+        findPersistedDrg(decisionRequirementsKey, tenantId);
     if (persistedDrg == null) {
       throw new DrgNotFoundException();
     }
@@ -538,9 +556,9 @@ public final class DbDecisionState implements MutableDecisionState {
   public void deleteDecisionRequirements(final DecisionRequirementsRecord record) {
     tenantIdKey.wrapString(record.getTenantId());
 
-    findLatestDecisionRequirementsByTenantAndId(
+    findLatestPersistedDecisionRequirementsByTenantAndId(
             record.getTenantId(), record.getDecisionRequirementsIdBuffer())
-        .map(DeployedDrg::getDecisionRequirementsVersion)
+        .map(PersistedDecisionRequirements::getDecisionRequirementsVersion)
         .ifPresent(
             latestVersion -> {
               if (latestVersion == record.getDecisionRequirementsVersion()) {
@@ -628,7 +646,7 @@ public final class DbDecisionState implements MutableDecisionState {
   }
 
   private void updateLatestDecisionRequirementsVersion(final DecisionRequirementsRecord record) {
-    findLatestDecisionRequirementsByTenantAndId(
+    findLatestPersistedDecisionRequirementsByTenantAndId(
             record.getTenantId(), record.getDecisionRequirementsIdBuffer())
         .ifPresentOrElse(
             previousVersion -> {

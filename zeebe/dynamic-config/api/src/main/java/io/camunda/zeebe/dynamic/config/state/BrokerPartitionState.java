@@ -20,17 +20,15 @@ import org.jspecify.annotations.Nullable;
 /**
  * Represents the partition assignment of a single broker within one partition group.
  *
- * <p>Unlike the legacy {@code MemberState}, this record carries <em>no</em> broker lifecycle {@code
- * State} (JOINING/ACTIVE/LEAVING/LEFT). Broker lifecycle is tracked once, cluster-wide, in {@code
- * GlobalConfiguration}; here we only record which partitions of this group the broker replicates.
- * Presence of the broker in a {@code PartitionGroupConfiguration} with at least one partition means
- * it is active in that group.
+ * <p>This record carries <em>no</em> broker lifecycle {@code State} (JOINING/ACTIVE/LEAVING/LEFT).
+ * Broker lifecycle is tracked once, cluster-wide, in {@code GlobalConfiguration}; here we only
+ * record which partitions of this group the broker replicates. Presence of the broker in a {@code
+ * PartitionGroupConfiguration} with at least one partition means it is active in that group.
  *
  * <p>{@code mode} is the per-broker operating mode <em>scoped to this group</em> — {@link
- * Mode#PROCESSING} or {@link Mode#RECOVERING} (the structural equivalent of the legacy {@code
- * MemberState.State.RECOVERING} set via {@code toRecovering()}). Because the mode is per broker and
- * per group (a broker may be recovering in one group but not another), it is tracked here rather
- * than on {@code PartitionGroupConfiguration} or on the cluster-wide broker lifecycle state.
+ * Mode#PROCESSING} or {@link Mode#RECOVERING}. Because the mode is per broker and per group (a
+ * broker may be recovering in one group but not another), it is tracked here rather than on {@code
+ * PartitionGroupConfiguration} or on the cluster-wide broker lifecycle state.
  *
  * <p>{@code version} is incremented every time the state is updated. It is used to resolve
  * conflicts when members receive gossip updates out of order. Only a member updates its own state,
