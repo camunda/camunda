@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.system.monitoring.detector;
 
+import io.camunda.zeebe.util.health.HealthStatus;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.time.Instant;
@@ -24,6 +25,9 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>Rates below {@link #MINIMUM_RATE} never count as a spike, so a partition going from idle to a
  * handful of records per second does not start one.
+ *
+ * <p>A spike is reported as {@link HealthStatus#NOTICE}: more load is not a problem by itself, but
+ * it explains latency or backpressure that follows it.
  */
 public final class LoadSpikeDetector extends ThresholdDetector {
 
@@ -81,6 +85,11 @@ public final class LoadSpikeDetector extends ThresholdDetector {
         });
     rates.keySet().retainAll(observed);
     forgetOthers(observed);
+  }
+
+  @Override
+  protected HealthStatus conditionStatus() {
+    return HealthStatus.NOTICE;
   }
 
   @Override

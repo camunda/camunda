@@ -51,6 +51,7 @@ public final class HealthTreeMetrics implements ComponentTreeListener {
   public static int statusValue(final HealthStatus status) {
     return switch (status) {
       case HEALTHY -> 1;
+      case NOTICE -> 3;
       case DEGRADED -> 2;
       case UNHEALTHY -> -1;
       case DEAD -> -2;

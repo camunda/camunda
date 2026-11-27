@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.system.monitoring.detector;
 
+import io.camunda.zeebe.util.health.HealthStatus;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
@@ -38,7 +39,7 @@ public abstract class ThresholdDetector extends HealthDetector implements Sample
         conditions.computeIfAbsent(child, ignored -> new ThresholdCondition(thresholds));
     final var started = condition.update(value, now) && condition.isActive();
     if (started) {
-      markDegraded(child, describe(child, condition.valueAtStart()), condition.since());
+      mark(child, conditionStatus(), describe(child, condition.valueAtStart()), condition.since());
     } else if (!condition.isActive()) {
       // a no-op unless the child is new or its condition just ended
       markHealthy(child);
@@ -53,6 +54,11 @@ public abstract class ThresholdDetector extends HealthDetector implements Sample
 
   protected ConditionThresholds thresholds() {
     return thresholds;
+  }
+
+  /** The status of a child while its condition holds. */
+  protected HealthStatus conditionStatus() {
+    return HealthStatus.DEGRADED;
   }
 
   /**

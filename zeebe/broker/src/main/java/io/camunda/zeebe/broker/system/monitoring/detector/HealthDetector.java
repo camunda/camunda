@@ -22,9 +22,10 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * A node of the health tree whose children are the things a detector watches, for example one per
- * partition or one per cluster member. A child is {@link HealthStatus#HEALTHY} or {@link
- * HealthStatus#DEGRADED}; the node reports the worst of its children. Listeners are notified only
- * when the report changes, so a condition that holds does not notify on every sample.
+ * partition or one per cluster member. A child is {@link HealthStatus#HEALTHY} or, while its
+ * condition holds, {@link HealthStatus#NOTICE} or {@link HealthStatus#DEGRADED}; the node reports
+ * the worst of its children. Listeners are notified only when the report changes, so a condition
+ * that holds does not notify on every sample.
  *
  * <p>Thread safe: listener-driven detectors update children from other components' threads.
  */
@@ -65,10 +66,18 @@ public abstract class HealthDetector implements HealthMonitorable {
   }
 
   protected void markDegraded(final String child, final String message, final Instant since) {
-    update(
-        () ->
-            children.put(
-                child, report(child, HealthStatus.DEGRADED, HealthIssue.of(message, since))));
+    mark(child, HealthStatus.DEGRADED, message, since);
+  }
+
+  /**
+   * Marks a child as having a condition.
+   *
+   * @param status {@link HealthStatus#NOTICE} for something unusual but harmless, {@link
+   *     HealthStatus#DEGRADED} for something that affects users of the broker
+   */
+  protected void mark(
+      final String child, final HealthStatus status, final String message, final Instant since) {
+    update(() -> children.put(child, report(child, status, HealthIssue.of(message, since))));
   }
 
   protected void remove(final String child) {

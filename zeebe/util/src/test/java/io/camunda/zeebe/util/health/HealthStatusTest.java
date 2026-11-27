@@ -8,7 +8,9 @@
 package io.camunda.zeebe.util.health;
 
 import static io.camunda.zeebe.util.health.HealthStatus.DEAD;
+import static io.camunda.zeebe.util.health.HealthStatus.DEGRADED;
 import static io.camunda.zeebe.util.health.HealthStatus.HEALTHY;
+import static io.camunda.zeebe.util.health.HealthStatus.NOTICE;
 import static io.camunda.zeebe.util.health.HealthStatus.UNHEALTHY;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -46,8 +48,15 @@ public class HealthStatusTest {
 
   @Test
   public void shouldSortBasedOnSeverity() {
-    final var statuses = new HealthStatus[] {DEAD, HEALTHY, UNHEALTHY};
+    final var statuses = new HealthStatus[] {DEAD, NOTICE, HEALTHY, UNHEALTHY, DEGRADED};
     Arrays.sort(statuses, HealthStatus.COMPARATOR);
-    assertThat(statuses).containsExactly(HEALTHY, UNHEALTHY, DEAD);
+    assertThat(statuses).containsExactly(HEALTHY, NOTICE, DEGRADED, UNHEALTHY, DEAD);
+  }
+
+  @Test
+  public void shouldTreatOnlyStatusesTheTreeAloneShowsAsHealthy() {
+    assertThat(HealthStatus.values())
+        .filteredOn(HealthStatus::isTreatedAsHealthy)
+        .containsExactly(HEALTHY, NOTICE, DEGRADED);
   }
 }

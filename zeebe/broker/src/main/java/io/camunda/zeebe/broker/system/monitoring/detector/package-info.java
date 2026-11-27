@@ -8,10 +8,11 @@
 
 /**
  * Detectors that turn signals the broker already has (metrics, listeners) into nodes of the
- * broker's health tree. A detector reports {@link
- * io.camunda.zeebe.util.health.HealthStatus#DEGRADED} while its condition holds, so the condition
- * shows in the health tree and its history without changing readiness, the topology or the
- * partition health that clients see.
+ * broker's health tree. While its condition holds, a detector reports {@link
+ * io.camunda.zeebe.util.health.HealthStatus#DEGRADED} if it affects users of the broker, or {@link
+ * io.camunda.zeebe.util.health.HealthStatus#NOTICE} if it is unusual but harmless, such as a load
+ * spike. Either way the condition shows in the health tree and its history without changing
+ * readiness, the topology or the partition health that clients see.
  *
  * <p>Prototype: thresholds and the set of detectors are expected to change.
  */

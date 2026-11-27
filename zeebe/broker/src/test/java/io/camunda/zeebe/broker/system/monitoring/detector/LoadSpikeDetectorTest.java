@@ -34,7 +34,7 @@ final class LoadSpikeDetectorTest {
           new ConditionThresholds(3, 1.5, Duration.ZERO, Duration.ZERO));
 
   @Test
-  void shouldMarkPartitionDegradedWhenRateJumpsAboveItsRecentAverage() {
+  void shouldReportANoticeWhenRateJumpsAboveItsRecentAverage() {
     // given - a steady 200 records/s
     detector.sample(T0);
     for (int i = 1; i <= 6; i++) {
@@ -48,7 +48,7 @@ final class LoadSpikeDetectorTest {
 
     // then
     final var partition = detector.getHealthReport().children().get(PARTITION);
-    assertThat(partition.status()).isEqualTo(HealthStatus.DEGRADED);
+    assertThat(partition.status()).isEqualTo(HealthStatus.NOTICE);
     assertThat(partition.issue().message())
         .startsWith("appending 2000 records/s, 10.0x the recent average of 200 records/s");
   }

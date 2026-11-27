@@ -29,6 +29,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.Logger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 public class BrokerHealthCheckServiceTest {
 
@@ -373,6 +375,25 @@ public class BrokerHealthCheckServiceTest {
     assertThat(healthCheckService.isBrokerReady()).isTrue();
   }
 
+  @ParameterizedTest
+  @CsvSource({"NOTICE, true, false", "DEGRADED, true, true", "UNHEALTHY, false, false"})
+  public void shouldOnlyCallTheBrokerDegradedForADegradedComponent(
+      final HealthStatus componentStatus, final boolean healthy, final boolean degraded) {
+    // given a ready broker
+    final var healthCheckService = newStartedHealthCheckService(DEFAULT_PHYSICAL_TENANT_ID);
+    healthCheckService.registerBootstrapPartitions(DEFAULT_PHYSICAL_TENANT_ID, List.of());
+    scheduler.workUntilDone();
+
+    // when a component reports the status
+    healthCheckService.registerMonitoredComponent(component("Detector", componentStatus));
+    scheduler.workUntilDone();
+
+    // then
+    assertThat(healthCheckService.getHealthReport().status()).isEqualTo(componentStatus);
+    assertThat(healthCheckService.isBrokerHealthy()).isEqualTo(healthy);
+    assertThat(healthCheckService.isBrokerDegraded()).isEqualTo(degraded);
+  }
+
   private BrokerHealthCheckService newHealthCheckService(final String... expectedPhysicalTenants) {
     return new BrokerHealthCheckService(
         member, new HealthTreeMetrics(new SimpleMeterRegistry()), Set.of(expectedPhysicalTenants));
@@ -397,6 +418,27 @@ public class BrokerHealthCheckServiceTest {
       @Override
       public HealthReport getHealthReport() {
         return HealthReport.healthy(this);
+      }
+
+      @Override
+      public void addFailureListener(final FailureListener failureListener) {}
+
+      @Override
+      public void removeFailureListener(final FailureListener failureListener) {}
+    };
+  }
+
+  private static HealthMonitorable component(
+      final String componentName, final HealthStatus status) {
+    return new HealthMonitorable() {
+      @Override
+      public String componentName() {
+        return componentName;
+      }
+
+      @Override
+      public HealthReport getHealthReport() {
+        return HealthReport.fromStatus(status, this);
       }
 
       @Override

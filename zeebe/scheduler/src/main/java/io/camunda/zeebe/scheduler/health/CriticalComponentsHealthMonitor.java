@@ -13,6 +13,7 @@ import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
+import io.camunda.zeebe.util.health.HealthStatus;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
@@ -230,8 +231,9 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
         return;
       }
 
-      if (healthReport.isDegraded()) {
-        log.info("{} is degraded: {}", componentName, healthReport.getIssue());
+      if (healthReport.getStatus() != HealthStatus.HEALTHY) {
+        log.info(
+            "{} reports {}: {}", componentName, healthReport.getStatus(), healthReport.getIssue());
       } else {
         log.info("{} recovered, marking it as healthy", componentName);
       }

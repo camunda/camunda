@@ -52,6 +52,7 @@ public enum HealthMetricsDoc implements ExtendedMeterDocumentation {
    *   <li>Unknown: 0
    *   <li>Healthy: 1
    *   <li>Degraded: 2
+   *   <li>Notice: 3
    *   <li>Unhealthy: -1
    *   <li>Dead: -2
    * </ul>
@@ -69,7 +70,7 @@ public enum HealthMetricsDoc implements ExtendedMeterDocumentation {
 
     @Override
     public String getDescription() {
-      return "Shows current health of a specific component (0 = unknown, 1 = healthy, 2 = degraded, -1 = unhealthy, -2 = dead)";
+      return "Shows current health of a specific component (0 = unknown, 1 = healthy, 2 = degraded, 3 = notice, -1 = unhealthy, -2 = dead)";
     }
 
     @Override

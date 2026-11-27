@@ -16,6 +16,12 @@ import java.util.Comparator;
 public enum HealthStatus {
   HEALTHY,
   /**
+   * The component works normally, but something unusual is going on that can explain other changes,
+   * for example a load spike. Nothing needs fixing; it gives context. Like {@link #DEGRADED}, only
+   * the health tree and its history show it, and it does not make the broker's status degraded.
+   */
+  NOTICE,
+  /**
    * The component works, but something worth an operator's attention was observed, for example a
    * latency outlier. Readiness, the topology and the partition health that clients see treat it as
    * healthy; only the health tree and its history show it.
@@ -36,6 +42,7 @@ public enum HealthStatus {
    *       <li>if any of the two is DEAD -> DEAD
    *       <li>if any of the two is UNHEALTHY -> UNHEALTHY
    *       <li>if any of the two is DEGRADED -> DEGRADED
+   *       <li>if any of the two is NOTICE -> NOTICE
    *       <li>if both are HEALTHY -> HEALTHY
    *     </ul>
    */
@@ -45,6 +52,6 @@ public enum HealthStatus {
 
   /** Whether everything outside the health tree should treat this status as healthy. */
   public boolean isTreatedAsHealthy() {
-    return this == HEALTHY || this == DEGRADED;
+    return this == HEALTHY || this == NOTICE || this == DEGRADED;
   }
 }
