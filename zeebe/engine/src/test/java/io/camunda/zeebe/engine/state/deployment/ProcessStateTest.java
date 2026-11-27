@@ -9,13 +9,15 @@ package io.camunda.zeebe.engine.state.deployment;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.zeebe.db.ZeebeDbInconsistentException;
 import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.state.deployment.PersistedProcess.PersistedProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
-import io.camunda.zeebe.engine.util.ProcessingStateRule;
+import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.Protocol;
@@ -25,23 +27,23 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.assertj.core.api.Assertions;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
+@ExtendWith(ProcessingStateExtension.class)
 public final class ProcessStateTest {
 
   private static final Long FIRST_PROCESS_KEY =
       Protocol.encodePartitionId(Protocol.DEPLOYMENT_PARTITION, 1);
   private static final String TENANT_ID = "defaultTenant";
-  @Rule public final ProcessingStateRule stateRule = new ProcessingStateRule();
-
   private MutableProcessState processState;
   private MutableProcessingState processingState;
 
-  @Before
+  @BeforeEach
   public void setUp() {
-    processingState = stateRule.getProcessingState();
     processState = processingState.getProcessState();
   }
 
@@ -817,6 +819,137 @@ public final class ProcessStateTest {
   }
 
   @Test
+  public void shouldMarkProcessAsDrainingAndKeepItRetrievable() {
+    // given
+    final long processDefinitionKey = 100L;
+    final var processRecord = creatingProcessRecord(processingState).setKey(processDefinitionKey);
+    processState.putProcess(processDefinitionKey, processRecord);
+
+    // when
+    processState.updateProcessState(processRecord, PersistedProcessState.DRAINING);
+
+    // then - the process is still retrievable by key and tenant, now in the DRAINING state
+    final var drainingProcess =
+        processState.getProcessByKeyAndTenant(processDefinitionKey, processRecord.getTenantId());
+    assertThat(drainingProcess).isNotNull();
+    assertThat(drainingProcess.getState()).isEqualTo(PersistedProcessState.DRAINING);
+  }
+
+  @Test
+  public void shouldGetLatestActiveProcessSkippingDrainingLatest() {
+    // given
+    final var v1 = creatingProcessRecord(processingState, "processId", 1);
+    final var v2 = creatingProcessRecord(processingState, "processId", 2);
+    processState.putProcess(v1.getKey(), v1);
+    processState.putProcess(v2.getKey(), v2);
+    processState.updateProcessState(v2, PersistedProcessState.DRAINING);
+
+    // when
+    final var latest =
+        processState.getLatestProcessVersionByProcessId(wrapString("processId"), TENANT_ID);
+    final var latestActive =
+        processState.getLatestActiveProcessVersionByProcessId(wrapString("processId"), TENANT_ID);
+
+    // then
+    assertThat(latest.getKey()).isEqualTo(v2.getKey());
+    assertThat(latestActive.getKey()).isEqualTo(v1.getKey());
+  }
+
+  @Test
+  public void shouldSkipDrainingButTreatPendingDeletionAsActiveWhenLookingUpLatestActiveProcess() {
+    // given - v3 is draining, v2 is stuck in pending deletion, v1 is ACTIVE
+    final var v1 = creatingProcessRecord(processingState, "processId", 1);
+    final var v2 = creatingProcessRecord(processingState, "processId", 2);
+    final var v3 = creatingProcessRecord(processingState, "processId", 3);
+    processState.putProcess(v1.getKey(), v1);
+    processState.putProcess(v2.getKey(), v2);
+    processState.putProcess(v3.getKey(), v3);
+    processState.updateProcessState(v2, PersistedProcessState.PENDING_DELETION);
+    processState.updateProcessState(v3, PersistedProcessState.DRAINING);
+
+    // when
+    final var latestActive =
+        processState.getLatestActiveProcessVersionByProcessId(wrapString("processId"), TENANT_ID);
+
+    // then - draining v3 is skipped, but PENDING_DELETION v2 counts as active and resolves as
+    // latest
+    assertThat(latestActive.getKey()).isEqualTo(v2.getKey());
+  }
+
+  @Test
+  public void shouldResolvePendingDeletionLatestAsLatestActiveProcess() {
+    // given - the latest version is stuck in PENDING_DELETION
+    final var v1 = creatingProcessRecord(processingState, "processId", 1);
+    final var v2 = creatingProcessRecord(processingState, "processId", 2);
+    processState.putProcess(v1.getKey(), v1);
+    processState.putProcess(v2.getKey(), v2);
+    processState.updateProcessState(v2, PersistedProcessState.PENDING_DELETION);
+
+    // when
+    final var latestActive =
+        processState.getLatestActiveProcessVersionByProcessId(wrapString("processId"), TENANT_ID);
+
+    // then - the stuck latest resolves rather than falling back to the superseded v1
+    assertThat(latestActive.getKey()).isEqualTo(v2.getKey());
+  }
+
+  @Test
+  public void shouldReturnNullLatestActiveProcessWhenNoActiveVersionRemains() {
+    // given
+    final var processRecord = creatingProcessRecord(processingState);
+    processState.putProcess(processRecord.getKey(), processRecord);
+    processState.updateProcessState(processRecord, PersistedProcessState.DRAINING);
+
+    // when
+    final var latestActive =
+        processState.getLatestActiveProcessVersionByProcessId(wrapString("processId"), TENANT_ID);
+
+    // then
+    assertThat(latestActive).isNull();
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = PersistedProcessState.class,
+      names = {"DRAINING", "PENDING_DELETION"})
+  public void shouldKeepUpdatedStateWhenReloadingByVersionAfterCacheMiss(
+      final PersistedProcessState state) {
+    // given
+    final var processRecord = creatingProcessRecord(processingState);
+    processState.putProcess(processRecord.getKey(), processRecord);
+    processState.updateProcessState(processRecord, state);
+
+    // when - the cached definition is gone, e.g. reclaimed by the GC
+    processState.clearCache();
+    final var byVersion =
+        processState.getProcessByProcessIdAndVersion(
+            wrapString("processId"), processRecord.getVersion(), TENANT_ID);
+
+    // then - the version lookup also refills the key cache, which must not regress either
+    final var byKey = processState.getProcessByKeyAndTenant(processRecord.getKey(), TENANT_ID);
+    assertThat(byVersion.getState()).isEqualTo(state);
+    assertThat(byKey.getState()).isEqualTo(state);
+  }
+
+  @Test
+  public void shouldNotResolveDrainingLatestAsLatestActiveAfterCacheMiss() {
+    // given
+    final var v1 = creatingProcessRecord(processingState, "processId", 1);
+    final var v2 = creatingProcessRecord(processingState, "processId", 2);
+    processState.putProcess(v1.getKey(), v1);
+    processState.putProcess(v2.getKey(), v2);
+    processState.updateProcessState(v2, PersistedProcessState.DRAINING);
+
+    // when - the cached definitions are gone, e.g. reclaimed by the GC
+    processState.clearCache();
+    final var latestActive =
+        processState.getLatestActiveProcessVersionByProcessId(wrapString("processId"), TENANT_ID);
+
+    // then
+    assertThat(latestActive.getKey()).isEqualTo(v1.getKey());
+  }
+
+  @Test
   public void shouldDeleteLatestProcess() {
     // given
     final String processId = Strings.newRandomValidBpmnId();
@@ -1204,5 +1337,87 @@ public final class ProcessStateTest {
     }
 
     return processRecord;
+  }
+
+  @Test
+  public void shouldNotHavePendingDeletionInitially() {
+    // when - nothing recorded
+
+    // then
+    assertThat(processState.hasPendingDeletion(1L)).isFalse();
+    assertThat(processState.hasPendingDeletion(1L, 2)).isFalse();
+  }
+
+  @Test
+  public void shouldAddPendingDeletion() {
+    // when
+    processState.addPendingDeletion(1L, 2);
+
+    // then
+    assertThat(processState.hasPendingDeletion(1L, 2)).isTrue();
+    assertThat(processState.hasPendingDeletion(1L)).isTrue();
+  }
+
+  @Test
+  public void shouldTrackPendingDeletionsPerPartitionIndependently() {
+    // when
+    processState.addPendingDeletion(1L, 2);
+    processState.addPendingDeletion(1L, 3);
+
+    // then
+    assertThat(processState.hasPendingDeletion(1L, 2)).isTrue();
+    assertThat(processState.hasPendingDeletion(1L, 3)).isTrue();
+    assertThat(processState.hasPendingDeletion(1L, 4)).isFalse();
+  }
+
+  @Test
+  public void shouldScopePendingDeletionsPerProcessDefinition() {
+    // when
+    processState.addPendingDeletion(1L, 2);
+
+    // then - another definition is unaffected
+    assertThat(processState.hasPendingDeletion(1L)).isTrue();
+    assertThat(processState.hasPendingDeletion(99L)).isFalse();
+    assertThat(processState.hasPendingDeletion(99L, 2)).isFalse();
+  }
+
+  @Test
+  public void shouldRemovePendingDeletion() {
+    // given
+    processState.addPendingDeletion(1L, 2);
+    processState.addPendingDeletion(1L, 3);
+
+    // when
+    processState.removePendingDeletion(1L, 2);
+
+    // then
+    assertThat(processState.hasPendingDeletion(1L, 2)).isFalse();
+    assertThat(processState.hasPendingDeletion(1L, 3)).isTrue();
+    assertThat(processState.hasPendingDeletion(1L)).isTrue();
+  }
+
+  @Test
+  public void shouldReportNoPendingDeletionOnceAllPartitionsRemoved() {
+    // given
+    processState.addPendingDeletion(1L, 2);
+    processState.addPendingDeletion(1L, 3);
+
+    // when
+    processState.removePendingDeletion(1L, 2);
+    processState.removePendingDeletion(1L, 3);
+
+    // then
+    assertThat(processState.hasPendingDeletion(1L)).isFalse();
+  }
+
+  @Test
+  public void shouldRejectRemovingPendingDeletionThatDoesNotExist() {
+    // given
+    processState.addPendingDeletion(1L, 2);
+
+    // when - removing a partition that was never recorded
+    // then
+    assertThatThrownBy(() -> processState.removePendingDeletion(1L, 99))
+        .isInstanceOf(ZeebeDbInconsistentException.class);
   }
 }

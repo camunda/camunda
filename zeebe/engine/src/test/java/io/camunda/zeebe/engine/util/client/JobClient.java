@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.util.client;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.Record;
@@ -143,9 +144,15 @@ public final class JobClient {
 
   public Record<JobRecordValue> complete() {
     final long jobKey = findJobKey();
+    final int partitionId = Protocol.decodePartitionId(jobKey);
+    final String[] tenantIds = authorizedTenantIds.toArray(new String[0]);
+    // route to the partition encoded in the job key; deployment-partition keys keep the default
+    // path
     final long position =
-        writer.writeCommand(
-            jobKey, JobIntent.COMPLETE, jobRecord, authorizedTenantIds.toArray(new String[0]));
+        partitionId <= Protocol.DEPLOYMENT_PARTITION
+            ? writer.writeCommand(jobKey, JobIntent.COMPLETE, jobRecord, tenantIds)
+            : writer.writeCommandOnPartition(
+                partitionId, jobKey, JobIntent.COMPLETE, jobRecord, tenantIds);
     return expectation.apply(position);
   }
 

@@ -134,6 +134,9 @@ public final class EventAppliers implements EventApplier {
     register(ProcessIntent.CREATED, 2, new ProcessCreatedV2Applier(state));
     register(ProcessIntent.DELETING, new ProcessDeletingApplier(state));
     register(ProcessIntent.DELETED, new ProcessDeletedApplier(state));
+    register(ProcessIntent.DRAINING, new ProcessDrainingApplier(state));
+    register(ProcessIntent.DELETE_COMPLETED, new ProcessDeleteCompletedApplier(state));
+    register(ProcessIntent.FULLY_DELETED, NOOP_EVENT_APPLIER);
   }
 
   private void registerTimeEventAppliers(final MutableProcessingState state) {

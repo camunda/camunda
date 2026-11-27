@@ -54,6 +54,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   private final BpmnUserTaskBehavior userTaskBehavior;
   private final BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour;
   private final JobUpdateBehaviour jobUpdateBehaviour;
+  private final BpmnProcessDeletionBehavior processDeletionBehavior;
 
   public BpmnBehaviorsImpl(
       final MutableProcessingState processingState,
@@ -198,6 +199,15 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             processingState.getKeyGenerator(), processingState, writers, stateBehavior);
 
     jobUpdateBehaviour = new JobUpdateBehaviour(processingState.getJobState(), writers, clock);
+
+    processDeletionBehavior =
+        new BpmnProcessDeletionBehavior(
+            processingState.getProcessState(),
+            processingState.getElementInstanceState(),
+            processingState.getBannedInstanceState(),
+            writers.command(),
+            writers.state(),
+            processingState.getKeyGenerator());
   }
 
   @Override
@@ -308,5 +318,10 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   @Override
   public JobUpdateBehaviour jobUpdateBehaviour() {
     return jobUpdateBehaviour;
+  }
+
+  @Override
+  public BpmnProcessDeletionBehavior processDeletionBehavior() {
+    return processDeletionBehavior;
   }
 }
