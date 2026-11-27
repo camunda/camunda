@@ -353,9 +353,9 @@ public final class JobCompleteProcessor
       case AD_HOC_SUB_PROCESS -> handleAdHocSubProcessJob(commandWriter, value, elementInstance);
       default -> {
         final long scopeKey = elementInstance.getValue().getFlowScopeKey();
-        final ElementInstance scopeInstance = elementInstanceState.getInstance(scopeKey);
 
-        if (scopeInstance != null && scopeInstance.isActive()) {
+        if (elementInstanceState.getInstanceState(scopeKey)
+            == ProcessInstanceIntent.ELEMENT_ACTIVATED) {
           eventHandle.triggeringProcessEvent(value);
           commandWriter.appendFollowUpCommand(
               elementInstanceKey,
