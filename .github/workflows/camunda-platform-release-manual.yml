@@ -42,7 +42,7 @@ jobs:
       actions: read
       contents: write
       issues: write
-      pull-requests: read
+      pull-requests: write # caps camunda-platform-release.yml; its github job labels PRs
       id-token: write # Vault JWT login
       security-events: write
     uses: ./.github/workflows/camunda-platform-release.yml
