@@ -4,8 +4,6 @@ dependencies {
   implementation(project(":camunda-secret-store-api"))
   implementation(libs.org.jspecify.jspecify)
   implementation(libs.org.slf4j.slf4j.api)
-  implementation(libs.com.fasterxml.jackson.core.jackson.databind)
-  implementation(libs.com.fasterxml.jackson.core.jackson.core)
   implementation(libs.com.google.cloud.google.cloud.secretmanager)
   implementation(libs.com.google.cloud.google.cloud.core)
   implementation(libs.com.google.api.grpc.proto.google.cloud.secretmanager.v1)
