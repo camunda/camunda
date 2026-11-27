@@ -243,16 +243,17 @@ test.describe('Process Definition Suspension API', () => {
       const onLatestActive = await createProcessInstanceRequest(request, {
         processDefinitionId,
       });
-      await suspendDefinitionAndWait(request, v1!.processDefinitionKey);
-      const allSuspended = await createProcessInstanceRequest(request, {
-        processDefinitionId,
-      });
-
       await assertStatusCode(onLatestActive, 200);
       const instance = await onLatestActive.json();
       instancesToCancel.push(instance.processInstanceKey);
       expect(instance.processDefinitionKey).toBe(v1!.processDefinitionKey);
       expect(instance.processDefinitionVersion).toBe(1);
+
+      await suspendDefinitionAndWait(request, v1!.processDefinitionKey);
+      const allSuspended = await createProcessInstanceRequest(request, {
+        processDefinitionId,
+      });
+
       // The message wording is due to change (#70544, question 3), so only the id is asserted.
       await assertStatusCode(allSuspended, 404);
       expect((await allSuspended.json()).detail).toContain(
@@ -293,15 +294,16 @@ test.describe('Process Definition Suspension API', () => {
       const byKey = await createProcessInstanceRequest(request, {
         processDefinitionKey: v1!.processDefinitionKey,
       });
+      await assertStatusCode(byKey, 200);
+      instancesToCancel.push((await byKey.json()).processInstanceKey);
+
       const byIdOnly = await createProcessInstanceRequest(request, {
         processDefinitionId,
       });
-
-      await assertStatusCode(byKey, 200);
       await assertStatusCode(byIdOnly, 200);
-      const created = [await byKey.json(), await byIdOnly.json()];
-      instancesToCancel.push(...created.map((i) => i.processInstanceKey));
-      expect(created[1].processDefinitionVersion).toBe(2);
+      const createdById = await byIdOnly.json();
+      instancesToCancel.push(createdById.processInstanceKey);
+      expect(createdById.processDefinitionVersion).toBe(2);
       await expectProcessInstanceCount(request, {processDefinitionId}, 2);
     });
 
