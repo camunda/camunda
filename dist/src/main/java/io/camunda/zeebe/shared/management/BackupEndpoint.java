@@ -35,6 +35,7 @@ import io.camunda.zeebe.backup.schedule.Schedule.NoneSchedule;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
+import io.camunda.zeebe.broker.client.api.PartitionInRecoveryException;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg;
 import io.camunda.zeebe.gateway.admin.IncompleteTopologyException;
 import io.camunda.zeebe.protocol.impl.encoding.BackupRangesResponse;
@@ -716,6 +717,9 @@ public final class BackupEndpoint {
       final var error = exception.getCause();
       if (error instanceof BackupAlreadyExistException) {
         errorCode = 409;
+        message = error.getMessage();
+      } else if (error instanceof PartitionInRecoveryException) {
+        errorCode = WebEndpointResponse.STATUS_SERVICE_UNAVAILABLE;
         message = error.getMessage();
       } else if (error instanceof IncompleteTopologyException) {
         errorCode = 502;
