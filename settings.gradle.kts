@@ -235,6 +235,7 @@ registerProject(":zeebe-metadata-store-in-memory", "zeebe/metadata-store/metadat
 registerProject(":zeebe-metadata-store-testkit", "zeebe/metadata-store/metadata-stores/testkit")
 
 registerProject(":zeebe-cluster-gossip-api", "zeebe/cluster-gossip/api")
+registerProject(":zeebe-cluster-gossip-testkit", "zeebe/cluster-gossip/testkit")
 
 registerProject(":zeebe-qa-integration-tests", "zeebe/qa/integration-tests")
 

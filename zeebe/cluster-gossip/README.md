@@ -7,8 +7,10 @@ writable by any member — or MEMBER — one value per member, written only by t
 
 ## Modules
 
-| Module |                                                    Purpose                                                     |
-|--------|----------------------------------------------------------------------------------------------------------------|
-| `api/` | `ClusterGossiper`, key descriptors, codecs, merge strategies and listeners. Depends only on `camunda-cluster`. |
+|   Module   |                                                                                     Purpose                                                                                      |
+|------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `api/`     | `ClusterGossiper`, key descriptors, codecs, merge strategies and listeners. Depends only on `camunda-cluster`.                                                                   |
+| `testkit/` | `InMemoryGossipCluster` (in-memory members with explicit sync, partitions, restarts), `MergeStrategyAssertions`, and the contract tests every implementation runs (`contract/`). |
 
-Consumers depend on `api/` only.
+Consumers depend on `api/`, and on `testkit/` in test scope. An implementation proves it meets the
+contract by extending `ClusterGossiperContractTest` with its own cluster.
