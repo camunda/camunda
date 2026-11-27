@@ -29,7 +29,8 @@ import {deleteResource} from './resource-requestHelpers';
 
 const PROCESS_DEFINITION_SEARCH_ENDPOINT = '/process-definitions/search';
 
-export type ProcessDefinitionState = 'ACTIVE' | 'DRAINING' | 'DELETED';
+export type ProcessDefinitionState =
+  'ACTIVE' | 'DRAINING' | 'DELETED' | 'SUSPENDED';
 
 export type ProcessDefinitionItem = {
   processDefinitionKey: string;
@@ -322,6 +323,178 @@ export async function createInstancesUntilOn(
     }
   }
   return instances;
+}
+
+const SUSPENSION_ENDPOINT = '/process-definitions/suspension';
+const RESUMPTION_ENDPOINT = '/process-definitions/resumption';
+
+export type ProcessDefinitionSelector =
+  | {processDefinitionKey: string}
+  | {
+      processDefinitionId: string;
+      processDefinitionVersion?: number;
+      tenantId?: string;
+    };
+
+export type SuspensionOutcome =
+  | 'SUSPENDED'
+  | 'ALREADY_SUSPENDED'
+  | 'RESUMED'
+  | 'ALREADY_RESUMED'
+  | 'DRAINING';
+
+export function suspendProcessDefinitions(
+  request: APIRequestContext,
+  selector: ProcessDefinitionSelector,
+  token?: string,
+): Promise<APIResponse> {
+  return request.post(buildUrl(SUSPENSION_ENDPOINT), {
+    headers: jsonHeaders(token),
+    data: selector,
+  });
+}
+
+export function resumeProcessDefinitions(
+  request: APIRequestContext,
+  selector: ProcessDefinitionSelector,
+  token?: string,
+): Promise<APIResponse> {
+  return request.post(buildUrl(RESUMPTION_ENDPOINT), {
+    headers: jsonHeaders(token),
+    data: selector,
+  });
+}
+
+/**
+ * Asserts a 200 suspension or resumption response and returns its outcomes as
+ * `[version, outcome]` pairs sorted by version, so callers can compare them
+ * whatever order the versions were resolved in.
+ */
+export async function suspensionOutcomes(
+  response: APIResponse,
+  path: typeof SUSPENSION_ENDPOINT | typeof RESUMPTION_ENDPOINT,
+): Promise<Array<[number, SuspensionOutcome]>> {
+  await assertStatusCode(response, 200);
+  await validateResponse({path, method: 'POST', status: '200'}, response);
+  const body = await response.json();
+  // Stays null until includeProcessInstances gets its cascade (#65707).
+  expect(body.batchOperationKey).toBeNull();
+  return (
+    body.processDefinitions as Array<{
+      processDefinitionVersion: number;
+      outcome: SuspensionOutcome;
+    }>
+  )
+    .map((p): [number, SuspensionOutcome] => [
+      p.processDefinitionVersion,
+      p.outcome,
+    ])
+    .sort(([a], [b]) => a - b);
+}
+
+export async function suspendAndListOutcomes(
+  request: APIRequestContext,
+  selector: ProcessDefinitionSelector,
+) {
+  return suspensionOutcomes(
+    await suspendProcessDefinitions(request, selector),
+    SUSPENSION_ENDPOINT,
+  );
+}
+
+export async function resumeAndListOutcomes(
+  request: APIRequestContext,
+  selector: ProcessDefinitionSelector,
+) {
+  return suspensionOutcomes(
+    await resumeProcessDefinitions(request, selector),
+    RESUMPTION_ENDPOINT,
+  );
+}
+
+/**
+ * Suspends one version and waits until search reports it `SUSPENDED`. The
+ * response only confirms the deployment partition, and the other partitions
+ * can still create instances until the distributed command reaches them; the
+ * export wait gives them that time before creations are asserted.
+ */
+export async function suspendDefinitionAndWait(
+  request: APIRequestContext,
+  processDefinitionKey: string,
+): Promise<void> {
+  const outcomes = await suspendAndListOutcomes(request, {
+    processDefinitionKey,
+  });
+  expect(outcomes.map(([, outcome]) => outcome)).toEqual(['SUSPENDED']);
+  await expectProcessDefinitionState(
+    request,
+    processDefinitionKey,
+    'SUSPENDED',
+  );
+}
+
+export async function resumeDefinitionAndWait(
+  request: APIRequestContext,
+  processDefinitionKey: string,
+): Promise<void> {
+  const outcomes = await resumeAndListOutcomes(request, {
+    processDefinitionKey,
+  });
+  expect(outcomes.map(([, outcome]) => outcome)).toEqual(['RESUMED']);
+  await expectProcessDefinitionState(request, processDefinitionKey, 'ACTIVE');
+}
+
+export function createProcessInstanceRequest(
+  request: APIRequestContext,
+  data: Record<string, unknown>,
+): Promise<APIResponse> {
+  return request.post(buildUrl('/process-instances'), {
+    headers: jsonHeaders(),
+    data,
+  });
+}
+
+/**
+ * Creates instances of `processDefinitionKey` over REST until every partition
+ * holds one or `maxAttempts` is reached, returning the instance keys. Each
+ * create must answer 200.
+ */
+export async function createInstancesUntilEveryPartition(
+  request: APIRequestContext,
+  processDefinitionKey: string,
+  partitions: number,
+  maxAttempts: number,
+): Promise<string[]> {
+  const created: string[] = [];
+  const reached = new Set<number>();
+  for (
+    let attempt = 0;
+    attempt < maxAttempts && reached.size < partitions;
+    attempt++
+  ) {
+    const res = await createProcessInstanceRequest(request, {
+      processDefinitionKey,
+    });
+    await assertStatusCode(res, 200);
+    const {processInstanceKey} = await res.json();
+    created.push(processInstanceKey);
+    reached.add(partitionOf(processInstanceKey));
+  }
+  return created;
+}
+
+export async function expectCreationRejectedAsSuspended(
+  response: APIResponse,
+  processDefinitionId: string,
+  processDefinitionVersion: number,
+): Promise<void> {
+  await assertStatusCode(response, 409);
+  const body = await response.json();
+  expect(body.title).toBe('INVALID_STATE');
+  expect(body.detail).toContain(
+    `process with ID '${processDefinitionId}' and version ${processDefinitionVersion}`,
+  );
+  expect(body.detail).toContain('but it is suspended');
 }
 
 /**
