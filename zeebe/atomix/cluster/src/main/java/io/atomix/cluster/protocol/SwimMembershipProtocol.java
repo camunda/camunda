@@ -134,6 +134,7 @@ public class SwimMembershipProtocol
   private BootstrapService bootstrapService;
   private SwimMember localMember;
   private volatile Properties localProperties = new Properties();
+  private final Object publishedLocalMemberLock = new Object();
   private ScheduledFuture<?> gossipFuture;
   private ScheduledFuture<?> probeFuture;
   private ScheduledFuture<?> syncFuture;
@@ -318,18 +319,34 @@ public class SwimMembershipProtocol
     }
 
     final var currentProperties = (Properties) liveProperties.clone();
-    localProperties = currentProperties;
-    LOGGER.debug("{} - Detected local properties change {}", localMember.id(), currentProperties);
-    localMember.setIncarnationNumber(localMember.getIncarnationNumber() + 1);
-
     // The properties of the local member are mutated in place by other components, e.g. to publish
     // partition roles and health. Listeners are notified asynchronously, so they must observe
     // exactly the properties we diffed against here: if they read the live properties instead, a
     // change applied and reverted before the next check is observed but never published again,
     // leaving those listeners permanently stale.
-    final var snapshot = localMember.copy(currentProperties);
+    final ImmutableMember snapshot;
+    synchronized (publishedLocalMemberLock) {
+      localProperties = currentProperties;
+      localMember.setIncarnationNumber(localMember.getIncarnationNumber() + 1);
+      snapshot = localMember.copy(currentProperties);
+    }
+    LOGGER.debug("{} - Detected local properties change {}", localMember.id(), currentProperties);
     post(new GroupMembershipEvent(GroupMembershipEvent.Type.METADATA_CHANGED, snapshot));
     recordUpdate(snapshot);
+  }
+
+  /**
+   * Returns the local member as it was last published by {@link #checkMetadata()}. Peers adopt the
+   * properties of a member only together with a higher incarnation number, so whatever we tell them
+   * about ourselves, e.g. in probes and syncs which can overtake the gossip of a change, must carry
+   * the properties published with our current incarnation number. Sending the live properties
+   * instead could hand a peer a change which is reverted before the next check; as the revert is
+   * never published, the peer would keep that intermediate value forever.
+   */
+  private ImmutableMember publishedLocalMember() {
+    synchronized (publishedLocalMemberLock) {
+      return localMember.copy(localProperties);
+    }
   }
 
   /**
@@ -609,7 +626,7 @@ public class SwimMembershipProtocol
         .sendAndReceive(
             member.address(),
             MEMBERSHIP_SYNC,
-            SERIALIZER.encode(localMember.copy()),
+            SERIALIZER.encode(publishedLocalMember()),
             false,
             config.getProbeTimeout())
         .whenCompleteAsync(
@@ -660,7 +677,9 @@ public class SwimMembershipProtocol
   private Collection<ImmutableMember> handleSync(final ImmutableMember member) {
     SYNC_LOGGER.trace("{} - Received sync request from {}", localMember.id(), member);
     updateState(member);
-    return members.values().stream().map(SwimMember::copy).collect(Collectors.toList());
+    return members.values().stream()
+        .map(known -> known == localMember ? publishedLocalMember() : known.copy())
+        .collect(Collectors.toList());
   }
 
   /** Sends probes to all members or to the next member in round robin fashion. */
@@ -704,7 +723,7 @@ public class SwimMembershipProtocol
         .sendAndReceive(
             member.address(),
             MEMBERSHIP_PROBE,
-            SERIALIZER.encode(Pair.of(localMember.copy(), member)),
+            SERIALIZER.encode(Pair.of(publishedLocalMember(), member)),
             false,
             config.getProbeTimeout())
         .whenCompleteAsync(
@@ -750,7 +769,7 @@ public class SwimMembershipProtocol
             this.localMember.id(),
             this.localMember.nodeVersion(),
             localMember.nodeVersion());
-        return this.localMember.copy();
+        return publishedLocalMember();
       } else if (localMember.nodeVersion() > this.localMember.nodeVersion()) {
         LOGGER.debug(
             "Detected higher version for member {} (local: {}, remote: {}). Leaving the cluster.",
@@ -758,7 +777,7 @@ public class SwimMembershipProtocol
             this.localMember.nodeVersion(),
             localMember.nodeVersion());
         leave(this.localMember);
-        return this.localMember.copy();
+        return publishedLocalMember();
       }
     }
 
@@ -767,20 +786,20 @@ public class SwimMembershipProtocol
     if (localMember.incarnationNumber() > this.localMember.getIncarnationNumber()) {
       this.localMember.setIncarnationNumber(localMember.incarnationNumber() + 1);
       if (config.isBroadcastDisputes()) {
-        broadcast(this.localMember.copy());
+        broadcast(publishedLocalMember());
       }
     }
     // If the probe indicates this member is suspect, increment the local term and respond.
     else if (localMember.state() == State.SUSPECT) {
       this.localMember.setIncarnationNumber(this.localMember.getIncarnationNumber() + 1);
       if (config.isBroadcastDisputes()) {
-        broadcast(this.localMember.copy());
+        broadcast(publishedLocalMember());
       }
     }
 
     // Update the state of the probing member.
     updateState(remoteMember);
-    return this.localMember.copy();
+    return publishedLocalMember();
   }
 
   /** Requests probes from n peers. */
@@ -888,7 +907,7 @@ public class SwimMembershipProtocol
               .sendAndReceive(
                   member.address(),
                   MEMBERSHIP_PROBE,
-                  SERIALIZER.encode(Pair.of(localMember.copy(), member)),
+                  SERIALIZER.encode(Pair.of(publishedLocalMember(), member)),
                   false,
                   config.getProbeTimeout())
               .whenCompleteAsync(
