@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.lenient;
@@ -32,13 +33,11 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.search.filter.DecisionInstanceFilter;
-import io.camunda.client.api.search.filter.ProcessInstanceFilter;
-import io.camunda.client.api.search.page.AnyPage;
-import io.camunda.client.api.search.sort.ProcessInstanceSort;
 import io.camunda.client.spring.event.CamundaClientClosingSpringEvent;
 import io.camunda.client.spring.event.CamundaClientCreatedSpringEvent;
 import io.camunda.client.spring.properties.CamundaClientProperties;
+import io.camunda.process.test.api.coverage.CoverageCollector;
+import io.camunda.process.test.api.coverage.CoverageCollectorBuilder;
 import io.camunda.process.test.api.judge.ChatModelAdapter;
 import io.camunda.process.test.api.judge.JudgeConfig;
 import io.camunda.process.test.api.runtime.CamundaProcessTestContainerProvider;
@@ -48,8 +47,6 @@ import io.camunda.process.test.impl.cleanup.CleanupStrategy;
 import io.camunda.process.test.impl.client.CamundaClockClient;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfiguration;
-import io.camunda.process.test.impl.coverage.CoverageCollector;
-import io.camunda.process.test.impl.coverage.CoverageCollectorBuilder;
 import io.camunda.process.test.impl.proxy.CamundaClientProxy;
 import io.camunda.process.test.impl.proxy.CamundaProcessTestContextProxy;
 import io.camunda.process.test.impl.proxy.TestCaseRunnerProxy;
@@ -62,7 +59,6 @@ import java.lang.reflect.Method;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -73,7 +69,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
-import org.mockito.ArgumentMatchers;
 import org.mockito.Captor;
 import org.mockito.InOrder;
 import org.mockito.Mock;
@@ -538,6 +533,11 @@ public class ExecutionListenerTest {
     verify(camundaManagementClient, never()).purgeCluster();
   }
 
+  @AfterEach
+  void resetSharedCoverageCollector() {
+    CamundaProcessTestExecutionListener.resetSharedCoverageCollector();
+  }
+
   @Test
   void shouldCollectProcessCoverage() throws Exception {
     // given
@@ -552,27 +552,8 @@ public class ExecutionListenerTest {
     final Method testMethod = mock(Method.class);
     when(processCoverageBuilder.build()).thenReturn(processCoverage);
     when(testContext.getTestMethod()).thenReturn(testMethod);
+    doReturn(ExecutionListenerTest.class).when(testContext).getTestClass();
     when(testMethod.getName()).thenReturn("test");
-
-    // coverage collection searches the client for instances, so let those searches return
-    // real (empty) results rather than deep stubs
-    when(camundaClient
-            .newProcessInstanceSearchRequest()
-            .filter(ArgumentMatchers.<Consumer<ProcessInstanceFilter>>any())
-            .sort(ArgumentMatchers.<Consumer<ProcessInstanceSort>>any())
-            .page(ArgumentMatchers.<Consumer<AnyPage>>any())
-            .send()
-            .join()
-            .items())
-        .thenReturn(Collections.emptyList());
-    when(camundaClient
-            .newDecisionInstanceSearchRequest()
-            .filter(ArgumentMatchers.<Consumer<DecisionInstanceFilter>>any())
-            .page(ArgumentMatchers.<Consumer<AnyPage>>any())
-            .send()
-            .join()
-            .items())
-        .thenReturn(Collections.emptyList());
 
     // when
     listener.beforeTestClass(testContext);
@@ -586,7 +567,7 @@ public class ExecutionListenerTest {
 
     // then
     verify(processCoverageBuilder).build();
-    verify(processCoverage).collectTestRunCoverage(any(), any(), any(), any());
+    verify(processCoverage).collectTestRunCoverage(any(), any(), any());
     verify(processCoverage).generateReport(any());
   }
 

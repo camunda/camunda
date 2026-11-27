@@ -19,6 +19,9 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.spring.event.CamundaClientClosingSpringEvent;
 import io.camunda.client.spring.event.CamundaClientCreatedSpringEvent;
+import io.camunda.process.test.api.coverage.CoverageCollector;
+import io.camunda.process.test.api.coverage.CoverageCollectorBuilder;
+import io.camunda.process.test.api.coverage.CoverageTestIdentifier;
 import io.camunda.process.test.api.runtime.CamundaProcessTestContainerProvider;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.assertions.util.InstantProbeAwaitBehavior;
@@ -29,10 +32,6 @@ import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.configuration.AssertionConfiguration;
 import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfiguration;
 import io.camunda.process.test.impl.configuration.CoverageReportConfiguration;
-import io.camunda.process.test.impl.coverage.CoverageCollector;
-import io.camunda.process.test.impl.coverage.CoverageCollectorBuilder;
-import io.camunda.process.test.impl.coverage.CoverageTestDataCollector;
-import io.camunda.process.test.impl.coverage.data.CoverageTestData;
 import io.camunda.process.test.impl.deployment.TestDeploymentService;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
 import io.camunda.process.test.impl.extension.ConditionalBehaviorEngine;
@@ -92,6 +91,10 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
       LoggerFactory.getLogger(CamundaProcessTestExecutionListener.class);
   private static final CamundaAssertAwaitBehavior INSTANT_PROBE = new InstantProbeAwaitBehavior();
 
+  // Spring creates a listener per test class and has no scope that spans the test classes of a test
+  // run. Share the collector in a static field to report the coverage of all test classes together.
+  private static CoverageCollector sharedCoverageCollector;
+
   private final CamundaProcessTestRuntimeBuilder containerRuntimeBuilder;
   private final CamundaProcessTestResultPrinter processTestResultPrinter;
   private final CoverageCollectorBuilder coverageCollectorBuilder;
@@ -105,7 +108,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
   private CamundaManagementClient camundaManagementClient;
   private CamundaClockClient camundaClockClient;
   private CamundaDataSource dataSource;
-  private boolean clockResetEnabled = true;
+  private volatile boolean clockResetEnabled = true;
   private Instant testCaseStartTime;
 
   private CamundaClient client;
@@ -155,18 +158,31 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     // create process coverage
     final CoverageReportConfiguration coverageReportConfiguration =
         runtimeConfiguration.getCoverage();
-    coverageCollector =
-        coverageCollectorBuilder
-            .reportDirectory(coverageReportConfiguration.getReportDirectory())
-            .excludeProcessDefinitionIds(coverageReportConfiguration.getExcludedProcesses())
-            .excludeDecisionDefinitionIds(coverageReportConfiguration.getExcludedDecisions())
-            .build();
+    coverageCollectorBuilder
+        .reportDirectory(coverageReportConfiguration.getReportDirectory())
+        .excludeProcessDefinitionIds(coverageReportConfiguration.getExcludedProcesses())
+        .excludeDecisionDefinitionIds(coverageReportConfiguration.getExcludedDecisions())
+        .queryPageLimit(runtimeConfiguration.getQueryPageLimit());
+    coverageCollector = getOrCreateSharedCoverageCollector(coverageCollectorBuilder);
 
     // initializations
     initializeJsonMapper(jsonMapper);
     initializeJudgeConfig(testContext, runtimeConfiguration);
     initializeAssertions(runtimeConfiguration.getAssertion());
     initializeSemanticSimilarityConfig(testContext, runtimeConfiguration);
+  }
+
+  private static synchronized CoverageCollector getOrCreateSharedCoverageCollector(
+      final CoverageCollectorBuilder coverageCollectorBuilder) {
+    if (sharedCoverageCollector == null) {
+      sharedCoverageCollector = coverageCollectorBuilder.build();
+    }
+    return sharedCoverageCollector;
+  }
+
+  /** Forgets the shared collector, so that the next test class creates a new one. */
+  static synchronized void resetSharedCoverageCollector() {
+    sharedCoverageCollector = null;
   }
 
   @Override
@@ -235,12 +251,13 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     // no data source means that beforeTestMethod failed before the test case could start
     if (dataSource != null) {
       try {
-        final CoverageTestData coverageTestData = CoverageTestDataCollector.collectData(dataSource);
         final java.lang.reflect.Method testMethod = testContext.getTestMethod();
         final String runName = testMethod.getName();
         final String displayName = getDisplayName(testMethod);
         coverageCollector.collectTestRunCoverage(
-            testContext.getTestClass(), runName, displayName, coverageTestData);
+            CoverageTestIdentifier.of(testContext.getTestClass(), runName, displayName),
+            client,
+            testCaseStartTime);
       } catch (final Throwable t) {
         LOG.warn("Failed to collect test process coverage, skipping.", t);
       }
@@ -280,7 +297,8 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     }
 
     try {
-      coverageCollector.generateReport(testContext.getTestClass());
+      coverageCollector.generateReport(
+          CoverageTestIdentifier.suiteIdOf(testContext.getTestClass()));
     } catch (final Throwable t) {
       LOG.warn("Failed to report process coverage, skipping.", t);
     }

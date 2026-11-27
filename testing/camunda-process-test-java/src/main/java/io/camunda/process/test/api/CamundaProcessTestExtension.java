@@ -18,6 +18,9 @@ package io.camunda.process.test.api;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.JsonMapper;
+import io.camunda.process.test.api.coverage.CoverageCollector;
+import io.camunda.process.test.api.coverage.CoverageCollectorBuilder;
+import io.camunda.process.test.api.coverage.CoverageTestIdentifier;
 import io.camunda.process.test.api.judge.JudgeConfig;
 import io.camunda.process.test.api.runtime.CamundaProcessTestContainerProvider;
 import io.camunda.process.test.api.similarity.SemanticSimilarityConfig;
@@ -29,10 +32,6 @@ import io.camunda.process.test.impl.cleanup.CleanupStrategyFactory;
 import io.camunda.process.test.impl.client.CamundaClockClient;
 import io.camunda.process.test.impl.client.CamundaClockClientImpl;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
-import io.camunda.process.test.impl.coverage.CoverageCollector;
-import io.camunda.process.test.impl.coverage.CoverageCollectorBuilder;
-import io.camunda.process.test.impl.coverage.CoverageTestDataCollector;
-import io.camunda.process.test.impl.coverage.data.CoverageTestData;
 import io.camunda.process.test.impl.deployment.TestDeploymentService;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
 import io.camunda.process.test.impl.extension.ConditionalBehaviorEngine;
@@ -111,6 +110,8 @@ public class CamundaProcessTestExtension
   /** The JUnit extension store key of the context. */
   public static final String STORE_KEY_CONTEXT = "camunda-process-test-context";
 
+  private static final String STORE_KEY_COVERAGE_COLLECTOR = "camunda-process-test-coverage";
+
   private static final Logger LOG = LoggerFactory.getLogger(CamundaProcessTestExtension.class);
   private static final CamundaAssertAwaitBehavior INSTANT_PROBE = new InstantProbeAwaitBehavior();
 
@@ -119,8 +120,9 @@ public class CamundaProcessTestExtension
 
   private final CamundaProcessTestRuntimeBuilder runtimeBuilder;
   private final CamundaProcessTestResultPrinter processTestResultPrinter;
-  private final CoverageCollector coverageCollector;
+  private final CoverageCollectorBuilder coverageCollectorBuilder;
 
+  private CoverageCollector coverageCollector;
   private CamundaProcessTestRuntime runtime;
   private CamundaProcessTestResultCollector processTestResultCollector;
 
@@ -131,6 +133,7 @@ public class CamundaProcessTestExtension
 
   private CamundaManagementClient camundaManagementClient;
   private CamundaClockClient camundaClockClient;
+  private CamundaClient testCaseClient;
   private CamundaDataSource dataSource;
   private boolean clockResetEnabled = CamundaProcessTestRuntimeDefaults.CLOCK_RESET_ENABLED;
   private DataDeletionMode dataDeletionMode = CamundaProcessTestRuntimeDefaults.DATA_DELETION_MODE;
@@ -145,13 +148,12 @@ public class CamundaProcessTestExtension
       final CoverageCollectorBuilder coverageCollectorBuilder,
       final Consumer<String> testResultPrintStream) {
     runtimeBuilder = containerRuntimeBuilder;
-    coverageCollector =
+    this.coverageCollectorBuilder =
         coverageCollectorBuilder
             .reportDirectory(runtimeBuilder.getCoverageReportDirectory())
             .excludeProcessDefinitionIds(runtimeBuilder.getCoverageExcludedProcesses())
             .excludeDecisionDefinitionIds(runtimeBuilder.getCoverageExcludedDecisions())
-            .printStream(testResultPrintStream)
-            .build();
+            .printStream(testResultPrintStream);
     processTestResultPrinter = new CamundaProcessTestResultPrinter(testResultPrintStream);
   }
 
@@ -182,6 +184,18 @@ public class CamundaProcessTestExtension
       // top-level process test.
       return;
     }
+
+    // The coverage of all test classes of the test run is reported together. Share the collector
+    // between the extension instances using the store of the root context, which lives as long as
+    // the test run. The first test class creates it.
+    coverageCollector =
+        context
+            .getRoot()
+            .getStore(NAMESPACE)
+            .getOrComputeIfAbsent(
+                STORE_KEY_COVERAGE_COLLECTOR,
+                key -> coverageCollectorBuilder.build(),
+                CoverageCollector.class);
 
     // create runtime
     runtime = runtimeBuilder.build();
@@ -311,6 +325,7 @@ public class CamundaProcessTestExtension
 
     // forget the previous test case, so that afterEach doesn't use it if this method fails
     testCaseStartTime = null;
+    testCaseClient = null;
     dataSource = null;
     processTestResultCollector = null;
 
@@ -334,11 +349,10 @@ public class CamundaProcessTestExtension
 
     // initialize assertions
     testCaseStartTime = readCurrentRuntimeTime();
+    testCaseClient = camundaProcessTestContext.createClient();
     dataSource =
         new CamundaDataSource(
-            camundaProcessTestContext.createClient(),
-            testCaseStartTime,
-            CamundaProcessTestRuntimeDefaults.QUERY_PAGE_LIMIT);
+            testCaseClient, testCaseStartTime, CamundaProcessTestRuntimeDefaults.QUERY_PAGE_LIMIT);
     CamundaAssert.initialize(dataSource);
 
     // initialize result collector
@@ -401,12 +415,13 @@ public class CamundaProcessTestExtension
     // no data source means that beforeEach failed before the test case could start
     if (dataSource != null) {
       try {
-        final CoverageTestData coverageData = CoverageTestDataCollector.collectData(dataSource);
         coverageCollector.collectTestRunCoverage(
-            context.getRequiredTestClass(),
-            getCoverageTestName(context),
-            getDisplayName(context),
-            coverageData);
+            CoverageTestIdentifier.of(
+                context.getRequiredTestClass(),
+                getCoverageTestName(context),
+                getDisplayName(context)),
+            testCaseClient,
+            testCaseStartTime);
       } catch (final Throwable t) {
         LOG.warn("Failed to collect test process coverage, skipping.", t);
       }
@@ -512,7 +527,8 @@ public class CamundaProcessTestExtension
     }
 
     try {
-      coverageCollector.generateReport(context.getRequiredTestClass());
+      coverageCollector.generateReport(
+          CoverageTestIdentifier.suiteIdOf(context.getRequiredTestClass()));
     } catch (final Throwable t) {
       LOG.warn("Failed to report process coverage, skipping.", t);
     }

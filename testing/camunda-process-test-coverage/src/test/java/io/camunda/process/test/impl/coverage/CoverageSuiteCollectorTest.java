@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.process.test.api.coverage;
+package io.camunda.process.test.impl.coverage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -28,7 +28,6 @@ import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.ProcessInstanceSequenceFlow;
 import io.camunda.process.test.api.coverage.model.CoverageReport;
-import io.camunda.process.test.impl.coverage.CoverageCollector;
 import io.camunda.process.test.impl.coverage.data.CoverageTestData;
 import io.camunda.process.test.impl.coverage.data.ImmutableCoverageDecisionInstanceData;
 import io.camunda.process.test.impl.coverage.data.ImmutableCoverageProcessDefinitionData;
@@ -37,6 +36,7 @@ import io.camunda.process.test.impl.coverage.data.ImmutableCoverageTestData;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -45,7 +45,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class CoverageReportCollectorBuilderTest {
+class CoverageSuiteCollectorTest {
 
   @TempDir File tempDir;
 
@@ -74,15 +74,17 @@ class CoverageReportCollectorBuilderTest {
                     .build())
             .build();
 
-    final CoverageCollector coverageCollector =
-        CoverageCollector.newBuilder()
-            .excludeProcessDefinitionIds(java.util.Collections.singletonList("excluded-process"))
-            .excludeDecisionDefinitionIds(java.util.Collections.singletonList("excluded-decision"))
-            .build();
+    final CoverageSuiteCollector coverageCollector =
+        new CoverageSuiteCollector(
+            java.util.Collections.singletonList("excluded-process"),
+            java.util.Collections.singletonList("excluded-decision"),
+            null,
+            null);
 
     // when
     final CoverageReport report =
-        coverageCollector.collectTestRunCoverage(ExclusionTest.class, "run-1", null, testResults);
+        coverageCollector.collectTestRunCoverage(
+            "ExclusionTest", "ExclusionTest", "run-1", null, testResults);
 
     // then
     assertThat(report.getSuites())
@@ -95,20 +97,22 @@ class CoverageReportCollectorBuilderTest {
   @Test
   void shouldIncludeGivenRunAndCollectedDataInSuiteReport() {
     // given
-    final CoverageCollector coverageCollector = CoverageCollector.newBuilder().build();
+    final CoverageSuiteCollector coverageCollector =
+        new CoverageSuiteCollector(Collections.emptyList(), Collections.emptyList(), null, null);
     final String processDefinitionId = "process-a";
     final CoverageTestData testData = createProcessCoverageTestData(processDefinitionId, "taskA");
 
     // when
     final CoverageReport report =
-        coverageCollector.collectTestRunCoverage(GivenRunTest.class, "run-1", null, testData);
+        coverageCollector.collectTestRunCoverage(
+            "GivenRunTest", "GivenRunTest", "run-1", null, testData);
 
     // then
     assertThat(report.getSuites())
         .singleElement()
         .satisfies(
             suite -> {
-              assertThat(suite.getId()).isEqualTo(GivenRunTest.class.getName());
+              assertThat(suite.getId()).isEqualTo("GivenRunTest");
               assertThat(suite.getName()).isEqualTo("GivenRunTest");
               assertThat(suite.getRuns())
                   .singleElement()
@@ -136,40 +140,74 @@ class CoverageReportCollectorBuilderTest {
   }
 
   @Test
-  void shouldUseEnclosingSuiteNameAndKeepNestedRunNameForNestedTests() {
+  void shouldNotShareSuitesBetweenCollectors() {
     // given
-    final CoverageCollector coverageCollector = CoverageCollector.newBuilder().build();
-    final CoverageTestData testData = createProcessCoverageTestData("process-a", "taskA");
+    final CoverageSuiteCollector firstCollector =
+        new CoverageSuiteCollector(Collections.emptyList(), Collections.emptyList(), null, null);
+    final CoverageSuiteCollector secondCollector =
+        new CoverageSuiteCollector(Collections.emptyList(), Collections.emptyList(), null, null);
+
+    final CoverageTestData testDataA = createProcessCoverageTestData("process-a", "taskA");
 
     // when
+    firstCollector.collectTestRunCoverage("suite-a", "suite-a", "run-1", null, testDataA);
     final CoverageReport report =
-        coverageCollector.collectTestRunCoverage(
-            NestedSuiteFixture.NestedSuiteTest.class, "NestedSuiteTest#run-1", null, testData);
+        secondCollector.collectTestRunCoverage(
+            "suite-b",
+            "suite-b",
+            "run-1",
+            null,
+            createProcessCoverageTestData("process-b", "taskB"));
+
+    // then
+    assertThat(report.getSuites()).extracting(suite -> suite.getId()).containsExactly("suite-b");
+    assertThat(
+            firstCollector
+                .collectTestRunCoverage("suite-a", "suite-a", "run-2", null, testDataA)
+                .getSuites())
+        .extracting(suite -> suite.getId())
+        .containsExactly("suite-a");
+  }
+
+  @Test
+  void shouldReturnAggregatedReportOfAllSuitesWithoutWritingFiles() {
+    // given
+    final CoverageSuiteCollector coverageCollector =
+        new CoverageSuiteCollector(
+            Collections.emptyList(), Collections.emptyList(), tempDir.getAbsolutePath(), null);
+    coverageCollector.collectTestRunCoverage(
+        "suite-a", "suite-a", "run-1", null, createProcessCoverageTestData("process-a", "taskA"));
+    coverageCollector.collectTestRunCoverage(
+        "suite-b", "suite-b", "run-1", null, createProcessCoverageTestData("process-b", "taskB"));
+
+    // when
+    final CoverageReport report = coverageCollector.getAggregatedReport();
 
     // then
     assertThat(report.getSuites())
-        .singleElement()
-        .satisfies(
-            suite -> {
-              assertThat(suite.getName()).isEqualTo("NestedSuiteFixture");
-              assertThat(suite.getRuns())
-                  .singleElement()
-                  .satisfies(run -> assertThat(run.getName()).isEqualTo("NestedSuiteTest#run-1"));
-            });
+        .extracting(suite -> suite.getId())
+        .containsOnly("suite-a", "suite-b");
+    assertThat(report.getProcessCoverages())
+        .extracting(coverage -> coverage.getProcessDefinitionId())
+        .containsExactlyInAnyOrder("process-a", "process-b");
+    assertThat(tempDir.list()).isEmpty();
   }
 
   @Test
   void shouldIncludeCollectedDataInAggregatedReport() {
     // given
-    final CoverageCollector coverageCollector = CoverageCollector.newBuilder().build();
+    final CoverageSuiteCollector coverageCollector =
+        new CoverageSuiteCollector(Collections.emptyList(), Collections.emptyList(), null, null);
     coverageCollector.collectTestRunCoverage(
-        AggregatedReportTest.class,
+        "AggregatedReportTest",
+        "AggregatedReportTest",
         "run-1",
         null,
         createProcessCoverageTestData("process-a", "taskA"));
     final CoverageReport report =
         coverageCollector.collectTestRunCoverage(
-            AggregatedReportTest.class,
+            "AggregatedReportTest",
+            "AggregatedReportTest",
             "run-2",
             null,
             createProcessCoverageTestData("process-b", "taskB"));
@@ -190,69 +228,39 @@ class CoverageReportCollectorBuilderTest {
   }
 
   @Test
-  void shouldCombineNestedSuitesOfSameEnclosingClassInSingleReport() {
-    // given
-    final CoverageCollector coverageCollector = CoverageCollector.newBuilder().build();
-
-    // when
-    coverageCollector.collectTestRunCoverage(
-        NestedCollectorFixture.SecondNestedSuiteTest.class,
-        "SecondNestedSuiteTest#run-2",
-        null,
-        createProcessCoverageTestData("process-b", "taskB"));
-    final CoverageReport report =
-        coverageCollector.collectTestRunCoverage(
-            NestedCollectorFixture.FirstNestedSuiteTest.class,
-            "FirstNestedSuiteTest#run-1",
-            null,
-            createProcessCoverageTestData("process-a", "taskA"));
-
-    // then
-    assertThat(report.getSuites())
-        .singleElement()
-        .satisfies(
-            suite -> {
-              assertThat(suite.getName()).isEqualTo("NestedCollectorFixture");
-              assertThat(suite.getRuns())
-                  .extracting(run -> run.getName())
-                  .containsExactlyInAnyOrder(
-                      "SecondNestedSuiteTest#run-2", "FirstNestedSuiteTest#run-1");
-            });
-  }
-
-  @Test
   void shouldGenerateReportAndPrintCoverageSummaryToStream() throws Exception {
     // given: pre-create the static resources directory so installReportDependencies is a no-op
     new File(tempDir, "coverage/static").mkdirs();
 
     final List<String> captured = new ArrayList<>();
-    final CoverageCollector coverageCollector =
-        CoverageCollector.newBuilder()
-            .reportDirectory(tempDir.getAbsolutePath())
-            .printStream(captured::add)
-            .build();
+    final CoverageSuiteCollector coverageCollector =
+        new CoverageSuiteCollector(
+            Collections.emptyList(),
+            Collections.emptyList(),
+            tempDir.getAbsolutePath(),
+            captured::add);
 
     coverageCollector.collectTestRunCoverage(
-        GenerateReportFixture.class,
+        "GenerateReportFixture",
+        "GenerateReportFixture",
         "shouldGenerateReport",
         null,
         createProcessCoverageTestData("generate-report-process", "genTask"));
 
     // when
-    final CoverageReport report = coverageCollector.generateReport(GenerateReportFixture.class);
+    final CoverageReport report = coverageCollector.generateReport("GenerateReportFixture");
 
     // then: print stream contains the suite name, process id, coverage percentage and HTML link
     assertThat(captured).hasSize(1);
     final String message = captured.get(0);
-    assertThat(message).contains(GenerateReportFixture.class.getName());
+    assertThat(message).contains("GenerateReportFixture");
     assertThat(message).contains("generate-report-process");
     assertThat(message).contains("%");
     assertThat(message).contains("report.html");
 
     // and the returned aggregated report includes the fixture suite
     assertThat(report.getSuites())
-        .anySatisfy(
-            suite -> assertThat(suite.getId()).isEqualTo(GenerateReportFixture.class.getName()));
+        .anySatisfy(suite -> assertThat(suite.getId()).isEqualTo("GenerateReportFixture"));
   }
 
   @Test
@@ -260,17 +268,19 @@ class CoverageReportCollectorBuilderTest {
     // given: pre-create the static resources directory so installReportDependencies is a no-op
     new File(tempDir, "coverage/static").mkdirs();
 
-    final CoverageCollector coverageCollector =
-        CoverageCollector.newBuilder().reportDirectory(tempDir.getAbsolutePath()).build();
+    final CoverageSuiteCollector coverageCollector =
+        new CoverageSuiteCollector(
+            Collections.emptyList(), Collections.emptyList(), tempDir.getAbsolutePath(), null);
 
     coverageCollector.collectTestRunCoverage(
-        GenerateReportJsonFixture.class,
+        "GenerateReportJsonFixture",
+        "GenerateReportJsonFixture",
         "shouldWriteJson",
         null,
         createProcessCoverageTestData("json-fixture-process", "jsonTask"));
 
     // when
-    coverageCollector.generateReport(GenerateReportJsonFixture.class);
+    coverageCollector.generateReport("GenerateReportJsonFixture");
 
     // then: a report.json file is written to the temp directory
     final File reportJson = new File(tempDir, "report.json");
@@ -278,7 +288,7 @@ class CoverageReportCollectorBuilderTest {
 
     final String json = new java.lang.String(java.nio.file.Files.readAllBytes(reportJson.toPath()));
     assertThat(json).contains("\"suites\"");
-    assertThat(json).contains(GenerateReportJsonFixture.class.getName());
+    assertThat(json).contains("GenerateReportJsonFixture");
     assertThat(json).contains("shouldWriteJson");
   }
 
@@ -332,27 +342,3 @@ class CoverageReportCollectorBuilderTest {
             .done());
   }
 }
-
-final class GivenRunTest {}
-
-final class AggregatedReportTest {}
-
-final class ExclusionTest {}
-
-final class NestedSuiteFixture {
-  private NestedSuiteFixture() {}
-
-  static final class NestedSuiteTest {}
-}
-
-final class NestedCollectorFixture {
-  private NestedCollectorFixture() {}
-
-  static final class FirstNestedSuiteTest {}
-
-  static final class SecondNestedSuiteTest {}
-}
-
-final class GenerateReportFixture {}
-
-final class GenerateReportJsonFixture {}

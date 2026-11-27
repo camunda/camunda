@@ -15,16 +15,20 @@
  */
 package io.camunda.process.test.impl.coverage;
 
+import io.camunda.process.test.api.coverage.CoverageCollector;
+import io.camunda.process.test.api.coverage.CoverageCollectorBuilder;
+import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeDefaults;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 
 public final class CoverageCollectorBuilderImpl implements CoverageCollectorBuilder {
 
-  private String reportDirectory;
   private List<String> excludedProcessDefinitionIds = Collections.emptyList();
   private List<String> excludedDecisionDefinitionIds = Collections.emptyList();
+  private String reportDirectory;
   private Consumer<String> printStream;
+  private int queryPageLimit = CamundaProcessTestRuntimeDefaults.QUERY_PAGE_LIMIT;
 
   @Override
   public CoverageCollectorBuilder excludeProcessDefinitionIds(
@@ -53,8 +57,19 @@ public final class CoverageCollectorBuilderImpl implements CoverageCollectorBuil
   }
 
   @Override
+  public CoverageCollectorBuilder queryPageLimit(final int queryPageLimit) {
+    this.queryPageLimit = queryPageLimit;
+    return this;
+  }
+
+  @Override
   public CoverageCollector build() {
     return new CoverageCollectorImpl(
-        excludedProcessDefinitionIds, excludedDecisionDefinitionIds, reportDirectory, printStream);
+        new CoverageSuiteCollector(
+            excludedProcessDefinitionIds,
+            excludedDecisionDefinitionIds,
+            reportDirectory,
+            printStream),
+        queryPageLimit);
   }
 }
