@@ -39,7 +39,8 @@ public class DefaultExecutionQueue implements ExecutionQueue {
       Set.of(
           Pattern.compile(".*update.*HistoryCleanupDate$"),
           Pattern.compile(".*\\.createIfNotExists$"),
-          Pattern.compile("io.camunda.db.rdbms.sql.BatchOperationMapper.activate"));
+          Pattern.compile("io.camunda.db.rdbms.sql.BatchOperationMapper.activate"),
+          Pattern.compile("io.camunda.db.rdbms.sql.BatchOperationMapper.finalizeEndDate"));
 
   private final SqlSessionFactory sessionFactory;
   private final TransactionRunner transactionRunner;
