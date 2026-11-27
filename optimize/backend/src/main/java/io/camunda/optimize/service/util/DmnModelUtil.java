@@ -21,7 +21,6 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.bpm.model.dmn.instance.Decision;
 import org.camunda.bpm.model.dmn.instance.DecisionTable;
@@ -34,7 +33,7 @@ public class DmnModelUtil {
 
   public static DmnModelInstance parseDmnModel(final String dmn10Xml) {
     try (final ByteArrayInputStream stream = new ByteArrayInputStream(dmn10Xml.getBytes())) {
-      return Dmn.readModelFromStream(stream);
+      return BundledSchemaDmnParser.readModelFromStream(stream);
     } catch (IOException e) {
       throw new OptimizeRuntimeException("Failed reading model", e);
     }
