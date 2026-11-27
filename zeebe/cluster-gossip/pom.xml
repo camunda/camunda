@@ -22,5 +22,6 @@
   <modules>
     <module>api</module>
     <module>testkit</module>
+    <module>swim</module>
   </modules>
 </project>
