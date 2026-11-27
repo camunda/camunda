@@ -158,6 +158,19 @@ class ClaimsExtractorTest {
   }
 
   @Test
+  void shouldNotFetchGroupsFromMembershipStateWhenTheGroupsClaimIsEmpty() {
+    // given: the token's provider has a groups claim, but the user has no groups in it
+    final Map<String, Object> claims = Map.of(Authorization.USER_GROUPS_CLAIMS, List.of());
+
+    // when
+    final var groups = claimsExtractor.getGroups(claims, EntityType.USER, "demo");
+
+    // then: the stored memberships of the principal ID are not the user's groups
+    assertThat(groups).isEmpty();
+    verify(membershipState, never()).getMemberships(any(), any(), any());
+  }
+
+  @Test
   void shouldFetchGroupsFromMembershipStateWhenNotInClaims() {
     // given
     final var expectedGroups = List.of("group-from-db1", "group-from-db2");

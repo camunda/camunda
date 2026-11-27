@@ -17,7 +17,6 @@ import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.TenantEntity;
 import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.security.auth.OidcGroupsLoader;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.GroupServices;
 import io.camunda.service.MappingRuleServices;
@@ -57,8 +56,7 @@ public class DefaultMembershipService implements MembershipService {
   private final TenantServices tenantServices;
   private final RoleServices roleServices;
   private final GroupServices groupServices;
-  private final OidcGroupsLoader oidcGroupsLoader;
-  private final boolean isGroupsClaimConfigured;
+  private final ProviderGroupsClaims groupsClaims;
 
   public DefaultMembershipService(
       final MappingRuleServices mappingRuleServices,
@@ -70,10 +68,7 @@ public class DefaultMembershipService implements MembershipService {
     this.tenantServices = tenantServices;
     this.roleServices = roleServices;
     this.groupServices = groupServices;
-    oidcGroupsLoader =
-        new OidcGroupsLoader(securityConfiguration.getAuthentication().getOidc().getGroupsClaim());
-    isGroupsClaimConfigured =
-        securityConfiguration.getAuthentication().getOidc().isGroupsClaimConfigured();
+    groupsClaims = new ProviderGroupsClaims(securityConfiguration.getAuthentication());
   }
 
   @Override
@@ -84,8 +79,7 @@ public class DefaultMembershipService implements MembershipService {
       throws OAuth2AuthenticationException {
     // OIDC groups-claim parsing is in-memory token validation, not a DB call: evaluate it
     // eagerly so malformed claims fail fast at authentication time.
-    final List<String> eagerGroupsFromClaims =
-        isGroupsClaimConfigured ? List.copyOf(oidcGroupsLoader.load(tokenClaims)) : null;
+    final List<String> eagerGroupsFromClaims = groupsClaims.groupIds(tokenClaims).orElse(null);
     return new Resolver(tokenClaims, principalId, principalType, eagerGroupsFromClaims);
   }
 

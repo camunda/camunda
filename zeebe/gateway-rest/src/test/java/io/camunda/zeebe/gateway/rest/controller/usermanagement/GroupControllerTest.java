@@ -57,7 +57,11 @@ public class GroupControllerTest {
   @Nested
   @WebMvcTest(GroupController.class)
   @Import(ApiFiltersConfiguration.class)
-  @TestPropertySource(properties = "camunda.security.authentication.oidc.groupsClaim=g1")
+  @TestPropertySource(
+      properties = {
+        "camunda.security.authentication.method=oidc",
+        "camunda.security.authentication.oidc.groupsClaim=g1"
+      })
   public class CamundaGroupsDisabledTest extends RestControllerTest {
 
     public static final String FORBIDDEN_MESSAGE =
@@ -210,7 +214,11 @@ public class GroupControllerTest {
   @Nested
   @WebMvcTest(GroupController.class)
   @Import(ApiFiltersConfiguration.class)
-  @TestPropertySource(properties = "camunda.security.authentication.oidc.groups-claim=g1")
+  @TestPropertySource(
+      properties = {
+        "camunda.security.authentication.method=oidc",
+        "camunda.security.authentication.oidc.groups-claim=g1"
+      })
   public class CamundaGroupsDisabledViaKebabCasePropertyTest extends RestControllerTest {
 
     private static final String FORBIDDEN_MESSAGE =
@@ -226,6 +234,51 @@ public class GroupControllerTest {
 
     @Test
     void shouldReturnErrorOnCreateWhenGroupsClaimSetViaKebabCaseKey() {
+      // given
+      final var groupName = "testGroup";
+      final var description = "description";
+      final var groupId = "g1";
+      // when
+      webClient
+          .post()
+          .uri(GROUP_BASE_URL)
+          .accept(MediaType.APPLICATION_JSON)
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(
+              new GroupCreateRequest().name(groupName).groupId(groupId).description(description))
+          .exchange()
+          .expectStatus()
+          .isForbidden()
+          .expectBody()
+          .json(
+              FORBIDDEN_MESSAGE.formatted(GROUP_BASE_URL, GROUP_BASE_URL), JsonCompareMode.STRICT);
+    }
+  }
+
+  @Nested
+  @WebMvcTest(GroupController.class)
+  @Import(ApiFiltersConfiguration.class)
+  @TestPropertySource(
+      properties = {
+        "camunda.security.authentication.method=oidc",
+        "camunda.security.authentication.providers.oidc.keycloak.client-id=client",
+        "camunda.security.authentication.providers.oidc.keycloak.groups-claim=groups"
+      })
+  public class CamundaGroupsDisabledViaNamedProviderTest extends RestControllerTest {
+
+    private static final String FORBIDDEN_MESSAGE =
+        """
+        {
+          "type": "about:blank",
+          "status": 403,
+          "title": "Access issue",
+          "detail": "%%s endpoint is not accessible: %s",
+          "instance": "%%s"
+        }"""
+            .formatted(GROUPS_API_DISABLED_ERROR_MESSAGE);
+
+    @Test
+    void shouldReturnErrorOnCreateWhenTheOnlyNamedProviderHasAGroupsClaim() {
       // given
       final var groupName = "testGroup";
       final var description = "description";

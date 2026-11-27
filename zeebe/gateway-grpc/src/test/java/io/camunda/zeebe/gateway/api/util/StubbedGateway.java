@@ -113,7 +113,7 @@ public final class StubbedGateway {
                         new AuthenticationHandler.Oidc(
                             new FakeJwtDecoder(),
                             new NoopOidcClaimsProvider(),
-                            securityConfiguration.getAuthentication().getOidc()),
+                            securityConfiguration.getAuthentication()),
                         new AuthenticationMetrics(
                             new SimpleMeterRegistry(), AuthenticationMethod.OIDC))));
     server = serverBuilder.build();

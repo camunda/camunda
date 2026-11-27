@@ -73,11 +73,7 @@ public class AdminClientConfigController {
   }
 
   private boolean isCamundaGroupsEnabled(final SecurityConfiguration securityConfiguration) {
-    final var authentication = securityConfiguration.getAuthentication();
-    final var oidcConfig = authentication.getOidc();
-    return oidcConfig == null
-        || oidcConfig.getGroupsClaim() == null
-        || oidcConfig.getGroupsClaim().isEmpty();
+    return securityConfiguration.getAuthentication().isCamundaGroupsEnabled();
   }
 
   @GetMapping(path = "/admin/config.js", produces = "text/javascript;charset=UTF-8")

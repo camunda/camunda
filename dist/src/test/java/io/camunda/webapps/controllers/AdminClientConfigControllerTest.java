@@ -18,12 +18,15 @@ import io.camunda.identity.webapp.controllers.AdminClientConfigController;
 import io.camunda.security.configuration.AuthenticationConfiguration;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
+import io.camunda.security.configuration.ProvidersConfiguration;
 import io.camunda.security.configuration.SaasConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.entity.AuthenticationMethod;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -143,6 +146,65 @@ public class AdminClientConfigControllerTest {
         .containsEntry("isTenantsApiEnabled", expectedTenantsApi)
         .containsEntry("organizationId", expectedOrganizationId)
         .containsEntry("clusterId", expectedClusterId);
+  }
+
+  @Test
+  void shouldEnableCamundaGroupsWhenANamedProviderHasNoGroupsClaim() throws Exception {
+    // given: one named provider reads groups from a claim, the other gets them from Camunda
+    final var securityConfiguration =
+        createSecurityConfiguration(AuthenticationMethod.OIDC, null, false, "test-org", "cluster");
+    securityConfiguration
+        .getAuthentication()
+        .setProviders(
+            providers(Map.of("keycloak", namedProvider("groups"), "partner", namedProvider(null))));
+
+    // when
+    final var config = configOf(securityConfiguration);
+
+    // then: the partner's users need Camunda's group management
+    assertThat(config).containsEntry("isCamundaGroupsEnabled", "true");
+  }
+
+  @Test
+  void shouldDisableCamundaGroupsWhenTheOnlyNamedProviderHasAGroupsClaim() throws Exception {
+    // given
+    final var securityConfiguration =
+        createSecurityConfiguration(AuthenticationMethod.OIDC, null, false, "test-org", "cluster");
+    securityConfiguration
+        .getAuthentication()
+        .setProviders(providers(Map.of("keycloak", namedProvider("groups"))));
+
+    // when
+    final var config = configOf(securityConfiguration);
+
+    // then
+    assertThat(config).containsEntry("isCamundaGroupsEnabled", "false");
+  }
+
+  private Map<String, String> configOf(final SecurityConfiguration securityConfiguration)
+      throws Exception {
+    mockMvc =
+        MockMvcBuilders.standaloneSetup(new AdminClientConfigController(securityConfiguration))
+            .build();
+    return extractConfigFromResponse(
+        mockMvc.perform(get("/admin/config.js")).andReturn().getResponse().getContentAsString());
+  }
+
+  private static ProvidersConfiguration providers(
+      final Map<String, OidcAuthenticationConfiguration> oidc) {
+    final var providers = new ProvidersConfiguration();
+    providers.setOidc(oidc);
+    return providers;
+  }
+
+  private static OidcAuthenticationConfiguration namedProvider(final String groupsClaim) {
+    final var provider = new OidcAuthenticationConfiguration();
+    provider.setClientId("client");
+    provider.setIssuerUri("https://" + UUID.randomUUID() + ".example.com");
+    if (groupsClaim != null) {
+      provider.setGroupsClaim(groupsClaim);
+    }
+    return provider;
   }
 
   private SecurityConfiguration createSecurityConfiguration(

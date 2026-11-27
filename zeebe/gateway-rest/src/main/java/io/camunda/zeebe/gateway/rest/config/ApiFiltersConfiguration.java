@@ -11,12 +11,12 @@ import static io.camunda.security.configuration.MultiTenancyConfiguration.API_EN
 import static io.camunda.security.configuration.OidcAuthenticationConfiguration.GROUPS_CLAIM_PROPERTY;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.authentication.CamundaGroupsMode;
 import io.camunda.authentication.ConditionalOnAuthenticationMethod;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.zeebe.gateway.rest.controller.EndpointAccessErrorFilter;
 import io.camunda.zeebe.util.VisibleForTesting;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
-import org.springframework.boot.context.properties.source.ConfigurationPropertyName;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Condition;
@@ -30,7 +30,7 @@ public class ApiFiltersConfiguration {
 
   @VisibleForTesting
   public static final String GROUPS_API_DISABLED_ERROR_MESSAGE =
-      "Groups API is disabled because the application is configured in group claim mode. To use the Groups API, reconfigure the application to manage group mode removing the '%s' property."
+      "Groups API is disabled because every OIDC provider of the application is configured in group claim mode. To use the Groups API, reconfigure a provider to manage group mode by removing its groups claim: the '%s' property, or 'camunda.security.authentication.providers.oidc.<provider>.groupsClaim' of a named provider."
           .formatted(GROUPS_CLAIM_PROPERTY);
 
   @VisibleForTesting
@@ -82,23 +82,14 @@ public class ApiFiltersConfiguration {
   }
 
   /**
-   * Matches when the OIDC groups-claim property is configured, meaning groups are managed
-   * externally via the identity provider. {@code GROUPS_CLAIM_PROPERTY} is camelCase ({@code
-   * groupsClaim}); querying the {@link ConditionContext#getEnvironment()} with that exact string
-   * only matches a camelCase-configured property. Canonicalizing it first makes the lookup match a
-   * kebab-case ({@code groups-claim}) YAML key too, relying on Spring Boot's relaxed property
-   * binding.
+   * Matches when every OIDC provider has a groups claim, so no provider's groups are managed in
+   * Camunda.
    */
   static final class GroupsClaimConfiguredCondition implements Condition {
 
-    private static final String CANONICAL_GROUPS_CLAIM_PROPERTY =
-        ConfigurationPropertyName.adapt(GROUPS_CLAIM_PROPERTY, '.').toString();
-
     @Override
     public boolean matches(final ConditionContext context, final AnnotatedTypeMetadata metadata) {
-      final String groupsClaim =
-          context.getEnvironment().getProperty(CANONICAL_GROUPS_CLAIM_PROPERTY);
-      return groupsClaim != null && !groupsClaim.isEmpty();
+      return !CamundaGroupsMode.isCamundaGroupsEnabled(context.getEnvironment());
     }
   }
 }

@@ -13,6 +13,8 @@ import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.OidcGroupsLoader;
 import io.camunda.security.auth.OidcPrincipalLoader;
 import io.camunda.security.auth.OidcPrincipalLoader.OidcPrincipals;
+import io.camunda.security.auth.TokenIssuer;
+import io.camunda.security.configuration.AuthenticationConfiguration;
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
 import io.camunda.security.oidc.OidcClaimsProvider;
 import io.camunda.service.UserServices;
@@ -24,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -56,23 +59,24 @@ public sealed interface AuthenticationHandler {
     private static final Logger LOG = LoggerFactory.getLogger(Oidc.class);
     private final JwtDecoder jwtDecoder;
     private final OidcClaimsProvider claimsProvider;
+    private final AuthenticationConfiguration authenticationConfiguration;
     private final OidcAuthenticationConfiguration oidcAuthenticationConfiguration;
     private final OidcPrincipalLoader oidcPrincipalLoader;
-    private final OidcGroupsLoader oidcGroupsLoader;
+    // Keyed by the configured groups claims, so it holds one loader per claim.
+    private final Map<String, OidcGroupsLoader> oidcGroupsLoaders = new ConcurrentHashMap<>();
 
     public Oidc(
         final JwtDecoder jwtDecoder,
         final OidcClaimsProvider claimsProvider,
-        final OidcAuthenticationConfiguration oidcAuthenticationConfiguration) {
+        final AuthenticationConfiguration authenticationConfiguration) {
       this.jwtDecoder = Objects.requireNonNull(jwtDecoder);
       this.claimsProvider = Objects.requireNonNull(claimsProvider);
-      this.oidcAuthenticationConfiguration =
-          Objects.requireNonNull(oidcAuthenticationConfiguration);
+      this.authenticationConfiguration = Objects.requireNonNull(authenticationConfiguration);
+      oidcAuthenticationConfiguration = authenticationConfiguration.getOidc();
       oidcPrincipalLoader =
           new OidcPrincipalLoader(
               oidcAuthenticationConfiguration.getUsernameClaim(),
               oidcAuthenticationConfiguration.getClientIdClaim());
-      oidcGroupsLoader = new OidcGroupsLoader(oidcAuthenticationConfiguration.getGroupsClaim());
     }
 
     @Override
@@ -105,12 +109,18 @@ public sealed interface AuthenticationHandler {
 
       var context = Context.current();
       context = context.withValue(IS_CAMUNDA_USERS_ENABLED, false);
+      // With several providers, only some may have a groups claim: use the one of the provider
+      // that issued the token.
+      final var groupsClaim = authenticationConfiguration.getGroupsClaim(TokenIssuer.of(claims));
+      // The groups of an IdP's groups claim exist only in the IdP, so Camunda can't require them to
+      // exist as soon as one provider has a groups claim.
       context =
           context.withValue(
-              IS_CAMUNDA_GROUPS_ENABLED,
-              !oidcAuthenticationConfiguration.isGroupsClaimConfigured());
-      if (oidcAuthenticationConfiguration.isGroupsClaimConfigured()) {
+              IS_CAMUNDA_GROUPS_ENABLED, !authenticationConfiguration.isExternalGroupsEnabled());
+      if (groupsClaim != null) {
         try {
+          final var oidcGroupsLoader =
+              oidcGroupsLoaders.computeIfAbsent(groupsClaim, OidcGroupsLoader::new);
           context = context.withValue(GROUPS_CLAIMS, oidcGroupsLoader.load(claims));
         } catch (final Exception e) {
           LOG.warn("Rejecting bearer token: OIDC groups loader failed", e);

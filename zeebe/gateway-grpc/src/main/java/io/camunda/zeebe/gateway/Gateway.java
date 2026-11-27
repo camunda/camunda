@@ -461,9 +461,7 @@ public final class Gateway implements CloseableSilently {
             case BASIC -> basicAuth();
             case OIDC ->
                 new AuthenticationHandler.Oidc(
-                    jwtDecoder,
-                    oidcClaimsProvider,
-                    securityConfiguration.getAuthentication().getOidc());
+                    jwtDecoder, oidcClaimsProvider, securityConfiguration.getAuthentication());
           };
       interceptors.add(
           new AuthenticationInterceptor(
