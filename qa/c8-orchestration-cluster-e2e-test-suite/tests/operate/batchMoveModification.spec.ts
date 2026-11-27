@@ -6,9 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {randomUUID} from 'crypto';
 import {test} from '@fixtures';
 import {expect} from '@playwright/test';
-import {deploy, createInstances} from 'utils/zeebeClient';
+import {deployWithSubstitutions, createInstances} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {
   navigateToAppHome,
@@ -21,10 +22,17 @@ import {waitForAssertion} from 'utils/waitForAssertion';
 const NUM_PROCESS_INSTANCES = 10;
 const NUM_SELECTED_PROCESS_INSTANCES = 4;
 
-test.beforeAll(async () => {
-  await deploy(['./resources/orderProcessBatchMod_v_1.bpmn']);
+// Unique per run (and per retry — Playwright reloads the file in a fresh worker)
+// so leftover instances from a prior attempt never inflate the exact-count
+// assertions below.
+const processId = `orderProcessBatchMod-${randomUUID().slice(0, 8)}`;
 
-  await createInstances('orderProcessBatchMod', 1, NUM_PROCESS_INSTANCES);
+test.beforeAll(async () => {
+  await deployWithSubstitutions('./resources/orderProcessBatchMod_v_1.bpmn', {
+    orderProcessBatchMod: processId,
+  });
+
+  await createInstances(processId, 1, NUM_PROCESS_INSTANCES);
 
   await sleep(2000);
 });
@@ -51,7 +59,7 @@ test.describe('Process Instance Batch Modification', () => {
       await gotoProcessesPage(page, {
         searchParams: {
           active: 'true',
-          processDefinitionId: 'orderProcessBatchMod',
+          processDefinitionId: processId,
           processDefinitionVersion: '1',
           elementId: 'checkPayment',
         },
@@ -160,7 +168,7 @@ test.describe('Process Instance Batch Modification', () => {
       await gotoProcessesPage(page, {
         searchParams: {
           active: 'true',
-          processDefinitionId: 'orderProcessBatchMod',
+          processDefinitionId: processId,
           processDefinitionVersion: '1',
           elementId: 'checkPayment',
         },
