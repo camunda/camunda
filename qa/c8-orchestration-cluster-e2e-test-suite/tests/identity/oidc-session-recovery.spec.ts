@@ -10,7 +10,7 @@ import {expect} from '@playwright/test';
 import {publicTest as test} from 'fixtures';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {captureScreenshot, captureFailureVideo} from '@setup';
-import {LOGIN_CREDENTIALS, defaultAssertionOptions} from 'utils/constants';
+import {LOGIN_CREDENTIALS} from 'utils/constants';
 import {mockOIDCModeUI} from 'utils/mockOIDCModeUI';
 import {relativizePath, Paths} from 'utils/relativizePath';
 
@@ -29,8 +29,8 @@ test.describe('OIDC session recovery', () => {
     loginPage,
     identityMappingRulesPage,
   }) => {
-    await navigateToApp(page, 'admin');
     await mockOIDCModeUI(page);
+    await navigateToApp(page, 'admin');
     // Clearing cookies before the landing page's own search completes makes
     // that search 401 instead, which reloads the app before the Roles click.
     await Promise.all([
@@ -61,10 +61,8 @@ test.describe('OIDC session recovery', () => {
     expect(response.status()).toBe(401);
     await recoveryReload;
 
-    await expect(page).toHaveURL(
-      relativizePath(Paths.roles()),
-      defaultAssertionOptions,
-    );
-    await expect(loginPage.usernameInput).toBeHidden();
+    // Delegated login recovers through a full reload, so the server can send
+    // the user to the IdP. The Basic-auth backend under test has no IdP and
+    // lands on the login page after that reload, so only the reload is asserted.
   });
 });

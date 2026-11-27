@@ -14,27 +14,25 @@ export class IdentityGlobalTaskListenersPage {
   private page: Page;
   readonly globalTaskListenersList: Locator;
   readonly createGlobalTaskListenerButton: Locator;
-  readonly editGlobalTaskListenerButton: (rowName?: string) => Locator;
-  readonly deleteGlobalTaskListenerButton: (rowName?: string) => Locator;
+  readonly rowActionsButton: (rowName: string) => Locator;
+  readonly editGlobalTaskListenerMenuItem: Locator;
+  readonly deleteGlobalTaskListenerMenuItem: Locator;
 
   readonly createGlobalTaskListenerModal: Locator;
-  readonly closeCreateGlobalTaskListenerModal: Locator;
   readonly createGlobalTaskListenerIdField: Locator;
   readonly createGlobalTaskListenerTypeField: Locator;
-  readonly createGlobalTaskListenerEventTypeToggle: Locator;
-  readonly createGlobalTaskListenerEventTypeMenu: Locator;
-  readonly createGlobalTaskListenerInlineError: Locator;
+  readonly createGlobalTaskListenerEventTypesCombobox: Locator;
+  readonly createGlobalTaskListenerErrorToast: Locator;
   readonly createGlobalTaskListenerModalCancelButton: Locator;
-  readonly createGlobalTaskListenerModalCreateButton: Locator;
+  readonly createGlobalTaskListenerModalSaveButton: Locator;
 
   readonly editGlobalTaskListenerModal: Locator;
-  readonly closeEditGlobalTaskListenerModal: Locator;
   readonly editGlobalTaskListenerTypeField: Locator;
+  readonly editGlobalTaskListenerEventTypesCombobox: Locator;
   readonly editGlobalTaskListenerModalCancelButton: Locator;
-  readonly editGlobalTaskListenerModalUpdateButton: Locator;
+  readonly editGlobalTaskListenerModalSaveButton: Locator;
 
   readonly deleteGlobalTaskListenerModal: Locator;
-  readonly closeDeleteGlobalTaskListenerModal: Locator;
   readonly deleteGlobalTaskListenerModalCancelButton: Locator;
   readonly deleteGlobalTaskListenerModalDeleteButton: Locator;
 
@@ -49,77 +47,97 @@ export class IdentityGlobalTaskListenersPage {
       this.globalTaskListenersList.getByRole('cell', {name, exact: true});
 
     this.createGlobalTaskListenerButton = page.getByRole('button', {
-      name: /^Create (listener|global user task listener)$/,
+      name: /^(Add|Create) global task listener$/,
     });
 
-    this.editGlobalTaskListenerButton = (rowName) =>
+    this.rowActionsButton = (rowName) =>
       this.globalTaskListenersList
-        .getByRole('row', {name: rowName})
-        .getByLabel('Update user task listener');
-
-    this.deleteGlobalTaskListenerButton = (rowName) =>
-      this.globalTaskListenersList
-        .getByRole('row', {name: rowName})
-        .getByRole('button', {name: 'Delete', exact: true});
+        .getByRole('row')
+        .filter({hasText: rowName})
+        .getByRole('button', {name: 'Row actions'});
+    this.editGlobalTaskListenerMenuItem = page.getByRole('menuitem', {
+      name: 'Edit',
+      exact: true,
+    });
+    this.deleteGlobalTaskListenerMenuItem = page.getByRole('menuitem', {
+      name: 'Delete',
+      exact: true,
+    });
 
     this.createGlobalTaskListenerModal = page.getByRole('dialog', {
-      name: 'Create user task listener',
+      name: 'Add global task listener',
+      exact: true,
     });
-    this.closeCreateGlobalTaskListenerModal =
-      this.createGlobalTaskListenerModal.getByRole('button', {name: 'Close'});
     this.createGlobalTaskListenerIdField =
       this.createGlobalTaskListenerModal.getByRole('textbox', {
-        name: 'Task listener ID',
+        name: 'Listener ID',
       });
     this.createGlobalTaskListenerTypeField =
       this.createGlobalTaskListenerModal.getByRole('textbox', {
         name: 'Listener type',
       });
-    this.createGlobalTaskListenerEventTypeToggle =
-      this.createGlobalTaskListenerModal.locator('[data-slot="multi-select"]');
-    // The design-system MultiSelect renders its list in a portal outside the
-    // dialog, so this cannot be scoped to the modal.
-    this.createGlobalTaskListenerEventTypeMenu = page.getByRole('listbox');
-    this.createGlobalTaskListenerInlineError =
-      this.createGlobalTaskListenerModal.getByRole('alert');
+    this.createGlobalTaskListenerEventTypesCombobox =
+      this.createGlobalTaskListenerModal.getByRole('combobox', {
+        name: 'Event types',
+      });
+    // The server rejection (e.g. duplicate ID) is reported as a toast, not inline.
+    this.createGlobalTaskListenerErrorToast = page.getByText(
+      'Failed to create global task listener',
+    );
     this.createGlobalTaskListenerModalCancelButton =
-      this.createGlobalTaskListenerModal.getByRole('button', {name: 'Cancel'});
-    this.createGlobalTaskListenerModalCreateButton =
-      this.createGlobalTaskListenerModal.getByRole('button', {name: 'Create'});
+      this.createGlobalTaskListenerModal
+        .getByRole('button', {name: 'Cancel'})
+        .filter({hasText: 'Cancel'});
+    this.createGlobalTaskListenerModalSaveButton =
+      this.createGlobalTaskListenerModal.getByRole('button', {name: 'Save'});
 
     this.editGlobalTaskListenerModal = page.getByRole('dialog', {
-      name: 'Update user task listener',
+      name: 'Edit global task listener',
+      exact: true,
     });
-    this.closeEditGlobalTaskListenerModal =
-      this.editGlobalTaskListenerModal.getByRole('button', {name: 'Close'});
     this.editGlobalTaskListenerTypeField =
       this.editGlobalTaskListenerModal.getByRole('textbox', {
         name: 'Listener type',
       });
+    this.editGlobalTaskListenerEventTypesCombobox =
+      this.editGlobalTaskListenerModal.getByRole('combobox', {
+        name: 'Event types',
+      });
     this.editGlobalTaskListenerModalCancelButton =
-      this.editGlobalTaskListenerModal.getByRole('button', {name: 'Cancel'});
-    this.editGlobalTaskListenerModalUpdateButton =
-      this.editGlobalTaskListenerModal.getByRole('button', {name: 'Update'});
+      this.editGlobalTaskListenerModal
+        .getByRole('button', {name: 'Cancel'})
+        .filter({hasText: 'Cancel'});
+    this.editGlobalTaskListenerModalSaveButton =
+      this.editGlobalTaskListenerModal.getByRole('button', {name: 'Save'});
 
-    this.deleteGlobalTaskListenerModal = page.getByRole('dialog', {
-      name: 'Delete user task listener',
+    this.deleteGlobalTaskListenerModal = page.getByRole('alertdialog', {
+      name: 'Delete global task listener',
+      exact: true,
     });
-    this.closeDeleteGlobalTaskListenerModal =
-      this.deleteGlobalTaskListenerModal.getByRole('button', {name: 'Close'});
     this.deleteGlobalTaskListenerModalCancelButton =
       this.deleteGlobalTaskListenerModal.getByRole('button', {name: 'Cancel'});
     this.deleteGlobalTaskListenerModalDeleteButton =
       this.deleteGlobalTaskListenerModal.getByRole('button', {
-        name: /^(danger )?Delete$/,
+        name: 'Delete',
+        exact: true,
       });
 
     this.emptyStateLocator = page.getByText(
-      'No global user task listeners created yet',
+      /^No global task listeners (found\.|created yet)$/,
     );
   }
 
   async navigateToGlobalTaskListeners() {
     await this.page.goto(relativizePath(Paths.globalTaskListeners()));
+  }
+
+  async selectEventType(combobox: Locator, eventTypeLabel: string) {
+    await combobox.click();
+    await this.page
+      .getByRole('option', {name: eventTypeLabel, exact: true})
+      .click();
+    // The options list is a popup that overlays the Save button until closed.
+    await this.page.keyboard.press('Escape');
   }
 
   async createGlobalTaskListener(
@@ -131,13 +149,11 @@ export class IdentityGlobalTaskListenersPage {
     await expect(this.createGlobalTaskListenerModal).toBeVisible();
     await this.createGlobalTaskListenerIdField.fill(listenerId);
     await this.createGlobalTaskListenerTypeField.fill(listenerType);
-    await this.createGlobalTaskListenerTypeField.blur();
-    await this.createGlobalTaskListenerEventTypeToggle.click();
-    await expect(this.createGlobalTaskListenerEventTypeMenu).toBeVisible();
-    await this.page
-      .locator('[role="option"]', {hasText: eventTypeLabel})
-      .click();
-    await this.createGlobalTaskListenerModalCreateButton.click();
+    await this.selectEventType(
+      this.createGlobalTaskListenerEventTypesCombobox,
+      eventTypeLabel,
+    );
+    await this.createGlobalTaskListenerModalSaveButton.click();
     await expect(this.createGlobalTaskListenerModal).toBeHidden();
   }
 
@@ -146,32 +162,27 @@ export class IdentityGlobalTaskListenersPage {
     newType: string,
     newEventTypeLabel?: string,
   ) {
-    await this.editGlobalTaskListenerButton(currentListenerId).click();
+    await this.rowActionsButton(currentListenerId).click();
+    await this.editGlobalTaskListenerMenuItem.click();
     await expect(this.editGlobalTaskListenerModal).toBeVisible();
-    await this.editGlobalTaskListenerTypeField.clear();
     await this.editGlobalTaskListenerTypeField.fill(newType);
     if (newEventTypeLabel) {
-      await this.editGlobalTaskListenerTypeField.blur();
-      const editEventTypeToggle = this.editGlobalTaskListenerModal.locator(
-        '[data-slot="multi-select"]',
+      await this.selectEventType(
+        this.editGlobalTaskListenerEventTypesCombobox,
+        newEventTypeLabel,
       );
-      await editEventTypeToggle.click();
-      const editEventTypeMenu = this.page.getByRole('listbox');
-      await expect(editEventTypeMenu).toBeVisible();
-      await this.page
-        .locator('[role="option"]', {hasText: newEventTypeLabel})
-        .click();
     }
-    await this.editGlobalTaskListenerModalUpdateButton.click();
+    await this.editGlobalTaskListenerModalSaveButton.click();
     await expect(this.editGlobalTaskListenerModal).toBeHidden();
   }
 
   async deleteGlobalTaskListener(listenerId: string) {
-    await expect(this.deleteGlobalTaskListenerButton(listenerId)).toBeVisible({
+    await expect(this.rowActionsButton(listenerId)).toBeVisible({
       timeout: 20000,
     });
     await expect(async () => {
-      await this.deleteGlobalTaskListenerButton(listenerId).click();
+      await this.rowActionsButton(listenerId).click();
+      await this.deleteGlobalTaskListenerMenuItem.click({timeout: 5000});
     }).toPass(defaultAssertionOptions);
     await expect(this.deleteGlobalTaskListenerModal).toBeVisible();
     await this.deleteGlobalTaskListenerModalDeleteButton.click();

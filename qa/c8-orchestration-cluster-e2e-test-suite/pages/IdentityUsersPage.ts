@@ -15,10 +15,10 @@ export class IdentityUsersPage {
   private page: Page;
   readonly usersList: Locator;
   readonly createUserButton: Locator;
-  readonly editUserButton: (rowName?: string) => Locator;
-  readonly deleteUserButton: (rowName?: string) => Locator;
+  readonly rowActionsButton: (rowName: string) => Locator;
+  readonly editUserMenuItem: Locator;
+  readonly deleteUserMenuItem: Locator;
   readonly createUserModal: Locator;
-  readonly closeCreateUserModal: Locator;
   readonly createUsernameField: Locator;
   readonly createNameField: Locator;
   readonly createEmailField: Locator;
@@ -27,7 +27,6 @@ export class IdentityUsersPage {
   readonly createUserModalCancelButton: Locator;
   readonly createUserModalCreateButton: Locator;
   readonly editUserModal: Locator;
-  readonly closeEditUserModal: Locator;
   readonly editNameField: Locator;
   readonly editEmailField: Locator;
   readonly editNewPasswordField: Locator;
@@ -35,7 +34,6 @@ export class IdentityUsersPage {
   readonly editUserModalCancelButton: Locator;
   readonly editUserModalUpdateButton: Locator;
   readonly deleteUserModal: Locator;
-  readonly closeDeleteUserModal: Locator;
   readonly deleteUserModalCancelButton: Locator;
   readonly deleteUserModalDeleteButton: Locator;
   readonly emptyState: Locator;
@@ -49,21 +47,16 @@ export class IdentityUsersPage {
       name: 'Create user',
       exact: true,
     });
-    this.editUserButton = (rowName) =>
+    this.rowActionsButton = (rowName) =>
       this.usersList
-        .getByRole('row', {name: rowName})
-        .getByLabel('Edit user', {exact: true});
-    this.deleteUserButton = (rowName) =>
-      this.usersList
-        .getByRole('row', {name: rowName})
-        .getByRole('button', {name: 'Delete', exact: true});
+        .getByRole('row')
+        .filter({hasText: rowName})
+        .getByRole('button', {name: 'Row actions'});
+    this.editUserMenuItem = page.getByRole('menuitem', {name: 'Edit user'});
+    this.deleteUserMenuItem = page.getByRole('menuitem', {name: 'Delete user'});
 
     this.createUserModal = page.getByRole('dialog', {
       name: 'Create user',
-      exact: true,
-    });
-    this.closeCreateUserModal = this.createUserModal.getByRole('button', {
-      name: 'Close',
       exact: true,
     });
     this.createUsernameField = this.createUserModal.getByRole('textbox', {
@@ -83,7 +76,7 @@ export class IdentityUsersPage {
       exact: true,
     });
     this.createRepeatPasswordField = this.createUserModal.getByRole('textbox', {
-      name: 'Repeat password',
+      name: 'Confirm password',
       exact: true,
     });
     this.createUserModalCancelButton = this.createUserModal.getByRole(
@@ -103,10 +96,6 @@ export class IdentityUsersPage {
     this.editUserModal = page.getByRole('dialog', {
       name: 'Edit user',
     });
-    this.closeEditUserModal = this.editUserModal.getByRole('button', {
-      name: 'Close',
-      exact: true,
-    });
     this.editNameField = this.editUserModal.getByRole('textbox', {
       name: 'Name',
       exact: true,
@@ -120,7 +109,7 @@ export class IdentityUsersPage {
       exact: true,
     });
     this.editRepeatPasswordField = this.editUserModal.getByRole('textbox', {
-      name: 'Repeat password',
+      name: 'Confirm password',
       exact: true,
     });
     this.editUserModalCancelButton = this.editUserModal.getByRole('button', {
@@ -132,12 +121,8 @@ export class IdentityUsersPage {
       exact: true,
     });
 
-    this.deleteUserModal = page.getByRole('dialog', {
+    this.deleteUserModal = page.getByRole('alertdialog', {
       name: 'Delete user',
-      exact: true,
-    });
-    this.closeDeleteUserModal = this.deleteUserModal.getByRole('button', {
-      name: 'Close',
       exact: true,
     });
     this.deleteUserModalCancelButton = this.deleteUserModal.getByRole(
@@ -147,9 +132,10 @@ export class IdentityUsersPage {
         exact: true,
       },
     );
-    this.deleteUserModalDeleteButton = this.deleteUserModal
-      .getByRole('button')
-      .filter({hasText: 'Delete user'});
+    this.deleteUserModalDeleteButton = this.deleteUserModal.getByRole(
+      'button',
+      {name: 'Delete user', exact: true},
+    );
 
     this.emptyState = page.getByText('No users created yet', {exact: true});
     this.userCell = (name) =>
@@ -201,7 +187,8 @@ export class IdentityUsersPage {
       clickNext: true,
       timeout: 30000,
     });
-    await this.editUserButton(currentUser.username).click();
+    await this.rowActionsButton(currentUser.username).click();
+    await this.editUserMenuItem.click();
     await expect(this.editUserModal).toBeVisible();
     await this.editNameField.fill(updatedUser.name);
     await this.editEmailField.fill(updatedUser.email);
@@ -215,11 +202,11 @@ export class IdentityUsersPage {
       timeout: 30000,
     });
     await expect(async () => {
-      await expect(this.deleteUserButton(user.username)).toBeVisible({
+      await expect(this.rowActionsButton(user.username)).toBeVisible({
         timeout: 20000,
       });
-      await this.usersHeading.click();
-      await this.deleteUserButton(user.username).click({timeout: 20000});
+      await this.rowActionsButton(user.username).click({timeout: 20000});
+      await this.deleteUserMenuItem.click({timeout: 20000});
     }).toPass(defaultAssertionOptions);
     await expect(this.deleteUserModal).toBeVisible();
     await this.deleteUserModalDeleteButton.click();

@@ -14,6 +14,7 @@ export class IdentityMcpProcessesPage {
   readonly mcpProcessesTable: Locator;
   readonly mcpProcessesHeading: Locator;
   readonly searchInput: Locator;
+  readonly toolNameSortButton: Locator;
   readonly allMcpProcessRows: Locator;
 
   constructor(page: Page) {
@@ -23,6 +24,7 @@ export class IdentityMcpProcessesPage {
       name: 'MCP Processes',
     });
     this.searchInput = page.getByPlaceholder('Search by tool name');
+    this.toolNameSortButton = page.getByRole('button', {name: 'Tool name'});
     this.allMcpProcessRows = this.mcpProcessesTable.getByRole('row');
   }
 
@@ -36,21 +38,26 @@ export class IdentityMcpProcessesPage {
 
   async expandRowByToolName(toolName: string): Promise<void> {
     await this.getRowByToolName(toolName)
-      .getByRole('button', {name: 'Expand current row'})
+      .getByRole('button', {name: 'Expand row'})
       .click();
   }
 
   getRowToolDetails(toolName: string) {
-    const container = this.mcpProcessesTable.locator(
-      `tr[data-parent-row]:has-text("${toolName}") + tr[data-child-row]`,
-    );
+    const container = this.mcpProcessesTable
+      .getByRole('row')
+      .filter({hasText: toolName})
+      .locator('xpath=following-sibling::tr[1]');
+    const section = (heading: string) =>
+      container
+        .getByRole('heading', {name: heading, exact: true})
+        .locator('xpath=following-sibling::*[1]');
 
     return {
       container,
-      purpose: container.locator('h3:has-text("Purpose") + p'),
-      results: container.locator('h3:has-text("Results") + p'),
-      whenToUse: container.locator('h3:has-text("When to use") + p'),
-      whenNotToUse: container.locator('h3:has-text("When not to use") + p'),
+      purpose: section('Purpose'),
+      results: section('Results'),
+      whenToUse: section('When to use'),
+      whenNotToUse: section('When not to use'),
     };
   }
 }

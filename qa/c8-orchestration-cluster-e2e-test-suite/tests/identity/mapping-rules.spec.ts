@@ -36,8 +36,8 @@ test.describe.serial('mapping rules CRUD', () => {
   });
 
   test.beforeEach(async ({page, loginPage}) => {
-    await navigateToApp(page, 'admin');
     await mockOIDCModeUI(page);
+    await navigateToApp(page, 'admin');
     await loginPage.login(
       LOGIN_CREDENTIALS.username,
       LOGIN_CREDENTIALS.password,
@@ -55,8 +55,10 @@ test.describe.serial('mapping rules CRUD', () => {
   }) => {
     await identityMappingRulesPage.createMappingRuleButton.click();
     await identityMappingRulesPage.createMappingRuleIdField.fill('invalid!!%');
+    // The modal does not mark fields touched on blur, only on submit.
+    await identityMappingRulesPage.createMappingRuleModalSaveButton.click();
     await expect(identityMappingRulesPage.createMappingRuleModal).toContainText(
-      'Please enter a valid mapping rule ID',
+      'ID must be 256 characters or fewer, using only letters, numbers, and _ ~ @ . + -',
     );
     await expect(
       identityMappingRulesPage.createMappingRuleIdField,

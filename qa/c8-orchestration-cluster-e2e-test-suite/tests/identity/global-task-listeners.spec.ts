@@ -21,6 +21,9 @@ import {cleanupGlobalTaskListeners} from 'utils/globalTaskListenerCleanup';
 
 const createdListenerIds: string[] = [];
 
+const eventTypeLabel = (eventType: string) =>
+  eventType.charAt(0).toUpperCase() + eventType.slice(1);
+
 test.describe.serial('global task listeners CRUD', () => {
   let NEW_LISTENER: ReturnType<typeof createUniqueGlobalTaskListener>;
   let EDITED_LISTENER: ReturnType<typeof createEditedGlobalTaskListener>;
@@ -59,13 +62,15 @@ test.describe.serial('global task listeners CRUD', () => {
       await identityGlobalTaskListenersPage.createGlobalTaskListenerTypeField.fill(
         'invalid type with spaces',
       );
+      // The modal does not mark fields touched on blur, only on submit.
+      await identityGlobalTaskListenersPage.createGlobalTaskListenerModalSaveButton.click();
     });
 
     await test.step('Verify validation error is shown', async () => {
       await expect(
         identityGlobalTaskListenersPage.createGlobalTaskListenerModal,
       ).toContainText(
-        'Please enter a valid listener type (letters, digits, dots, dashes, and underscores only)',
+        'Listener type must be 256 characters or fewer, using only letters, numbers, and _ ~ @ . + -',
       );
       await expect(
         identityGlobalTaskListenersPage.createGlobalTaskListenerTypeField,
@@ -81,7 +86,7 @@ test.describe.serial('global task listeners CRUD', () => {
       await identityGlobalTaskListenersPage.createGlobalTaskListener(
         NEW_LISTENER.id,
         NEW_LISTENER.type,
-        NEW_LISTENER.eventType,
+        eventTypeLabel(NEW_LISTENER.eventType),
       );
     });
 
@@ -98,7 +103,6 @@ test.describe.serial('global task listeners CRUD', () => {
   });
 
   test('rejects creating a duplicate global task listener', async ({
-    page,
     identityGlobalTaskListenersPage,
   }) => {
     await test.step('Open create modal and fill duplicate data', async () => {
@@ -113,23 +117,19 @@ test.describe.serial('global task listeners CRUD', () => {
       await identityGlobalTaskListenersPage.createGlobalTaskListenerTypeField.fill(
         NEW_LISTENER.type,
       );
-      await identityGlobalTaskListenersPage.createGlobalTaskListenerTypeField.blur();
-      await identityGlobalTaskListenersPage.createGlobalTaskListenerEventTypeToggle.click();
-      await expect(
-        identityGlobalTaskListenersPage.createGlobalTaskListenerEventTypeMenu,
-      ).toBeVisible();
-      await page
-        .locator('[role="option"]', {hasText: NEW_LISTENER.eventType})
-        .click();
+      await identityGlobalTaskListenersPage.selectEventType(
+        identityGlobalTaskListenersPage.createGlobalTaskListenerEventTypesCombobox,
+        eventTypeLabel(NEW_LISTENER.eventType),
+      );
     });
 
     await test.step('Submit and verify duplicate error is shown', async () => {
-      await identityGlobalTaskListenersPage.createGlobalTaskListenerModalCreateButton.click();
+      await identityGlobalTaskListenersPage.createGlobalTaskListenerModalSaveButton.click();
       await expect(
         identityGlobalTaskListenersPage.createGlobalTaskListenerModal,
       ).toBeVisible();
       await expect(
-        identityGlobalTaskListenersPage.createGlobalTaskListenerInlineError,
+        identityGlobalTaskListenersPage.createGlobalTaskListenerErrorToast,
       ).toBeVisible();
     });
 
@@ -161,7 +161,7 @@ test.describe.serial('global task listeners CRUD', () => {
       await identityGlobalTaskListenersPage.editGlobalTaskListener(
         NEW_LISTENER.id,
         EDITED_LISTENER.type,
-        EDITED_LISTENER.eventType,
+        eventTypeLabel(EDITED_LISTENER.eventType),
       );
     });
 

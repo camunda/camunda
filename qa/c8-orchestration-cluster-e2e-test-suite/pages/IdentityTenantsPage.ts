@@ -16,10 +16,12 @@ export class IdentityTenantsPage {
   readonly tenantsList: Locator;
   readonly assignedUsersList: Locator;
   readonly createTenantButton: Locator;
-  readonly editTenantButton: (rowName?: string) => Locator;
-  readonly deleteTenantButton: (rowName?: string) => Locator;
+  readonly rowActionsButton: (rowName: string) => Locator;
+  readonly editTenantMenuItem: Locator;
+  readonly deleteTenantMenuItem: Locator;
   readonly createTenantModal: Locator;
-  readonly closeCreateTenantModal: Locator;
+  readonly tenantCreatedHeading: Locator;
+  readonly tenantCreatedDismissButton: Locator;
   readonly tenantFieldId: Locator;
   readonly tenantNameField: Locator;
   readonly tenantDescriptionField: Locator;
@@ -30,17 +32,17 @@ export class IdentityTenantsPage {
   readonly editTenantDescriptionField: Locator;
   readonly editTenantModalButton: Locator;
   readonly deleteTenantModal: Locator;
-  readonly closeDeleteTenantModal: Locator;
   readonly deleteTenantModalCancelButton: Locator;
   readonly deleteTenantModalDeleteButton: Locator;
   readonly assignUserButton: Locator;
   readonly assignUserModal: Locator;
-  readonly assignUserSearchbox: Locator;
+  readonly assignUserCombobox: Locator;
+  readonly assignUserSearchInput: Locator;
   readonly assignUserSearchboxResult: Locator;
   readonly assignUserOption: (username: string) => Locator;
   readonly confirmAssignmentButton: Locator;
   readonly openTenantDetails: (rowName: string) => Locator;
-  readonly removeUserButton: (rowName?: string) => Locator;
+  readonly removeUserMenuItem: Locator;
   readonly removeUserModal: Locator;
   readonly confirmRemoveUserButton: Locator;
   readonly usersEmptyState: Locator;
@@ -57,40 +59,54 @@ export class IdentityTenantsPage {
     this.createTenantButton = page.getByRole('button', {
       name: 'Create tenant',
     });
-    this.editTenantButton = (rowName) =>
-      this.tenantsList.getByRole('row', {name: rowName}).getByLabel('Edit');
-    this.deleteTenantButton = (rowName) =>
+    this.rowActionsButton = (rowName) =>
       this.tenantsList
-        .getByRole('row', {name: rowName})
-        .getByRole('button', {name: 'Delete', exact: true});
+        .getByRole('row')
+        .filter({hasText: rowName})
+        .getByRole('button', {name: 'Row actions'});
+    this.editTenantMenuItem = page.getByRole('menuitem', {
+      name: 'Edit',
+      exact: true,
+    });
+    this.deleteTenantMenuItem = page.getByRole('menuitem', {
+      name: 'Delete',
+      exact: true,
+    });
 
     this.createTenantModal = page.getByRole('dialog', {
-      name: 'Create new tenant',
+      name: 'Create tenant',
+      exact: true,
     });
-    this.closeCreateTenantModal = this.createTenantModal.getByRole('button', {
-      name: 'Close',
+    this.tenantCreatedHeading = page.getByRole('heading', {
+      name: 'Tenant created',
+    });
+    this.tenantCreatedDismissButton = page.getByRole('button', {
+      name: 'Got it',
     });
     this.tenantFieldId = this.createTenantModal.getByRole('textbox', {
       name: 'Tenant ID',
     });
     this.tenantNameField = this.createTenantModal.getByRole('textbox', {
-      name: 'Tenant name',
+      name: 'Name',
+      exact: true,
     });
     this.tenantDescriptionField = this.createTenantModal.getByRole('textbox', {
       name: 'Description',
     });
     this.createTenantModalCancelButton = this.createTenantModal.getByRole(
       'button',
-      {name: 'Cancel'},
+      {name: 'Cancel', exact: true},
     );
     this.createTenantModalButton = this.createTenantModal.getByRole('button', {
-      name: 'Create tenant',
+      name: 'Create',
+      exact: true,
     });
     this.editTenantModal = page.getByRole('dialog', {
       name: 'Edit tenant',
     });
     this.editTenantNameField = this.editTenantModal.getByRole('textbox', {
-      name: 'Tenant name',
+      name: 'Name',
+      exact: true,
     });
     this.editTenantDescriptionField = this.editTenantModal.getByRole(
       'textbox',
@@ -99,22 +115,20 @@ export class IdentityTenantsPage {
       },
     );
     this.editTenantModalButton = this.editTenantModal.getByRole('button', {
-      name: 'Edit tenant',
+      name: 'Save',
+      exact: true,
     });
 
-    this.deleteTenantModal = page.getByRole('dialog', {
+    this.deleteTenantModal = page.getByRole('alertdialog', {
       name: 'Delete tenant',
-    });
-    this.closeDeleteTenantModal = this.deleteTenantModal.getByRole('button', {
-      name: 'Close',
     });
     this.deleteTenantModalCancelButton = this.deleteTenantModal.getByRole(
       'button',
-      {name: 'Cancel'},
+      {name: 'Cancel', exact: true},
     );
     this.deleteTenantModalDeleteButton = this.deleteTenantModal.getByRole(
       'button',
-      {name: 'Delete tenant'},
+      {name: 'Delete', exact: true},
     );
 
     this.openTenantDetails = (rowName) =>
@@ -125,9 +139,10 @@ export class IdentityTenantsPage {
     this.assignUserModal = page.getByRole('dialog', {
       name: 'Assign user',
     });
-    this.assignUserSearchbox = this.assignUserModal.getByRole('combobox', {
-      name: 'Search by name, email, or username',
+    this.assignUserCombobox = this.assignUserModal.getByRole('combobox', {
+      name: 'Users',
     });
+    this.assignUserSearchInput = page.locator('[data-slot="command-input"]');
     this.assignUserSearchboxResult = page.getByRole('listbox');
     this.assignUserOption = (username) =>
       this.assignUserSearchboxResult
@@ -140,10 +155,10 @@ export class IdentityTenantsPage {
     this.usersEmptyState = page.getByText(
       'No users assigned to this tenant yet',
     );
-    this.removeUserButton = (rowName) =>
-      page
-        .getByRole('row', {name: rowName})
-        .getByRole('button', {name: 'Remove'});
+    this.removeUserMenuItem = page.getByRole('menuitem', {
+      name: 'Remove user',
+      exact: true,
+    });
     this.userRow = (userName) =>
       this.tenantsList.getByRole('row', {name: userName});
     this.tenantCell = (tenantName) =>
@@ -151,7 +166,7 @@ export class IdentityTenantsPage {
     this.tenantRow = (tenantName) =>
       this.tenantsList.getByRole('row', {name: tenantName});
 
-    this.removeUserModal = page.getByRole('dialog', {
+    this.removeUserModal = page.getByRole('alertdialog', {
       name: 'Remove user',
     });
     this.confirmRemoveUserButton = this.removeUserModal.getByRole('button', {
@@ -177,25 +192,19 @@ export class IdentityTenantsPage {
   }
 
   async fillAssignUserSearch(username: string) {
-    // The MultiSelect trigger is a div: open it, then type in the search box.
-    await this.assignUserSearchbox.click();
-    await this.page.locator('[data-slot="command-input"]').fill(username);
+    await this.assignUserCombobox.click();
+    await this.assignUserSearchInput.fill(username);
   }
 
   async assignUserToTenant(user: {id: string}) {
     await this.assignUserButton.click();
     await expect(this.assignUserModal).toBeVisible();
-    // The assign-user search filters users by `username` and renders the
-    // username as the option title, so `user.id` drives both steps.
     await this.fillAssignUserSearch(user.id);
     const userOption = this.assignUserOption(user.id);
     await expect(userOption).toBeVisible({timeout: 30000});
     await userOption.click();
-    // The open popover covers the confirm button; Escape closes it, not the dialog.
-    await this.page.keyboard.press('Escape');
+    await this.assignUserModal.getByRole('heading').click();
     await expect(this.assignUserSearchboxResult).toBeHidden();
-    // The assign-user search is debounced + server-driven, so the option can
-    // outlast the 10s default actionTimeout on a loaded cluster.
     await this.confirmAssignmentButton.click();
     await expect(this.assignUserModal).toBeHidden();
     await waitForItemInList(
@@ -206,7 +215,8 @@ export class IdentityTenantsPage {
   }
 
   async removeUserFromTenant(userName: string) {
-    await this.removeUserButton(userName).click();
+    await this.rowActionsButton(userName).click();
+    await this.removeUserMenuItem.click();
     await expect(this.removeUserModal).toBeVisible();
     await this.confirmRemoveUserButton.click();
     await expect(this.removeUserModal).toBeHidden();
@@ -214,11 +224,11 @@ export class IdentityTenantsPage {
 
   async deleteTenant(tenantName: string) {
     await expect(async () => {
-      await expect(this.deleteTenantButton(tenantName)).toBeVisible({
+      await expect(this.rowActionsButton(tenantName)).toBeVisible({
         timeout: 20000,
       });
-      await this.tenantsHeading.click();
-      await this.deleteTenantButton(tenantName).click();
+      await this.rowActionsButton(tenantName).click();
+      await this.deleteTenantMenuItem.click({timeout: 20000});
     }).toPass(defaultAssertionOptions);
 
     await expect(this.deleteTenantModal).toBeVisible();
@@ -232,11 +242,11 @@ export class IdentityTenantsPage {
     updatedDescription?: string,
   ) {
     await expect(async () => {
-      await expect(this.editTenantButton(currentName)).toBeVisible({
+      await expect(this.rowActionsButton(currentName)).toBeVisible({
         timeout: 20000,
       });
-      await this.tenantsHeading.click();
-      await this.editTenantButton(currentName).click();
+      await this.rowActionsButton(currentName).click();
+      await this.editTenantMenuItem.click({timeout: 20000});
     }).toPass(defaultAssertionOptions);
 
     await expect(this.editTenantModal).toBeVisible();
@@ -259,6 +269,8 @@ export class IdentityTenantsPage {
     await this.fillTenantName(tenant.name);
     await this.fillTenantDescription(tenant.description);
     await this.createTenantModalButton.click();
-    await expect(this.createTenantModal).toBeHidden();
+    await expect(this.tenantCreatedHeading).toBeVisible();
+    await this.tenantCreatedDismissButton.click();
+    await expect(this.tenantCreatedHeading).toBeHidden();
   }
 }

@@ -34,6 +34,7 @@ export class IdentityAuthorizationsPage {
   readonly getAuthorizationCell: (ownerId: string) => Locator;
   readonly resourceTypeOption: (resourceType: string) => Locator;
   readonly ownerIdSearchInput: Locator;
+  readonly modalResourceTypeField: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -45,20 +46,20 @@ export class IdentityAuthorizationsPage {
     this.authorizationRowByOwnerId = (ownerId) =>
       this.authorizationsList.getByRole('row').filter({hasText: ownerId});
 
-    this.createAuthorizationButton = page.getByRole('button', {
-      name: 'Create authorization',
-    });
+    // The empty state repeats the button, with an icon; the header one has none.
+    this.createAuthorizationButton = page
+      .getByRole('button', {
+        name: 'Create authorization',
+      })
+      .filter({hasNot: page.locator('svg')});
     this.createAuthorizationModal = page.getByRole('dialog', {
       name: 'Create authorization',
     });
-    // The owner field is a design-system Combobox. Its closed control is a
-    // `combobox`-role trigger that renders the "Search by owner ID" placeholder
-    // as static text (there is no input `placeholder` attribute, which is why
-    // getByPlaceholder no longer resolves it). Typing happens in the cmdk search
-    // box that mounts in the popover only after the trigger is opened.
-    this.createAuthorizationOwnerTrigger = this.createAuthorizationModal
-      .getByRole('combobox')
-      .filter({hasText: 'Search by owner ID'});
+    this.createAuthorizationOwnerTrigger =
+      this.createAuthorizationModal.getByRole('combobox', {
+        name: 'Owner',
+        exact: true,
+      });
     this.createAuthorizationOwnerSearchInput = this.page.locator(
       '[data-slot="command-input"]',
     );
@@ -67,11 +68,11 @@ export class IdentityAuthorizationsPage {
         name: 'Resource ID',
       });
     this.createAuthorizationAccessPermission = (name) =>
-      this.page.locator(`label[for="${name.toUpperCase()}"]`);
-    // The clickable label and the underlying input are separate nodes; use this
-    // one to assert checked state, and the label above to toggle it.
-    this.accessPermissionCheckbox = (name) =>
-      this.page.getByRole('checkbox', {name: name.toUpperCase()});
+      this.createAuthorizationModal.getByRole('checkbox', {
+        name: name.toUpperCase(),
+        exact: true,
+      });
+    this.accessPermissionCheckbox = this.createAuthorizationAccessPermission;
     this.createAuthorizationOwnerTypeComboBox =
       this.createAuthorizationModal.getByRole('combobox', {name: 'Owner type'});
     // The Select's popover renders in a portal outside the dialog's DOM
@@ -82,25 +83,31 @@ export class IdentityAuthorizationsPage {
       });
     this.createAuthorizationSubmitButton =
       this.createAuthorizationModal.getByRole('button', {
-        name: 'Create authorization',
+        name: 'Create',
+        exact: true,
       });
     this.deleteAuthorizationButton = (name) =>
       this.authorizationsList
         .getByRole('row', {name})
-        .getByRole('button', {name: 'Delete'});
-    this.deleteAuthorizationModal = page.getByRole('dialog', {
+        .getByRole('button', {name: 'Delete authorization'});
+    this.deleteAuthorizationModal = page.getByRole('alertdialog', {
       name: 'Delete authorization',
     });
     this.deleteAuthorizationSubButton = this.deleteAuthorizationModal.getByRole(
       'button',
       {
-        name: 'Delete authorization',
+        name: 'Delete',
+        exact: true,
       },
     );
     this.resourceTypeComboBox = page.getByRole('combobox', {
       name: 'Resource type',
     });
-    this.ownerIdSearchInput = page.getByLabel('Search by owner ID', {
+    this.modalResourceTypeField = this.createAuthorizationModal.getByRole(
+      'textbox',
+      {name: 'Resource type'},
+    );
+    this.ownerIdSearchInput = page.getByLabel('Filter by owner ID', {
       exact: true,
     });
     this.getAuthorizationCell = (ownerId) =>
@@ -143,16 +150,13 @@ export class IdentityAuthorizationsPage {
 
   async checkAccessPermissions(permission: string[]) {
     for (let index = 0; index < permission.length; index++) {
-      await this.createAuthorizationAccessPermission(permission[index]).click();
+      await this.createAuthorizationAccessPermission(permission[index]).check();
     }
   }
 
   async selectAccessPermissions(permissions: string[]) {
     for (const permission of permissions) {
-      const checkboxLabel =
-        this.createAuthorizationAccessPermission(permission);
-      await checkboxLabel.waitFor({state: 'visible'});
-      await checkboxLabel.click();
+      await this.createAuthorizationAccessPermission(permission).check();
     }
   }
 

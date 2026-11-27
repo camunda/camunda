@@ -19,23 +19,21 @@ export class IdentityGroupsPage {
   readonly groupsList: Locator;
   readonly assignedUsersList: Locator;
   readonly createGroupButton: Locator;
-  readonly editGroupButton: (rowName?: string) => Locator;
-  readonly deleteGroupButton: (rowName?: string) => Locator;
+  readonly rowActionsButton: (rowName: string) => Locator;
+  readonly editGroupMenuItem: Locator;
+  readonly deleteGroupMenuItem: Locator;
   readonly createGroupModal: Locator;
-  readonly closeCreateGroupModal: Locator;
   readonly createGroupIdField: Locator;
   readonly createNameField: Locator;
   readonly createDescriptionField: Locator;
   readonly createGroupModalCancelButton: Locator;
   readonly createGroupModalCreateButton: Locator;
   readonly editGroupModal: Locator;
-  readonly closeEditGroupModal: Locator;
   readonly editNameField: Locator;
   readonly editDescriptionField: Locator;
   readonly editGroupModalCancelButton: Locator;
   readonly editGroupModalUpdateButton: Locator;
   readonly deleteGroupModal: Locator;
-  readonly closeDeleteGroupModal: Locator;
   readonly deleteGroupModalCancelButton: Locator;
   readonly deleteGroupModalDeleteButton: Locator;
   readonly emptyStateLocator: Locator;
@@ -64,19 +62,18 @@ export class IdentityGroupsPage {
       name: /Create( a)? group/,
     });
 
-    this.editGroupButton = (rowName) =>
-      this.groupsList.getByRole('row', {name: rowName}).getByLabel('Edit');
-    // Delete is labelled by its visible text; only Edit is icon-only with an aria-label.
-    this.deleteGroupButton = (rowName) =>
+    this.rowActionsButton = (rowName) =>
       this.groupsList
-        .getByRole('row', {name: rowName})
-        .getByRole('button', {name: 'Delete', exact: true});
+        .getByRole('row')
+        .filter({hasText: rowName})
+        .getByRole('button', {name: 'Row actions'});
+    this.editGroupMenuItem = page.getByRole('menuitem', {name: 'Edit group'});
+    this.deleteGroupMenuItem = page.getByRole('menuitem', {
+      name: 'Delete group',
+    });
 
     this.createGroupModal = page.getByRole('dialog', {
       name: 'Create group',
-    });
-    this.closeCreateGroupModal = this.createGroupModal.getByRole('button', {
-      name: 'Close',
     });
     this.createGroupIdField = this.createGroupModal.getByRole('textbox', {
       name: 'Group ID',
@@ -103,9 +100,6 @@ export class IdentityGroupsPage {
     this.editGroupModal = page.getByRole('dialog', {
       name: 'Edit group',
     });
-    this.closeEditGroupModal = this.editGroupModal.getByRole('button', {
-      name: 'Close',
-    });
     this.editNameField = this.editGroupModal.getByRole('textbox', {
       name: 'Group name',
     });
@@ -116,14 +110,11 @@ export class IdentityGroupsPage {
       name: 'Cancel',
     });
     this.editGroupModalUpdateButton = this.editGroupModal.getByRole('button', {
-      name: 'Edit group',
+      name: 'Update group',
     });
 
-    this.deleteGroupModal = page.getByRole('dialog', {
+    this.deleteGroupModal = page.getByRole('alertdialog', {
       name: 'Delete group',
-    });
-    this.closeDeleteGroupModal = this.deleteGroupModal.getByRole('button', {
-      name: 'Close',
     });
     this.deleteGroupModalCancelButton = this.deleteGroupModal.getByRole(
       'button',
@@ -140,17 +131,12 @@ export class IdentityGroupsPage {
     this.emptyStateLocator = page.getByText('No groups created yet');
     this.assignUserButton = page.getByRole('button', {name: 'Assign user'});
     this.assignUserModal = page.getByRole('dialog', {name: 'Assign user'});
-    // On the new design system the assign-user field is a cmdk combobox. The
-    // groups modal uses `UserMultiSelect`'s default placeholder, so the
-    // accessible name is "Search by username" -- not the "Search by Username
-    // or Name" the roles modal overrides it to.
-    this.searchBox = this.assignUserModal.getByRole('combobox', {
-      name: 'Search by name, email, or username',
-    });
-    // Results portal outside the dialog (DS #496), so scope them to the page.
+    this.searchBox = this.assignUserModal.getByRole('combobox');
+    // Results portal outside the dialog, so scope them to the page.
     this.searchBoxResult = page.getByRole('listbox');
     this.assignUserButtonModal = this.assignUserModal.getByRole('button', {
       name: 'Assign user',
+      exact: true,
     });
     this.groupsHeading = this.page.getByRole('heading', {name: 'Groups'});
   }
@@ -175,7 +161,8 @@ export class IdentityGroupsPage {
     newName: string,
     newDescription?: string,
   ) {
-    await this.editGroupButton(currentName).click();
+    await this.rowActionsButton(currentName).click();
+    await this.editGroupMenuItem.click();
     await expect(this.editGroupModal).toBeVisible();
     await this.editNameField.fill(newName);
     if (newDescription) {
@@ -192,11 +179,11 @@ export class IdentityGroupsPage {
       timeout: 30000,
     });
     await expect(async () => {
-      await expect(this.deleteGroupButton(groupName)).toBeVisible({
+      await expect(this.rowActionsButton(groupName)).toBeVisible({
         timeout: 20000,
       });
-      await this.groupsHeading.click();
-      await this.deleteGroupButton(groupName).click();
+      await this.rowActionsButton(groupName).click({timeout: 20000});
+      await this.deleteGroupMenuItem.click({timeout: 20000});
     }).toPass(defaultAssertionOptions);
     await expect(this.deleteGroupModal).toBeVisible();
     await this.deleteGroupModalDeleteButton.click();
@@ -208,18 +195,14 @@ export class IdentityGroupsPage {
     await this.selectGroupRow(groupName).click();
   }
 
-  async assignUserToGroup(userName: string, userEmail: string) {
+  async assignUserToGroup(userName: string) {
     await this.assignUserButton.click();
     await expect(this.assignUserModal).toBeVisible();
-    // The MultiSelect trigger is a div: open it, then type in the search box.
     await this.searchBox.click();
     await this.page.locator('[data-slot="command-input"]').fill(userName);
-    // Keep matching on the email: this modal leaves `UserMultiSelect`'s
-    // default `itemSubTitle`, so the option renders the username as its title
-    // and the email beneath it, and the email is the unique half.
     const option = this.searchBoxResult
       .getByRole('option')
-      .filter({hasText: userEmail})
+      .filter({hasText: userName})
       .first();
     await expect(option).toBeVisible({timeout: 30000});
     await option.click({timeout: 20000});
@@ -228,13 +211,13 @@ export class IdentityGroupsPage {
     await expect(this.searchBoxResult).toBeHidden();
     await this.assignUserButtonModal.click();
     await expect(this.assignUserModal).toBeHidden();
-    // Wait for the member row rather than sleeping for a fixed 8s: both
-    // callers navigate away immediately afterwards, so the assignment has to
-    // be observable before returning. The members table renders username,
-    // name and email, and the email is the unique column.
     await waitForItemInList(
       this.page,
-      this.assignedUsersList.getByRole('cell', {name: userEmail}),
+      this.assignedUsersList
+        .getByRole('row')
+        .filter({hasText: userName})
+        .getByRole('cell')
+        .first(),
       {timeout: 60000},
     );
   }

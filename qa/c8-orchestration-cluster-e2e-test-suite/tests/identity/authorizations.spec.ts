@@ -48,7 +48,9 @@ test.describe.serial('component authorizations CRUD', () => {
     });
     NEW_USER = testData.user!;
     NEW_AUTH_ROLE = testData.authRole!;
-    NEW_USER_AUTHORIZATION = createUserAuthorization(NEW_AUTH_ROLE);
+    NEW_USER_AUTHORIZATION = createUserAuthorization({
+      name: NEW_AUTH_ROLE.id,
+    });
     NEW_COMPONENT_AUTHORIZATION = testData.componentAuth!;
 
     createdRoleIds.push(NEW_AUTH_ROLE.id);
@@ -88,9 +90,10 @@ test.describe.serial('component authorizations CRUD', () => {
     // No owner selected: the owner search only lists existing owners, and this
     // role is never created. Resource ID validation does not depend on the owner.
     await identityAuthorizationsPage.fillResourceId('invalid!!%');
+    await identityAuthorizationsPage.createAuthorizationResourceIdField.blur();
     await expect(
       identityAuthorizationsPage.createAuthorizationModal,
-    ).toContainText('Please enter a valid Resource ID');
+    ).toContainText('Enter a valid resource ID of at most 256 characters');
     await expect(
       identityAuthorizationsPage.createAuthorizationResourceIdField,
     ).toHaveAttribute('aria-invalid', 'true');
@@ -123,6 +126,9 @@ test.describe.serial('component authorizations CRUD', () => {
         LOGIN_CREDENTIALS.username,
         LOGIN_CREDENTIALS.password,
       );
+      // Logging out from the forbidden page keeps it as the login redirect, so
+      // the admin is sent back to it. Remove once #71192 is fixed.
+      await page.goto(relativizePath(Paths.users()));
       await expect(page).toHaveURL(relativizePath(Paths.users()));
       await identityHeader.navigateToRoles();
       await expect(page).toHaveURL(relativizePath(Paths.roles()));
@@ -157,10 +163,11 @@ test.describe.serial('component authorizations CRUD', () => {
     await identityHeader.navigateToAuthorizations();
     await identityAuthorizationsPage.createAuthorization({
       ...NEW_COMPONENT_AUTHORIZATION,
-      ownerId: role.name,
+      ownerId: role.id,
     });
     await identityHeader.logout();
     await loginPage.login(NEW_USER.username, NEW_USER.password);
+    await identityUsersPage.navigateToUsers();
     await expect(identityUsersPage.userCell('demo@example.com')).toBeVisible();
     await waitForItemInList(page, identityUsersPage.userCell(NEW_USER.email), {
       clickNext: true,
@@ -185,7 +192,7 @@ test.describe.serial('component authorizations CRUD', () => {
       `${NEW_AUTH_ROLE.id}-no-match`,
     );
     await expect(
-      page.getByText('No results found', {exact: true}),
+      page.getByText('No authorizations found.', {exact: true}),
     ).toBeVisible();
     await expect(
       identityAuthorizationsPage.getAuthorizationCell(NEW_AUTH_ROLE.id),
@@ -241,6 +248,8 @@ test.describe.serial('component authorizations CRUD', () => {
         LOGIN_CREDENTIALS.username,
         LOGIN_CREDENTIALS.password,
       );
+      // See #71192: the redirect after logging out of the forbidden page.
+      await identityUsersPage.navigateToUsers();
       await expect(identityUsersPage.usersHeading).toBeVisible();
       await identityUsersPage.deleteUser(NEW_USER);
       const userItem = identityUsersPage.userCell(NEW_USER.username);
@@ -320,7 +329,10 @@ test.describe('authorization scenarios', () => {
     await test.step(`Verify user can access Identity after authorization`, async () => {
       await identityHeader.logout();
       await loginPage.login(testUser.username, testUser.password);
-      await expect(identityUsersPage.userCell(testUser.email)).toBeVisible();
+      await verifyAccess(page, true);
+      await expect(
+        page.getByRole('navigation', {name: 'Admin navigation'}),
+      ).toBeVisible();
     });
   });
 });
@@ -350,11 +362,11 @@ test.describe('create authorization modal — resource type field', () => {
       identityAuthorizationsPage.createAuthorizationModal,
     ).toBeVisible();
 
-    await expect(identityAuthorizationsPage.resourceTypeComboBox).toHaveText(
+    await expect(identityAuthorizationsPage.modalResourceTypeField).toHaveValue(
       /Component/i,
     );
     await expect(
-      identityAuthorizationsPage.resourceTypeComboBox,
+      identityAuthorizationsPage.modalResourceTypeField,
     ).toBeDisabled();
   });
 });
@@ -485,7 +497,7 @@ test.describe('secret authorizations', () => {
     await test.step('Grant SECRET READ and REVEAL for a concrete resource id', async () => {
       await identityAuthorizationsPage.createAuthorization(
         createSecretAuthorization(
-          testRole,
+          {name: testRole.id},
           ['read', 'reveal'],
           'Role',
           secretReference,

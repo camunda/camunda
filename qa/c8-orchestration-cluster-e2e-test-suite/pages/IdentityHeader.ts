@@ -21,17 +21,20 @@ export class IdentityHeader {
 
   constructor(page: Page) {
     this.page = page;
-    this.userMenuButton = page.getByRole('button', {name: /^User menu/});
+    this.userMenuButton = page.getByRole('button', {
+      name: 'Settings',
+      exact: true,
+    });
     this.logoutButton = page.getByRole('menuitem', {name: /log out/i});
-    this.rolesTab = page.locator('nav a').filter({hasText: /^Roles$/});
+    this.rolesTab = page
+      .getByRole('navigation', {name: 'Admin navigation'})
+      .getByRole('link')
+      .filter({hasText: /^Roles$/});
     this.tenantsTab = page.locator('nav a').filter({hasText: /^Tenants$/});
     this.authorizationsTab = page
       .locator('nav a')
       .filter({hasText: /^Authorizations$/});
     this.usersTab = page.locator('nav a').filter({hasText: /^Users$/});
-    this.authorizationsTab = page
-      .locator('nav a')
-      .filter({hasText: /^Authorizations$/});
     this.groupsTab = page.locator('nav a').filter({hasText: /^Groups$/});
     this.globalTaskListenersTab = page
       .locator('nav a')

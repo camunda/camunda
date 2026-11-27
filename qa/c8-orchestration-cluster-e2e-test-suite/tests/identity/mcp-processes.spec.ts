@@ -80,13 +80,13 @@ test.describe('Identity MCP Processes', () => {
       await expect(identityMcpProcessesPage.mcpProcessesHeading).toBeVisible();
 
       await expect(
-        page.getByRole('columnheader', {name: 'Tool Name'}),
+        page.getByRole('columnheader', {name: 'Tool name'}),
       ).toBeVisible();
       await expect(
-        page.getByRole('columnheader', {name: 'Tool Description'}),
+        page.getByRole('columnheader', {name: 'Tool description'}),
       ).toBeVisible();
       await expect(
-        page.getByRole('columnheader', {name: 'Process Name'}),
+        page.getByRole('columnheader', {name: 'Process name'}),
       ).toBeVisible();
       await expect(
         page.getByRole('columnheader', {name: 'Version'}),
@@ -139,34 +139,29 @@ test.describe('Identity MCP Processes', () => {
   // skipped due to bug 52778: https://github.com/camunda/camunda/issues/52778
   // MCP Processes UI shows duplicate rows per partition in multi-partition clusters
   test.skip('MCP Processes can be sorted by tool name', async ({
-    page,
     identityMcpProcessesPage,
   }) => {
     const rows = identityMcpProcessesPage.allMcpProcessRows;
-    const toolNameHeader = page.getByRole('columnheader', {
-      name: 'Tool Name',
-    });
     await identityMcpProcessesPage.navigateToMcpProcesses();
 
     await test.step("Verify default sort is ascending by 'Tool Name'", async () => {
       await expect(rows.nth(1)).toContainText(ALPHA_TOOL_NAME);
-      await expect(rows.nth(3)).toContainText(BRAVO_TOOL_NAME);
+      await expect(rows.nth(2)).toContainText(BRAVO_TOOL_NAME);
     });
 
-    await test.step("Sort ASC by 'Tool Name'", async () => {
-      // First click results in ASC order
-      await toolNameHeader.click();
-
-      await expect(rows.nth(1)).toContainText(ALPHA_TOOL_NAME);
-      await expect(rows.nth(3)).toContainText(BRAVO_TOOL_NAME);
-    });
-
-    await test.step("Sort DESC by 'Tool Name'", async () => {
-      // Second click results in DESC order
-      await toolNameHeader.click();
+    await test.step("Sort DESC by 'Tool name'", async () => {
+      // The default order is ascending, so the first click reverses it
+      await identityMcpProcessesPage.toolNameSortButton.click();
 
       await expect(rows.nth(1)).toContainText(BRAVO_TOOL_NAME);
-      await expect(rows.nth(3)).toContainText(ALPHA_TOOL_NAME);
+      await expect(rows.nth(2)).toContainText(ALPHA_TOOL_NAME);
+    });
+
+    await test.step("Sort ASC by 'Tool name'", async () => {
+      await identityMcpProcessesPage.toolNameSortButton.click();
+
+      await expect(rows.nth(1)).toContainText(ALPHA_TOOL_NAME);
+      await expect(rows.nth(2)).toContainText(BRAVO_TOOL_NAME);
     });
   });
 
