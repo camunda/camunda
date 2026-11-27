@@ -410,9 +410,13 @@ jobs:
           echo "After normalization + filtering: $(jq 'length' /tmp/failures_normalized.json)"
 
           # Determine which test files are already covered by open failing-test-fix PRs.
-          # Build a map: base_ref -> [spec file paths already being fixed on that branch].
-          # This allows partial dispatch: if a branch has an open PR but the new failures
-          # are in different files, a fix agent is still dispatched for those files.
+          # Build a map: "base_ref::bucket" -> [spec file paths already being fixed there].
+          # Keying by bucket as well as ref matters because an api spec can fail under both
+          # ES (cheap bucket) and RDBMS (rdbms bucket): a cheap-bucket PR touching that file
+          # must not suppress the separate rdbms failure, whose bucket has no PR. The bucket
+          # lives in the head branch slot (fix/nightly-<version>-<bucket>-...); a version-only
+          # legacy/manual slot (or a ci/ branch) has no bucket and is stored under "::legacy",
+          # which the lookup treats as covering every bucket.
           covered_files_map='{}'
           open_pr_base_refs='[]'
           open_pr_nums=$(gh pr list --repo "$REPO" \
@@ -421,18 +425,29 @@ jobs:
             --json number --jq '.[].number' 2>/dev/null || echo '')
           for pr_num in $open_pr_nums; do
             [ -z "$pr_num" ] && continue
-            base_ref=$(gh pr view "$pr_num" --repo "$REPO" --json baseRefName \
-              --jq '.baseRefName' 2>/dev/null || echo '')
+            pr_json=$(gh pr view "$pr_num" --repo "$REPO" \
+              --json baseRefName,headRefName,files 2>/dev/null || echo '{}')
+            base_ref=$(echo "$pr_json" | jq -r '.baseRefName // ""')
             [ -z "$base_ref" ] && continue
-            pr_files=$(gh pr view "$pr_num" --repo "$REPO" --json files \
-              --jq '[.files[].path
-                     | select(test("qa/c8-orchestration-cluster-e2e-test-suite/.*\\.spec\\.[jt]s$"))
-                     | sub("^.*/qa/c8-orchestration-cluster-e2e-test-suite/"; "")
-                     | sub("^qa/c8-orchestration-cluster-e2e-test-suite/"; "")]' \
+            head_ref=$(echo "$pr_json" | jq -r '.headRefName // ""')
+            pr_files=$(echo "$pr_json" | jq \
+              '[.files[].path
+                | select(test("qa/c8-orchestration-cluster-e2e-test-suite/.*\\.spec\\.[jt]s$"))
+                | sub("^.*/qa/c8-orchestration-cluster-e2e-test-suite/"; "")
+                | sub("^qa/c8-orchestration-cluster-e2e-test-suite/"; "")]' \
               2>/dev/null || echo '[]')
+            # Derive the bucket from the head branch slot; anything that is not a
+            # recognised cheap-/rdbms- slot is treated as a legacy version-only PR.
+            version=$([ "$base_ref" = "main" ] && echo "main" || echo "${base_ref#stable/}")
+            rest=${head_ref#fix/nightly-${version}-}
+            case "$rest" in
+              cheap-*) bucket=cheap ;;
+              rdbms-*) bucket=rdbms ;;
+              *)       bucket=legacy ;;
+            esac
             covered_files_map=$(echo "$covered_files_map" | jq \
-              --arg ref "$base_ref" --argjson files "$pr_files" \
-              '. + {($ref): ((.[$ref] // []) + $files | unique)}')
+              --arg key "${base_ref}::${bucket}" --argjson files "$pr_files" \
+              '. + {($key): ((.[$key] // []) + $files | unique)}')
             open_pr_base_refs=$(echo "$open_pr_base_refs" | jq \
               --arg ref "$base_ref" '. + [$ref] | unique')
           done
@@ -508,14 +523,17 @@ jobs:
                   ref: (if .[0].version == "main" then "main" else ("stable/" + .[0].version) end)
                 })
               | map(select(.test_specs | length > 0))
-              # per-file dedup: remove specs whose file is already covered by an open PR on this branch.
-              # A version is only skipped entirely when every failing spec is already being fixed.
-              # If some specs are in files not yet covered, dispatch proceeds for those specs only.
+              # per-file dedup: remove specs whose file is already covered by an open PR for
+              # the same ref AND bucket (a legacy version-only PR, keyed ::legacy, covers all
+              # buckets). A spec failing under both ES and RDBMS is dropped only for the bucket
+              # already covered by a PR, so a failure in the other bucket still dispatches.
               | map(
                   .ref as $ref |
+                  .cost_bucket as $cb |
+                  (($covered[$ref + "::" + $cb] // []) + ($covered[$ref + "::legacy"] // [])) as $cov |
                   .test_specs |= map(
                     . as $spec |
-                    select(($covered[$ref] // []) | index($spec.file) == null)
+                    select($cov | index($spec.file) == null)
                   )
                 )
               | map(select(.test_specs | length > 0))
