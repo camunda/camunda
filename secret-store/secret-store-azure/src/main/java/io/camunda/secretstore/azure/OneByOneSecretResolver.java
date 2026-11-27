@@ -224,7 +224,8 @@ final class OneByOneSecretResolver implements AzureSecretResolver {
     try {
       return callTimeout.call("list its secrets", this::readAllPages);
     } catch (final SecretStoreUnavailableException e) {
-      throw e;
+      // a timeout, an interrupt or a closed store: name the store, as every other listing failure
+      throw new SecretStoreUnavailableException(storeDescription + ": " + e.getMessage(), e);
     } catch (final RuntimeException e) {
       throw listingFailed(e);
     }
