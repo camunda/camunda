@@ -136,7 +136,7 @@ describe('<EditClusterVariableModal />', () => {
 		await replaceMonacoValue(editor, '42');
 		await userEvent.click(screen.getByRole('button', {name: 'Save'}));
 
-		await vi.waitFor(() => expect(onClose).toHaveBeenCalledOnce());
+		await expect.poll(() => onClose).toHaveBeenCalledOnce();
 	});
 
 	it('should keep the metadata of the cluster variable when updating its value', async ({worker}) => {
@@ -177,7 +177,7 @@ describe('<EditClusterVariableModal />', () => {
 		await replaceMonacoValue(editor, '42');
 		await userEvent.click(screen.getByRole('button', {name: 'Save'}));
 
-		await vi.waitFor(() => expect(onClose).toHaveBeenCalledOnce());
+		await expect.poll(() => onClose).toHaveBeenCalledOnce();
 	});
 
 	it('should reject a value that is not valid JSON', async ({worker}) => {

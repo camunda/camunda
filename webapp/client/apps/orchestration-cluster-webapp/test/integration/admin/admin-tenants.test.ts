@@ -25,7 +25,9 @@ import {
 	mockAssignUserToTenantEndpoint,
 	mockAssignClientToTenantEndpoint,
 	mockUnassignUserFromTenantEndpoint,
+	mockQueryGroupsEndpoint,
 } from '#/shared-test-modules/mock-handlers';
+import {createQueryGroupsResponse} from '#/shared-test-modules/api-mocks/groups';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
@@ -270,6 +272,63 @@ test.describe('Admin tenants list', () => {
 
 		await expect(adminTenantsPage.deleteModal.dialog).not.toBeVisible();
 		await expect(adminTenantsPage.row('my-tenant')).not.toBeVisible();
+	});
+
+	test('should keep a deleted tenant off the list on a quick return and refresh the list later', async ({
+		adminTenantsPage,
+		adminGroupsPage,
+		adminIndexPage,
+		network,
+		page,
+	}) => {
+		const tenants = [
+			createTenant({tenantId: 'my-tenant', name: 'My tenant'}),
+			createTenant({tenantId: 'other-tenant', name: 'Other tenant'}),
+		];
+		await page.clock.setFixedTime(new Date('2026-01-01T10:00:00Z'));
+		await adminGroupsPage.mockClientConfig();
+		network.use(
+			mockQueryTenantsEndpoint({successResponse: HttpResponse.json(createQueryTenantsResponse(tenants))}),
+			mockDeleteTenantEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
+			mockGetTenantEndpoint({successResponse: new HttpResponse(null, {status: 404})}),
+			mockQueryGroupsEndpoint({successResponse: HttpResponse.json(createQueryGroupsResponse())}),
+		);
+
+		await test.step('delete a tenant the search index still lists', async () => {
+			await adminTenantsPage.goto();
+			await adminTenantsPage.rowActionsButton('my-tenant').click();
+			await adminTenantsPage.menuItem('Delete').click();
+			await adminTenantsPage.deleteModal.confirmButton.click();
+
+			await expect(adminTenantsPage.deleteModal.dialog).not.toBeVisible();
+			await expect(adminTenantsPage.row('my-tenant')).not.toBeVisible();
+		});
+
+		await test.step('keep it off the list when returning right away', async () => {
+			await adminIndexPage.navItem('Groups').click();
+			await expect(adminIndexPage.sectionHeading('Groups')).toBeVisible();
+			await adminIndexPage.navItem('Tenants').click();
+
+			await expect(adminTenantsPage.row('other-tenant')).toBeVisible();
+			await expect(adminTenantsPage.row('my-tenant')).not.toBeVisible();
+		});
+
+		await test.step('show the search index again when returning after a few seconds', async () => {
+			await page.clock.setFixedTime(new Date('2026-01-01T10:00:06Z'));
+			network.use(
+				mockQueryTenantsEndpoint({
+					successResponse: HttpResponse.json(
+						createQueryTenantsResponse([...tenants, createTenant({tenantId: 'new-tenant', name: 'New tenant'})]),
+					),
+				}),
+			);
+
+			await adminIndexPage.navItem('Groups').click();
+			await expect(adminIndexPage.sectionHeading('Groups')).toBeVisible();
+			await adminIndexPage.navItem('Tenants').click();
+
+			await expect(adminTenantsPage.row('new-tenant')).toBeVisible();
+		});
 	});
 
 	test('should search tenants by exact ID', async ({adminTenantsPage, network}) => {

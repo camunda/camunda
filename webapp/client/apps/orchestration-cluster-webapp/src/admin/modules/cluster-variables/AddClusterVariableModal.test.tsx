@@ -85,7 +85,7 @@ describe('<AddClusterVariableModal />', () => {
 		await replaceMonacoValue(screen.getByRole('textbox', {name: 'Value - Enter string or JSON'}), '{"answer": 42}');
 		await userEvent.click(screen.getByRole('button', {name: 'Create'}));
 
-		await vi.waitFor(() => expect(onClose).toHaveBeenCalledOnce());
+		await expect.poll(() => onClose).toHaveBeenCalledOnce();
 	});
 
 	it('should create a tenant-scoped cluster variable for the selected tenant', async ({worker}) => {
@@ -122,7 +122,7 @@ describe('<AddClusterVariableModal />', () => {
 		await expect.element(screen.getByRole('combobox', {name: 'Tenant'})).toHaveTextContent('Tenant A');
 		await userEvent.click(screen.getByRole('button', {name: 'Create'}));
 
-		await vi.waitFor(() => expect(onClose).toHaveBeenCalledOnce());
+		await expect.poll(() => onClose).toHaveBeenCalledOnce();
 	});
 
 	it('should disable the tenant scope when it is not available', async () => {
@@ -202,7 +202,7 @@ describe('<AddClusterVariableModal />', () => {
 		await replaceMonacoValue(screen.getByRole('textbox', {name: 'Value - Enter string or JSON'}), '1');
 		await userEvent.click(screen.getByRole('button', {name: 'Create'}));
 
-		await vi.waitFor(() => expect(onClose).toHaveBeenCalledOnce());
+		await expect.poll(() => onClose).toHaveBeenCalledOnce();
 	});
 
 	it('should reject a value that is not valid JSON', async () => {

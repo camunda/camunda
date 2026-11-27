@@ -27,9 +27,6 @@ import {getAuthorizationsRequestBody} from '#/admin/modules/authorizations/getAu
 import {queries} from '#/shared/http/queries';
 import {AdminAuthorizationsPage, type AdminAuthorizationsPageProps} from './AdminAuthorizationsPage';
 
-const DEBOUNCED = {timeout: 3000};
-const RETRY_BUDGET = {timeout: 10_000};
-
 const clientConfig: AdminAuthorizationsPageProps['clientConfig'] = {
 	idPattern: null,
 	resourcePermissions: {
@@ -80,6 +77,7 @@ async function renderPage({
 
 describe('<AdminAuthorizationsPage />', () => {
 	afterEach(async () => {
+		vi.useRealTimers();
 		await cleanup();
 		toast.dismiss();
 	});
@@ -182,7 +180,7 @@ describe('<AdminAuthorizationsPage />', () => {
 	it('should keep the toolbar mounted while another resource type loads', async ({worker}) => {
 		worker.use(
 			mockQueryAuthorizationsEndpoint({
-				delay: 500,
+				delay: 'infinite',
 				successResponse: HttpResponse.json(
 					createQueryAuthorizationsResponse({
 						items: [createAuthorization({ownerId: 'jane.doe', resourceType: 'USER_TASK'})],
@@ -192,21 +190,39 @@ describe('<AdminAuthorizationsPage />', () => {
 		);
 		const {screen, props} = await renderPage({authorizations: [createAuthorization({ownerId: 'john.doe'})]});
 		await expect.element(screen.getByRole('cell', {name: 'john.doe'})).toBeVisible();
-		const searchInput = screen.getByRole('searchbox').element();
+		await userEvent.fill(screen.getByRole('searchbox'), 'demo');
 
 		await screen.rerender(<AdminAuthorizationsPage {...props} resourceType="USER_TASK" />);
 
 		await expect.element(screen.getByTestId('authorizations-skeleton')).toBeVisible();
 		await expect.element(screen.getByRole('cell', {name: 'john.doe'})).not.toBeInTheDocument();
 		await expect.element(screen.getByText('No authorizations found.')).not.toBeInTheDocument();
-		expect(screen.getByRole('searchbox').element()).toBe(searchInput);
+		await expect.element(screen.getByRole('searchbox')).toHaveValue('demo');
+		await expect.element(screen.getByRole('searchbox')).toHaveFocus();
+	});
+
+	it('should show the authorizations of another resource type once they load', async ({worker}) => {
+		worker.use(
+			mockQueryAuthorizationsEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryAuthorizationsResponse({
+						items: [createAuthorization({ownerId: 'jane.doe', resourceType: 'USER_TASK'})],
+					}),
+				),
+			}),
+		);
+		const {screen, props} = await renderPage({authorizations: [createAuthorization({ownerId: 'john.doe'})]});
+		await expect.element(screen.getByRole('cell', {name: 'john.doe'})).toBeVisible();
+
+		await screen.rerender(<AdminAuthorizationsPage {...props} resourceType="USER_TASK" />);
+
 		await expect.element(screen.getByRole('cell', {name: 'jane.doe'})).toBeVisible();
 	});
 
 	it('should keep the current rows while the next page loads', async ({worker}) => {
 		worker.use(
 			mockQueryAuthorizationsEndpoint({
-				delay: 500,
+				delay: 'infinite',
 				successResponse: HttpResponse.json(
 					createQueryAuthorizationsResponse({items: [createAuthorization({ownerId: 'jane.doe'})]}),
 				),
@@ -219,16 +235,33 @@ describe('<AdminAuthorizationsPage />', () => {
 
 		await expect.element(screen.getByRole('cell', {name: 'john.doe'})).toBeVisible();
 		await expect.element(screen.getByTestId('authorizations-skeleton')).not.toBeInTheDocument();
+	});
+
+	it('should replace the current rows once the next page loads', async ({worker}) => {
+		worker.use(
+			mockQueryAuthorizationsEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryAuthorizationsResponse({items: [createAuthorization({ownerId: 'jane.doe'})]}),
+				),
+			}),
+		);
+		const {screen, props} = await renderPage({authorizations: [createAuthorization({ownerId: 'john.doe'})]});
+		await expect.element(screen.getByRole('cell', {name: 'john.doe'})).toBeVisible();
+
+		await screen.rerender(<AdminAuthorizationsPage {...props} search={{page: 2}} />);
+
 		await expect.element(screen.getByRole('cell', {name: 'jane.doe'})).toBeVisible();
 		await expect.element(screen.getByRole('cell', {name: 'john.doe'})).not.toBeInTheDocument();
 	});
 
 	it('should filter by owner ID once the reader stops typing', async () => {
 		const {screen, onSearchChange} = await renderPage();
+		vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
 
 		await userEvent.fill(screen.getByRole('searchbox'), 'demo');
 
-		await vi.waitFor(() => expect(onSearchChange).toHaveBeenCalledWith({ownerId: 'demo', page: undefined}), DEBOUNCED);
+		await vi.advanceTimersByTimeAsync(500);
+		expect(onSearchChange).toHaveBeenCalledWith({ownerId: 'demo', page: undefined});
 	});
 
 	it('should reverse the owner ID order when the reader sorts the column', async () => {
@@ -449,8 +482,8 @@ describe('<AdminAuthorizationsPage />', () => {
 		await userEvent.click(screen.getByRole('button', {name: 'Create', exact: true}));
 
 		await expect.element(screen.getByText('Authorization created')).toBeVisible();
-		await expect.element(screen.getByText("Couldn't confirm the change took effect"), RETRY_BUDGET).toBeVisible();
-	}, 15_000);
+		await expect.element(screen.getByText("Couldn't confirm the change took effect")).toBeVisible();
+	});
 
 	it('should warn when a deleted authorization is still visible on the server', async ({worker}) => {
 		const authorization = createAuthorization({ownerId: 'john.doe'});
@@ -466,6 +499,6 @@ describe('<AdminAuthorizationsPage />', () => {
 		await userEvent.click(screen.getByRole('button', {name: 'Delete', exact: true}));
 
 		await expect.element(screen.getByText('Authorization deleted')).toBeVisible();
-		await expect.element(screen.getByText("Couldn't confirm the change took effect"), RETRY_BUDGET).toBeVisible();
-	}, 15_000);
+		await expect.element(screen.getByText("Couldn't confirm the change took effect")).toBeVisible();
+	});
 });

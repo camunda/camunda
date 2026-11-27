@@ -21,11 +21,8 @@ import {
 	mockUpdateUserEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createUser} from '#/shared-test-modules/api-mocks/users';
-import type {User} from '@camunda/camunda-api-zod-schemas/8.11';
+import {updateUserRequestBodySchema, type User} from '@camunda/camunda-api-zod-schemas/8.11';
 import {AdminUsersPage, type AdminUsersPageProps} from './AdminUsersPage';
-
-const DEBOUNCED = {timeout: 3000};
-const RETRY_BUDGET = {timeout: 10_000};
 
 async function renderPage(overrides: Partial<AdminUsersPageProps> = {}) {
 	const onSearchChange = vi.fn();
@@ -46,6 +43,7 @@ async function renderPage(overrides: Partial<AdminUsersPageProps> = {}) {
 
 describe('<AdminUsersPage />', () => {
 	afterEach(async () => {
+		vi.useRealTimers();
 		await cleanup();
 		toast.dismiss();
 	});
@@ -64,8 +62,8 @@ describe('<AdminUsersPage />', () => {
 	it('should keep the table when a search finds no users', async () => {
 		const {screen} = await renderPage({users: [], totalItems: 0, search: {search: 'nothing'}});
 
-		await expect.element(screen.getByText('No users created yet')).not.toBeInTheDocument();
 		await expect.element(screen.getByRole('searchbox')).toBeVisible();
+		await expect.element(screen.getByText('No users created yet')).not.toBeInTheDocument();
 	});
 
 	it('should list users', async () => {
@@ -87,15 +85,18 @@ describe('<AdminUsersPage />', () => {
 
 	it('should search by username once the reader stops typing', async () => {
 		const {screen, onSearchChange} = await renderPage();
+		vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
 
 		await userEvent.fill(screen.getByRole('searchbox'), 'jane');
 
-		await vi.waitFor(() => expect(onSearchChange).toHaveBeenCalledWith({search: 'jane', page: undefined}), DEBOUNCED);
+		await vi.advanceTimersByTimeAsync(500);
+		expect(onSearchChange).toHaveBeenCalledWith({search: 'jane', page: undefined});
 	});
 
 	it('should show the new URL search and not commit the stale draft when the URL search changes through navigation', async () => {
 		// given
 		const {screen} = await renderPage({search: {search: 'jane'}});
+		vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
 		await userEvent.fill(screen.getByRole('searchbox'), 'john');
 
 		// when
@@ -112,7 +113,7 @@ describe('<AdminUsersPage />', () => {
 
 		// then
 		await expect.element(screen.getByRole('searchbox')).toHaveValue('previous');
-		await new Promise((resolve) => setTimeout(resolve, 1000));
+		await vi.advanceTimersByTimeAsync(1000);
 		expect(onSearchChange).not.toHaveBeenCalled();
 	});
 
@@ -283,7 +284,11 @@ describe('<AdminUsersPage />', () => {
 	it('should edit a user', async ({worker}) => {
 		const user = createUser({username: 'john.doe', name: 'John Doe'});
 		worker.use(
-			mockUpdateUserEndpoint({successResponse: HttpResponse.json({...user, name: 'Johnny Doe'})}),
+			mockUpdateUserEndpoint({
+				schema: updateUserRequestBodySchema.extend({name: z.literal('Johnny Doe')}),
+				successResponse: HttpResponse.json({...user, name: 'Johnny Doe'}),
+				failureResponse: new HttpResponse(null, {status: 400}),
+			}),
 			mockQueryUsersEndpoint({
 				successResponse: HttpResponse.json({items: [{...user, name: 'Johnny Doe'}], page: {totalItems: 1}}),
 			}),
@@ -332,9 +337,9 @@ describe('<AdminUsersPage />', () => {
 
 		// then
 		await expect.element(screen.getByText('User new.user created')).toBeVisible();
-		await expect.element(screen.getByText("Couldn't confirm the change took effect"), RETRY_BUDGET).toBeVisible();
+		await expect.element(screen.getByText("Couldn't confirm the change took effect")).toBeVisible();
 		await expect.element(screen.getByText('Refresh the page to see the latest state.')).toBeVisible();
-	}, 15_000);
+	});
 
 	it('should warn when a deleted user is still visible on the server', async ({worker}) => {
 		// given
@@ -352,8 +357,8 @@ describe('<AdminUsersPage />', () => {
 
 		// then
 		await expect.element(screen.getByText('User john.doe deleted')).toBeVisible();
-		await expect.element(screen.getByText("Couldn't confirm the change took effect"), RETRY_BUDGET).toBeVisible();
-	}, 15_000);
+		await expect.element(screen.getByText("Couldn't confirm the change took effect")).toBeVisible();
+	});
 
 	it('should disable the delete confirmation while the deletion is pending', async ({worker}) => {
 		const user = createUser({username: 'john.doe'});

@@ -72,7 +72,7 @@ describe('<DeleteGlobalTaskListenerModal />', () => {
 
 		await userEvent.click(screen.getByRole('button', {name: 'Delete'}));
 
-		await vi.waitFor(() => expect(mockOnClose).toHaveBeenCalledOnce());
+		await expect.poll(() => mockOnClose).toHaveBeenCalledOnce();
 	});
 
 	it('should warn when a deleted global task listener is still visible on the server', async ({worker}) => {
@@ -94,8 +94,8 @@ describe('<DeleteGlobalTaskListenerModal />', () => {
 
 		// then
 		await expect.element(screen.getByText('Global task listener deleted')).toBeVisible();
-		await expect.element(screen.getByText("Couldn't confirm the change took effect"), {timeout: 10_000}).toBeVisible();
-	}, 15_000);
+		await expect.element(screen.getByText("Couldn't confirm the change took effect")).toBeVisible();
+	});
 
 	it('should keep the dialog open when the delete fails', async ({worker}) => {
 		const mockOnClose = vi.fn();

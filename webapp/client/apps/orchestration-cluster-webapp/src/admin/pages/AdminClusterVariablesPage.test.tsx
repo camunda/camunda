@@ -15,8 +15,6 @@ import {userEvent} from 'vitest/browser';
 import {createClusterVariable} from '#/shared-test-modules/api-mocks/cluster-variables';
 import {AdminClusterVariablesPage, type AdminClusterVariablesPageProps} from './AdminClusterVariablesPage';
 
-const DEBOUNCED = {timeout: 3000};
-
 function getWrapper() {
 	const queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});
 
@@ -49,6 +47,7 @@ async function renderPage(overrides: Partial<AdminClusterVariablesPageProps> = {
 
 describe('<AdminClusterVariablesPage />', () => {
 	afterEach(async () => {
+		vi.useRealTimers();
 		await cleanup();
 		toast.dismiss();
 	});
@@ -67,8 +66,8 @@ describe('<AdminClusterVariablesPage />', () => {
 	it('should keep the table when a search finds no cluster variables', async () => {
 		const {screen} = await renderPage({clusterVariables: [], totalItems: 0, search: {search: 'nothing'}});
 
-		await expect.element(screen.getByText('No cluster variables created yet')).not.toBeInTheDocument();
 		await expect.element(screen.getByRole('searchbox')).toBeVisible();
+		await expect.element(screen.getByText('No cluster variables created yet')).not.toBeInTheDocument();
 	});
 
 	it('should list the cluster variables with their scope', async () => {
@@ -89,18 +88,22 @@ describe('<AdminClusterVariablesPage />', () => {
 
 	it('should search by name once the reader stops typing', async () => {
 		const {screen, onSearchChange} = await renderPage();
+		vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
 
 		await userEvent.fill(screen.getByRole('searchbox'), 'my-var');
 
-		await vi.waitFor(() => expect(onSearchChange).toHaveBeenCalledWith({search: 'my-var', page: undefined}), DEBOUNCED);
+		await vi.advanceTimersByTimeAsync(500);
+		expect(onSearchChange).toHaveBeenCalledWith({search: 'my-var', page: undefined});
 	});
 
 	it('should not overwrite newer input when a stale search term is applied', async () => {
 		const {screen, onSearchChange} = await renderPage();
+		vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
 		const searchBox = screen.getByRole('searchbox');
 
 		await userEvent.fill(searchBox, 'a');
-		await vi.waitFor(() => expect(onSearchChange).toHaveBeenCalledWith({search: 'a', page: undefined}), DEBOUNCED);
+		await vi.advanceTimersByTimeAsync(500);
+		expect(onSearchChange).toHaveBeenCalledWith({search: 'a', page: undefined});
 		await userEvent.fill(searchBox, 'ab');
 
 		// Simulates the route applying the debounced "a" navigation while the reader kept typing.
@@ -119,13 +122,12 @@ describe('<AdminClusterVariablesPage />', () => {
 
 	it('should clear the name filter', async () => {
 		const {screen, onSearchChange} = await renderPage({search: {search: 'my-var'}});
+		vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
 
 		await userEvent.click(screen.getByRole('button', {name: /clear/i}));
 
-		await vi.waitFor(
-			() => expect(onSearchChange).toHaveBeenCalledWith({search: undefined, page: undefined}),
-			DEBOUNCED,
-		);
+		await vi.advanceTimersByTimeAsync(500);
+		expect(onSearchChange).toHaveBeenCalledWith({search: undefined, page: undefined});
 	});
 
 	it('should reverse the name order when the reader sorts the column', async () => {

@@ -9,12 +9,10 @@
 import {render} from 'vitest-browser-react';
 import {userEvent} from 'vitest/browser';
 import {TooltipProvider} from '@camunda/design-system';
-import {describe, expect, vi} from 'vitest';
+import {afterEach, describe, expect, vi} from 'vitest';
 import {it} from '#/vitest-modules/test-extend';
 import type {McpProcessTool} from '#/admin/modules/mcp-processes/mcpProcessTools';
 import {AdminMcpProcessesPage, type AdminMcpProcessesPageProps} from './AdminMcpProcessesPage';
-
-const DEBOUNCED = {timeout: 3000};
 
 function createTool(overrides: Partial<McpProcessTool> = {}): McpProcessTool {
 	return {
@@ -52,6 +50,10 @@ async function renderPage(overrides: Partial<AdminMcpProcessesPageProps> = {}) {
 }
 
 describe('<AdminMcpProcessesPage />', () => {
+	afterEach(() => {
+		vi.useRealTimers();
+	});
+
 	it('should link to the MCP processes guide', async () => {
 		// when
 		const {screen} = await renderPage();
@@ -135,34 +137,37 @@ describe('<AdminMcpProcessesPage />', () => {
 	it('should search by tool name once the reader stops typing', async () => {
 		// given
 		const {screen, onSearchChange} = await renderPage();
+		vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
 
 		// when
 		await userEvent.fill(screen.getByRole('searchbox'), 'order');
 
 		// then
-		await vi.waitFor(() => expect(onSearchChange).toHaveBeenCalledWith({search: 'order', page: undefined}), DEBOUNCED);
+		await vi.advanceTimersByTimeAsync(500);
+		expect(onSearchChange).toHaveBeenCalledWith({search: 'order', page: undefined});
 	});
 
 	it('should clear the tool name filter', async () => {
 		// given
 		const {screen, onSearchChange} = await renderPage({search: {search: 'order'}});
+		vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
 
 		// when
 		await userEvent.click(screen.getByRole('button', {name: /clear/i}));
 
 		// then
-		await vi.waitFor(
-			() => expect(onSearchChange).toHaveBeenCalledWith({search: undefined, page: undefined}),
-			DEBOUNCED,
-		);
+		await vi.advanceTimersByTimeAsync(500);
+		expect(onSearchChange).toHaveBeenCalledWith({search: undefined, page: undefined});
 	});
 
 	it('should not re-search while the applied term already matches the input', async () => {
+		vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
+
 		// when
 		const {onSearchChange} = await renderPage({search: {search: 'order'}});
 
 		// then
-		await new Promise((resolve) => setTimeout(resolve, 1000));
+		await vi.advanceTimersByTimeAsync(1000);
 		expect(onSearchChange).not.toHaveBeenCalled();
 	});
 
