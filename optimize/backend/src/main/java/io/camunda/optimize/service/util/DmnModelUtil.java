@@ -17,7 +17,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.bpm.model.dmn.instance.Decision;
 import org.camunda.bpm.model.dmn.instance.DecisionTable;
@@ -33,7 +32,7 @@ public final class DmnModelUtil {
 
   public static DmnModelInstance parseDmnModel(final String dmn10Xml) {
     try (final ByteArrayInputStream stream = new ByteArrayInputStream(dmn10Xml.getBytes())) {
-      return Dmn.readModelFromStream(stream);
+      return BundledSchemaDmnParser.readModelFromStream(stream);
     } catch (final IOException e) {
       throw new OptimizeRuntimeException("Failed reading model", e);
     }
