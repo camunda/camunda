@@ -55,7 +55,8 @@ import java.util.function.Supplier;
  *
  * <p>Every call runs under one lock, so any number of threads can use the store, and each call is
  * complete when it returns its future. Events reach a listener on its executor, one at a time and
- * in commit order, after the change that caused them is visible to reads.
+ * in commit order, after the change that caused them is visible to reads. Listeners are never
+ * called under the lock, so a listener may call the store, also on a direct executor.
  */
 public final class InMemoryClusterMetadataStore
     implements ClusterMetadataStore, NamespaceApi, AutoCloseable {
@@ -68,8 +69,11 @@ public final class InMemoryClusterMetadataStore
   private final List<NamespaceWatch> namespaceWatches = new ArrayList<>();
   private boolean closed;
 
+  /** Deliveries that got their first queued call under the lock and are started after it. */
+  private final List<Delivery<?>> starting = new ArrayList<>();
+
   @Override
-  public synchronized ActorFuture<Optional<KeyValue>> get(final StoreKey key) {
+  public ActorFuture<Optional<KeyValue>> get(final StoreKey key) {
     return call(
         () -> {
           if (key.isEmpty()) {
@@ -82,7 +86,7 @@ public final class InMemoryClusterMetadataStore
   }
 
   @Override
-  public synchronized ActorFuture<List<KeyValue>> list(final StoreKey prefix) {
+  public ActorFuture<List<KeyValue>> list(final StoreKey prefix) {
     return call(
         () ->
             values(prefix.namespace()).values().stream()
@@ -106,7 +110,7 @@ public final class InMemoryClusterMetadataStore
   }
 
   @Override
-  public synchronized ActorFuture<Void> batch(final Batch batch) {
+  public ActorFuture<Void> batch(final Batch batch) {
     return call(
         () -> {
           dispatch(commit(evaluate(batch)));
@@ -120,12 +124,12 @@ public final class InMemoryClusterMetadataStore
   }
 
   @Override
-  public synchronized ActorFuture<Boolean> exists(final Namespace namespace) {
+  public ActorFuture<Boolean> exists(final Namespace namespace) {
     return call(() -> namespaces.containsKey(namespace));
   }
 
   @Override
-  public synchronized ActorFuture<List<Namespace>> list(final NamespaceScope scope) {
+  public ActorFuture<List<Namespace>> list(final NamespaceScope scope) {
     return call(
         () ->
             namespaces.keySet().stream()
@@ -135,7 +139,7 @@ public final class InMemoryClusterMetadataStore
   }
 
   @Override
-  public synchronized ActorFuture<Void> deleteNamespace(final Namespace namespace) {
+  public ActorFuture<Void> deleteNamespace(final Namespace namespace) {
     return call(
         () -> {
           final var removed = values(namespace);
@@ -146,10 +150,12 @@ public final class InMemoryClusterMetadataStore
               new NamespaceChanged(
                   new NamespaceChange(namespace, NamespaceChange.ChangeType.DELETED)));
           dispatch(events);
-          keyWatches.stream()
-              .filter(watch -> watch.path.namespace().equals(namespace))
-              .toList()
-              .forEach(watch -> watch.end(CloseReason.NAMESPACE_DELETED));
+          final var ended =
+              keyWatches.stream()
+                  .filter(watch -> watch.path.namespace().equals(namespace))
+                  .toList();
+          keyWatches.removeAll(ended);
+          ended.forEach(watch -> end(watch.delivery, CloseReason.NAMESPACE_DELETED));
           return unit();
         });
   }
@@ -167,15 +173,20 @@ public final class InMemoryClusterMetadataStore
 
   /** Fails later calls and ends every subscription with {@link CloseReason#STORE_CLOSED}. */
   @Override
-  public synchronized void close() {
-    if (closed) {
-      return;
+  public void close() {
+    final List<Delivery<?>> started;
+    synchronized (this) {
+      if (closed) {
+        return;
+      }
+      closed = true;
+      keyWatches.forEach(watch -> end(watch.delivery, CloseReason.STORE_CLOSED));
+      namespaceWatches.forEach(watch -> end(watch.delivery, CloseReason.STORE_CLOSED));
+      keyWatches.clear();
+      namespaceWatches.clear();
+      started = takeStarting();
     }
-    closed = true;
-    keyWatches.forEach(watch -> watch.delivery.end(CloseReason.STORE_CLOSED));
-    namespaceWatches.forEach(watch -> watch.delivery.end(CloseReason.STORE_CLOSED));
-    keyWatches.clear();
-    namespaceWatches.clear();
+    started.forEach(Delivery::start);
   }
 
   /**
@@ -301,20 +312,41 @@ public final class InMemoryClusterMetadataStore
     }
   }
 
-  /** Hands the events to the subscriptions after the whole change is visible to reads. */
+  /**
+   * Queues the events for the subscriptions, under the lock, so that every queue holds them in
+   * commit order even when a listener writes while an earlier change is still being delivered.
+   */
   private void dispatch(final List<Event> events) {
     for (final var event : events) {
       switch (event) {
         case final KeyChanged changed ->
             keyWatches.stream()
                 .filter(watch -> changed.event().key().isAtOrUnder(watch.path))
-                .forEach(watch -> watch.delivery.event(changed.event()));
+                .forEach(watch -> send(watch.delivery, changed.event()));
         case final NamespaceChanged changed ->
             namespaceWatches.stream()
                 .filter(watch -> watch.scope == changed.change().namespace().scope())
-                .forEach(watch -> watch.delivery.event(changed.change()));
+                .forEach(watch -> send(watch.delivery, changed.change()));
       }
     }
+  }
+
+  private <E> void send(final Delivery<E> delivery, final E event) {
+    if (delivery.event(event)) {
+      starting.add(delivery);
+    }
+  }
+
+  private void end(final Delivery<?> delivery, final CloseReason reason) {
+    if (delivery.end(reason)) {
+      starting.add(delivery);
+    }
+  }
+
+  private List<Delivery<?>> takeStarting() {
+    final var started = List.copyOf(starting);
+    starting.clear();
+    return started;
   }
 
   private TreeMap<String, KeyValue> values(final Namespace namespace) {
@@ -326,13 +358,22 @@ public final class InMemoryClusterMetadataStore
     return values;
   }
 
+  /** Runs the call under the lock, then starts the deliveries it queued the first events for. */
   private <T> ActorFuture<T> call(final Supplier<T> call) {
-    try {
-      requireOpen();
-      return CompletableActorFuture.completed(call.get());
-    } catch (final ClusterMetadataStoreException e) {
-      return CompletableActorFuture.completedExceptionally(e);
+    ActorFuture<T> result;
+    final List<Delivery<?>> started;
+    synchronized (this) {
+      try {
+        requireOpen();
+        result = CompletableActorFuture.completed(call.get());
+      } catch (final ClusterMetadataStoreException e) {
+        result = CompletableActorFuture.completedExceptionally(e);
+      } finally {
+        started = takeStarting();
+      }
     }
+    started.forEach(Delivery::start);
+    return result;
   }
 
   private void requireOpen() {
@@ -356,8 +397,9 @@ public final class InMemoryClusterMetadataStore
 
   /**
    * The calls of one listener: one queue, drained by at most one task of the listener's executor,
-   * so calls arrive one at a time and in order, also on an executor with many threads. An executor
-   * that rejects the task drops the events of this listener only.
+   * so calls arrive one at a time and in order, also on an executor with many threads. Calls are
+   * queued under the store's lock and the drain is started after it, so a listener never runs under
+   * the lock. An executor that rejects the task drops the events of this listener only.
    */
   private static final class Delivery<E> {
 
@@ -372,16 +414,19 @@ public final class InMemoryClusterMetadataStore
       this.executor = executor;
     }
 
-    void event(final E event) {
-      enqueue(() -> listener.onEvent(event));
+    /** Returns whether the caller has to {@link #start()} the drain. */
+    boolean event(final E event) {
+      return offer(() -> listener.onEvent(event));
     }
 
-    /** Delivers the end of the watch after the queued events; nothing is delivered after it. */
-    void end(final CloseReason reason) {
-      enqueue(() -> listener.onClosed(reason));
-      synchronized (this) {
-        stopped = true;
-      }
+    /**
+     * Delivers the end of the watch after the queued events; nothing is delivered after it. Returns
+     * whether the caller has to {@link #start()} the drain.
+     */
+    synchronized boolean end(final CloseReason reason) {
+      final var start = offer(() -> listener.onClosed(reason));
+      stopped = true;
+      return start;
     }
 
     /** The consumer closed its subscription: queued events are dropped. */
@@ -390,22 +435,28 @@ public final class InMemoryClusterMetadataStore
       queue.clear();
     }
 
-    private synchronized void enqueue(final Runnable call) {
-      if (stopped) {
-        return;
-      }
-      queue.add(call);
-      if (draining) {
-        return;
-      }
-      draining = true;
+    void start() {
       try {
         executor.execute(this::drain);
       } catch (final RejectedExecutionException e) {
-        stopped = true;
-        draining = false;
-        queue.clear();
+        synchronized (this) {
+          stopped = true;
+          draining = false;
+          queue.clear();
+        }
       }
+    }
+
+    private synchronized boolean offer(final Runnable call) {
+      if (stopped) {
+        return false;
+      }
+      queue.add(call);
+      if (draining) {
+        return false;
+      }
+      draining = true;
+      return true;
     }
 
     private void drain() {
@@ -420,8 +471,9 @@ public final class InMemoryClusterMetadataStore
         }
         try {
           call.run();
-        } catch (final RuntimeException e) {
-          // a failing listener keeps its later events, and the error reaches the thread's handler
+        } catch (final Throwable e) {
+          // also an AssertionError of a test's listener: delivery goes on with the next call, as
+          // WatchListener promises, and the error reaches the thread's handler
           final var thread = Thread.currentThread();
           thread.getUncaughtExceptionHandler().uncaughtException(thread, e);
         }
@@ -444,12 +496,6 @@ public final class InMemoryClusterMetadataStore
     private KeyWatch(final StoreKey path, final Delivery<KeyEvent> delivery) {
       this.path = path;
       this.delivery = delivery;
-    }
-
-    /** The store ends the watch: it delivers the reason after the events before it. */
-    private void end(final CloseReason reason) {
-      keyWatches.remove(this);
-      delivery.end(reason);
     }
 
     @Override

@@ -31,6 +31,7 @@ import io.camunda.zeebe.metadata.store.api.NamespaceChange;
 import io.camunda.zeebe.metadata.store.api.NamespaceScope;
 import io.camunda.zeebe.metadata.store.api.StoreKey;
 import io.camunda.zeebe.metadata.store.api.StoreValue;
+import io.camunda.zeebe.metadata.store.api.Subscription;
 import io.camunda.zeebe.metadata.store.api.Subscription.CloseReason;
 import io.camunda.zeebe.metadata.store.api.WatchListener;
 import io.camunda.zeebe.metadata.store.api.Write;
@@ -46,6 +47,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -421,6 +423,123 @@ public abstract class ClusterMetadataStoreContractTest {
 
     // then
     assertThat(events).hasSize(1);
+  }
+
+  @Test
+  void shouldDeliverInCommitOrderWhenListenerWrites() {
+    // given - the first listener writes on its first event, before the second one has seen it
+    final var received = new CopyOnWriteArrayList<String>();
+    final var first = new AtomicBoolean(true);
+    store.watch(
+        key("a"),
+        event -> {
+          if (first.getAndSet(false)) {
+            // not joined: a store may deliver on a thread that must not block
+            store.put(key("a.y"), bytes("2"));
+          }
+        },
+        DIRECT);
+    store.watch(key("a"), event -> received.add(event.type() + " " + event.key().key()), DIRECT);
+
+    // when
+    join(store.put(key("a.x"), bytes("1")));
+
+    // then
+    await().untilAsserted(() -> assertThat(received).containsExactly("ADD a.x", "ADD a.y"));
+  }
+
+  @Test
+  void shouldKeepDeliveringToOthersWhenListenerChangesSubscriptions() {
+    // given - a listener that closes its own watch and registers a new one on its first event
+    final var own = new AtomicReference<Subscription>();
+    final var registered = new CopyOnWriteArrayList<String>();
+    own.set(
+        store.watch(
+            key("a"),
+            event -> {
+              own.get().close();
+              store.watch(key("a"), next -> registered.add(next.key().key()), DIRECT);
+            },
+            DIRECT));
+    final var other = new CopyOnWriteArrayList<String>();
+    store.watch(key("a"), event -> other.add(event.key().key()), DIRECT);
+
+    // when
+    join(store.put(key("a.x"), bytes("1")));
+    join(store.put(key("a.y"), bytes("2")));
+
+    // then
+    await().untilAsserted(() -> assertThat(other).containsExactly("a.x", "a.y"));
+    await().untilAsserted(() -> assertThat(registered).containsExactly("a.y"));
+  }
+
+  @Test
+  void shouldEndEverySubscriptionWhenListenersCloseThemOnClose() {
+    // given - listeners that close their own watch when the store ends it
+    final var reasons = new CopyOnWriteArrayList<CloseReason>();
+    for (int i = 0; i < 2; i++) {
+      final var own = new AtomicReference<Subscription>();
+      own.set(
+          store.watch(
+              key("a"),
+              listener(
+                  event -> {},
+                  reason -> {
+                    own.get().close();
+                    reasons.add(reason);
+                  }),
+              DIRECT));
+    }
+
+    // when
+    closeStore();
+
+    // then
+    await()
+        .untilAsserted(
+            () ->
+                assertThat(reasons)
+                    .containsExactly(CloseReason.STORE_CLOSED, CloseReason.STORE_CLOSED));
+  }
+
+  @Test
+  void shouldKeepDeliveringAfterListenerThrowsError() {
+    // given - a listener that fails an assertion on its first event, on a thread that swallows it
+    final var executor =
+        Executors.newSingleThreadExecutor(
+            runnable -> {
+              final var thread = new Thread(runnable);
+              thread.setUncaughtExceptionHandler((t, e) -> {});
+              return thread;
+            });
+    final var log = new CopyOnWriteArrayList<String>();
+    store.watch(
+        key("a"),
+        listener(
+            event -> {
+              log.add(event.key().key());
+              if (event.key().key().equals("a.x")) {
+                throw new AssertionError("expected by the test");
+              }
+            },
+            reason -> log.add("closed " + reason)),
+        executor);
+
+    try {
+      // when
+      join(store.put(key("a.x"), bytes("1")));
+      join(store.put(key("a.y"), bytes("2")));
+      closeStore();
+
+      // then
+      await()
+          .untilAsserted(
+              () ->
+                  assertThat(log)
+                      .containsExactly("a.x", "a.y", "closed " + CloseReason.STORE_CLOSED));
+    } finally {
+      executor.shutdownNow();
+    }
   }
 
   @Test
