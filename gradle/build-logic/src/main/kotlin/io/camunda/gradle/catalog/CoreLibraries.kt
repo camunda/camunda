@@ -71,6 +71,12 @@ internal fun VersionCatalogBuilder.catalogCoreLibraries() {
   library("com-google-code-findbugs-jsr305", "com.google.code.findbugs", "jsr305")
     .versionRef("com-google-code-findbugs-jsr305")
   library("com-google-code-gson-gson", "com.google.code.gson", "gson").versionRef("gson")
+  library(
+      "com-google-errorprone-error-prone-annotations",
+      "com.google.errorprone",
+      "error_prone_annotations",
+    )
+    .versionRef("com-google-errorprone-error-prone-core")
   library("com-google-errorprone-error-prone-core", "com.google.errorprone", "error_prone_core")
     .versionRef("com-google-errorprone-error-prone-core")
   library(

@@ -20,6 +20,7 @@ import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.SchedulingHints;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.time.Duration;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -145,6 +146,70 @@ final class ActorSchedulerConfigurationTest {
     }
   }
 
+  @Test
+  void shouldCreateTheThreadGroupsOfAllTenantsAsSiblings() throws Exception {
+    // given two tenants that override the root pool
+    final var environment =
+        new MockEnvironment()
+            .withProperty("camunda.system.actor-pool.enabled", "true")
+            .withProperty("camunda.system.actor-pool.cpu-thread-count", "1")
+            .withProperty("camunda.system.actor-pool.io-thread-count", "1")
+            .withProperty(
+                "camunda.physical-tenants.tenanta.system.actor-pool.cpu-thread-count", "1")
+            .withProperty("camunda.physical-tenants.tenanta.system.actor-pool.io-thread-count", "1")
+            .withProperty(
+                "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.index-prefix",
+                "tenanta")
+            .withProperty(
+                "camunda.physical-tenants.tenanta.security.authorizations.enabled", "false")
+            .withProperty(
+                "camunda.physical-tenants.tenantb.system.actor-pool.cpu-thread-count", "1")
+            .withProperty("camunda.physical-tenants.tenantb.system.actor-pool.io-thread-count", "1")
+            .withProperty(
+                "camunda.physical-tenants.tenantb.data.secondary-storage.elasticsearch.index-prefix",
+                "tenantb")
+            .withProperty(
+                "camunda.physical-tenants.tenantb.security.authorizations.enabled", "false");
+    UnifiedConfigurationHelper.setCustomEnvironment(environment);
+
+    ActorScheduler sharedScheduler = null;
+    PhysicalTenantActorSchedulers tenantSchedulers = null;
+    try {
+      final var rootConfig = new Camunda();
+      Binder.get(environment).bind(Camunda.PREFIX, Bindable.ofInstance(rootConfig));
+      final var tenantResolver = PhysicalTenantResolver.of(environment, rootConfig);
+      final var actorSchedulerConfiguration =
+          new ActorSchedulerConfiguration(
+              new ActorSchedulerConfiguration.SchedulerConfiguration(
+                  1, 1, 0, false, "Broker", "node", new TenantActorPoolCfg(true, 1, 1)),
+              IdleStrategySupplier.ofDefault(),
+              new ActorClockConfiguration(false),
+              new SimpleMeterRegistry());
+      sharedScheduler = actorSchedulerConfiguration.scheduler();
+      tenantSchedulers =
+          actorSchedulerConfiguration.physicalTenantActorSchedulers(
+              sharedScheduler, tenantResolver);
+
+      // when each tenant's first actor is submitted from a thread group of its own
+      final var first =
+          actorThreadGroupOf(tenantSchedulers.schedulingService("tenanta"), "creator-a");
+      final var second =
+          actorThreadGroupOf(tenantSchedulers.schedulingService("tenantb"), "creator-b");
+
+      // then
+      assertThat(first).isNotSameAs(second);
+      assertThat(first.getParent()).isSameAs(second.getParent());
+    } finally {
+      if (tenantSchedulers != null) {
+        tenantSchedulers.close();
+      }
+      if (sharedScheduler != null) {
+        sharedScheduler.close();
+      }
+      UnifiedConfigurationHelper.setCustomEnvironment(null);
+    }
+  }
+
   private static String threadNameOf(final ActorSchedulingService schedulingService)
       throws Exception {
     final var threadName = new CompletableFuture<String>();
@@ -157,6 +222,25 @@ final class ActorSchedulerConfigurationTest {
         },
         SchedulingHints.cpuBound());
     return threadName.get(10, TimeUnit.SECONDS);
+  }
+
+  private static ThreadGroup actorThreadGroupOf(
+      final ActorSchedulingService scheduler, final String creatorGroupName) throws Exception {
+    final var actorGroup = new CompletableFuture<ThreadGroup>();
+    final var creator =
+        new Thread(
+            new ThreadGroup(creatorGroupName),
+            () ->
+                scheduler.submitActor(
+                    new Actor() {
+                      @Override
+                      protected void onActorStarted() {
+                        actorGroup.complete(Thread.currentThread().getThreadGroup());
+                      }
+                    }));
+    creator.start();
+    assertThat(creator.join(Duration.ofSeconds(10))).isTrue();
+    return actorGroup.get(10, TimeUnit.SECONDS);
   }
 
   private static Actor blockingActor(

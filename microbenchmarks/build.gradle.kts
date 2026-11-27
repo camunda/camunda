@@ -13,6 +13,7 @@ dependencies {
   implementation(project(":zeebe-workflow-engine-api"))
   implementation(project(":zeebe-db"))
   implementation(project(":zeebe-stream-platform"))
+  implementation(project(":zeebe-scheduler"))
   implementation(project(":zeebe-protocol"))
   implementation(project(":zeebe-protocol-impl"))
   implementation(project(":camunda-search-domain"))
