@@ -21,12 +21,17 @@ import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_20_SCHEMA
 
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import java.io.InputStream;
+import java.net.URL;
+import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.validation.Schema;
 import javax.xml.validation.SchemaFactory;
+import org.camunda.bpm.model.xml.ModelValidationException;
 import org.camunda.bpm.model.xml.impl.ModelImpl;
 import org.camunda.bpm.model.xml.impl.parser.AbstractModelParser;
 import org.camunda.bpm.model.xml.impl.util.ReflectUtil;
 import org.camunda.bpm.model.xml.instance.DomDocument;
+import org.xml.sax.SAXException;
 
 /**
  * The parser used when parsing BPMN Files
@@ -35,26 +40,22 @@ import org.camunda.bpm.model.xml.instance.DomDocument;
  */
 public class BpmnParser extends AbstractModelParser {
 
-  private static final String JAXP_SCHEMA_SOURCE =
-      "http://java.sun.com/xml/jaxp/properties/schemaSource";
-  private static final String JAXP_SCHEMA_LANGUAGE =
-      "http://java.sun.com/xml/jaxp/properties/schemaLanguage";
-
-  private static final String W3C_XML_SCHEMA = "http://www.w3.org/2001/XMLSchema";
-
   public BpmnParser() {
-    schemaFactory = SchemaFactory.newInstance(W3C_XML_SCHEMA);
-    addSchema(BPMN20_NS, createSchema(BPMN_20_SCHEMA_LOCATION, BpmnParser.class.getClassLoader()));
+    schemaFactory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
+    addSchema(BPMN20_NS, BundledSchema.BPMN_20);
   }
 
   @Override
   protected void configureFactory(final DocumentBuilderFactory dbf) {
-    dbf.setAttribute(JAXP_SCHEMA_LANGUAGE, W3C_XML_SCHEMA);
-    dbf.setAttribute(
-        JAXP_SCHEMA_SOURCE,
-        ReflectUtil.getResource(BPMN_20_SCHEMA_LOCATION, BpmnParser.class.getClassLoader())
-            .toString());
     super.configureFactory(dbf);
+    // This only turns off DTD validation. Models are still validated against the schema set below.
+    dbf.setValidating(false);
+    dbf.setSchema(BundledSchema.BPMN_20);
+  }
+
+  @Override
+  protected String resolveAccessExternalSchemaProperty() {
+    return "";
   }
 
   @Override
@@ -71,5 +72,18 @@ public class BpmnParser extends AbstractModelParser {
   protected BpmnModelInstanceImpl createModelInstance(final DomDocument document) {
     return new BpmnModelInstanceImpl(
         (ModelImpl) Bpmn.INSTANCE.getBpmnModel(), Bpmn.INSTANCE.getBpmnModelBuilder(), document);
+  }
+
+  private static final class BundledSchema {
+    private static final Schema BPMN_20 = compile(BPMN_20_SCHEMA_LOCATION);
+
+    private static Schema compile(final String location) {
+      final URL url = ReflectUtil.getResource(location, BpmnParser.class.getClassLoader());
+      try {
+        return SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI).newSchema(url);
+      } catch (final SAXException e) {
+        throw new ModelValidationException("Unable to compile schema " + url, e);
+      }
+    }
   }
 }
