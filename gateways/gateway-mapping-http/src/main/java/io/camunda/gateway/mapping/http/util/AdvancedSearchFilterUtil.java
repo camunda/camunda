@@ -20,6 +20,7 @@ import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Function;
 import org.apache.commons.lang3.StringUtils;
 import org.jspecify.annotations.Nullable;
@@ -156,6 +157,29 @@ public class AdvancedSearchFilterUtil {
         Arrays.stream(Operator.values())
             .anyMatch(operator -> findOperatorGetter(value.getClass(), operator) != null);
     return isAdvancedFilter && mapToUntypedOperations().apply(value).isEmpty();
+  }
+
+  /**
+   * True for an advanced filter object whose operator list, for example {@code $in}, holds a {@code
+   * null} element. The mapping drops such a list entirely, so a sibling operator such as {@code
+   * $exists: true} or {@code $neq} would decide alone what matches. Any other value is false.
+   */
+  public static boolean hasNullListValue(final Object value) {
+    return Arrays.stream(Operator.values())
+        .map(operator -> findOperatorGetter(value.getClass(), operator))
+        .filter(Objects::nonNull)
+        .anyMatch(getter -> isListWithNull(getter, value));
+  }
+
+  private static boolean isListWithNull(final Method getter, final Object filter) {
+    try {
+      getter.setAccessible(true);
+      return getter.invoke(filter) instanceof final List<?> list
+          && list.stream().anyMatch(Objects::isNull);
+    } catch (final InvocationTargetException | IllegalAccessException e) {
+      LOG.error(e.getMessage(), e);
+      return false;
+    }
   }
 
   private static @Nullable Method findOperatorGetter(

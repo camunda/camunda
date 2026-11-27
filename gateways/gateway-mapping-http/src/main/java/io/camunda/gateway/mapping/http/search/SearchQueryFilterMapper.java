@@ -7,6 +7,7 @@
  */
 package io.camunda.gateway.mapping.http.search;
 
+import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.hasNullListValue;
 import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.isEmptyAdvancedFilter;
 import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapToIntegerOperations;
 import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapToKeyOperations;
@@ -16,6 +17,7 @@ import static io.camunda.gateway.mapping.http.util.KeyUtil.mapKeyToLong;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_AT_LEAST_ONE_FIELD;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_FILTER_PROPERTY;
+import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_NULL_FILTER_PROPERTY_VALUE;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_NULL_VARIABLE_NAME;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_NULL_VARIABLE_VALUE;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_ONLY_ONE_FIELD;
@@ -715,21 +717,32 @@ public class SearchQueryFilterMapper {
 
   /**
    * One violation per property of the filter that is an empty filter object, such as {@code {"$in":
-   * []}}. The mapping drops these, which would widen a batch operation to everything the remaining
-   * criteria match. The model cannot tell an explicit empty {@code $in} from an absent one, so the
-   * empty object is what we reject.
+   * []}}, or that has an operator list holding {@code null}, such as {@code {"$in": [null, "1"],
+   * "$exists": true}}. The mapping drops both, which would widen a batch operation to everything
+   * the remaining criteria match. The model cannot tell an explicit empty {@code $in} from an
+   * absent one, so next to another operator only the empty object and the null element are
+   * rejected.
    */
   private static List<String> emptyFilterPropertyViolations(final Object filter) {
     return Arrays.stream(propertyDescriptors(filter.getClass()))
-        .filter(property -> isEmptyFilterProperty(property, filter))
-        .map(property -> ERROR_MESSAGE_EMPTY_FILTER_PROPERTY.formatted(property.getName()))
+        .map(property -> filterPropertyViolation(property, filter))
+        .flatMap(Optional::stream)
         .toList();
   }
 
-  private static boolean isEmptyFilterProperty(
+  private static Optional<String> filterPropertyViolation(
       final PropertyDescriptor property, final Object filter) {
     final var value = readProperty(property, filter);
-    return value != null && isEmptyAdvancedFilter(value);
+    if (value == null) {
+      return Optional.empty();
+    }
+    if (isEmptyAdvancedFilter(value)) {
+      return Optional.of(ERROR_MESSAGE_EMPTY_FILTER_PROPERTY.formatted(property.getName()));
+    }
+    if (hasNullListValue(value)) {
+      return Optional.of(ERROR_MESSAGE_NULL_FILTER_PROPERTY_VALUE.formatted(property.getName()));
+    }
+    return Optional.empty();
   }
 
   private static PropertyDescriptor[] propertyDescriptors(final Class<?> type) {
