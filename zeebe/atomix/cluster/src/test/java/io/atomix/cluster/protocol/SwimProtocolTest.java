@@ -219,6 +219,69 @@ public class SwimProtocolTest extends ConcurrentTestCase {
         .untilAsserted(() -> assertThat(notifiedValues.getLast()).isEqualTo("published"));
   }
 
+  /**
+   * Peers accept new properties of a member only together with a higher incarnation number. Probes
+   * and syncs can reach a peer before the gossip of a metadata change does, so they must carry the
+   * properties published with the current incarnation number: if they carried properties changed
+   * since, and those were reverted before the next metadata check, the peer would keep the
+   * intermediate value forever, as no later incarnation number would ever correct it.
+   */
+  @Test
+  public void shouldNotLeaveRemotePeerWithIntermediatePropertyValue() throws Exception {
+    // given - the gossip of member 1 never reaches member 2, and no probe or sync can reach it
+    // before the test changes the published property; the gossip interval of member 1 is long
+    // enough that no further metadata check runs while the test changes the properties below, and
+    // the failure timeout long enough that neither member drops the other while they are
+    // partitioned
+    reset(false);
+    final var protocol1 =
+        startProtocol(
+            member1,
+            config ->
+                config
+                    .setGossipInterval(Duration.ofSeconds(5))
+                    .setFailureTimeout(Duration.ofSeconds(30)),
+            member1.id().toString());
+    final var protocol2 =
+        startProtocol(
+            member2,
+            config -> config.setFailureTimeout(Duration.ofSeconds(30)),
+            member2.id().toString());
+    awaitMembers(member2, member1, member2);
+    unicastServiceFactory.partition(member1.address(), member2.address());
+    messagingServiceFactory.partition(member1.address(), member2.address());
+
+    final var published = new CountDownLatch(1);
+    protocol1.addListener(
+        event -> {
+          if (event.type() == METADATA_CHANGED
+              && "published".equals(event.member().properties().getProperty("foo"))) {
+            published.countDown();
+          }
+        });
+
+    // when - the property changes right after its value was published, a probe or sync reaches
+    // member 2, and the property is reverted to the published value before the next check
+    member1.properties().setProperty("foo", "published");
+    assertThat(published.await(30, TimeUnit.SECONDS)).isTrue();
+    member1.properties().setProperty("foo", "changed");
+    final long publishedIncarnation = incarnationNumber(protocol1, member1);
+    messagingServiceFactory.heal(member1.address(), member2.address());
+    Awaitility.await("until member 2 knows the published incarnation number of member 1")
+        .atMost(Duration.ofSeconds(4))
+        .until(() -> incarnationNumber(protocol2, member1) >= publishedIncarnation);
+    member1.properties().setProperty("foo", "published");
+    unicastServiceFactory.heal(member1.address(), member2.address());
+
+    // then - member 2 ends up knowing the current property value of member 1
+    Awaitility.await("until member 2 knows the current property value of member 1")
+        .atMost(Duration.ofSeconds(15))
+        .untilAsserted(
+            () ->
+                assertThat(protocol2.getMember(member1.id()).properties().getProperty("foo"))
+                    .isEqualTo("published"));
+  }
+
   @ParameterizedTest
   @ValueSource(booleans = {true, false})
   public void shouldReceiveMultipleEventsOnTwoNodeCluster(final boolean withVersions)
@@ -597,6 +660,11 @@ public class SwimProtocolTest extends ConcurrentTestCase {
         state,
         incarnationNumber,
         instanceId);
+  }
+
+  /** The incarnation number the given protocol currently holds for the member. */
+  private long incarnationNumber(final SwimMembershipProtocol protocol, final Member member) {
+    return ((SwimMember) protocol.getMember(member.id())).getIncarnationNumber();
   }
 
   /** The instance ID the member would report to the rest of the cluster for its current run. */
