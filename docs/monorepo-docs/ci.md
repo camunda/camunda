@@ -272,7 +272,12 @@ Metadata follows this structure and is placed at the beginning of a GHA workflow
 
 For programmatic alert routing and medic assignment on CI incidents, each workflow also propagates the canonical GitHub team handle to [CI Analytics](#ci-health-metrics) via a workflow-level `env: TEST_OWNER:` block.
 
-The [`observe-build-status` action](#metrics-collection) reads this env var as the default for the `user_description` field it submits to CI Analytics. This can be overwritten on the job-level with more specific `env: TEST_OWNER:` blocks.
+The [`observe-build-status` action](#metrics-collection) submits one owner as the `user_description` field to CI Analytics. It uses the first of these that applies:
+
+1. An explicit `user_description` input of the calling step.
+2. The code owner of the failing tests, resolved on failed jobs (see [Code-ownership-based attribution](#code-ownership-based-attribution-for-failed-jobs)).
+3. `pre_test_owner` (default `@camunda/engineering-operations`), when the job failed **and** the step outcome passed as `test_step_outcome` is `skipped`, i.e. the job broke before its tests ran (see [Pre-test failures](#pre-test-failures-are-routed-to-engineering-operations)). Without `test_step_outcome` this tier is off.
+4. The `TEST_OWNER` env var, as the default. This can be overwritten on the job-level with more specific `env: TEST_OWNER:` blocks.
 
 See [Metrics Collection](#metrics-collection) for the concrete `env:` snippet, including how to override per-job and how to wire matrix-driven values.
 
@@ -282,9 +287,29 @@ See [Metrics Collection](#metrics-collection) for the concrete `env:` snippet, i
 
 1. It collects the distinct test classes that failed (from the `TEST-*.xml` reports, and from the Playwright JUnit report of the Orchestration Cluster E2E suite, whose test classes are spec paths), excluding skipped, passing and flaky-but-passed retries.
 2. Each failing class is mapped to its source file and then to its owning team via `codeowners-cli` (reusing the resolvers in `.ci/scripts/ci/setup-medic-lookup.sh`).
-3. A **strict** rule decides the submitted owner: the resolved code owner is used as `user_description` only when there is at least one failing test class **and** every failing class resolves to the **same** non-empty owner. If any failing class cannot be attributed (e.g. a compile/setup failure with no test class, or a test whose source file cannot be located) or the failing tests span **multiple** owners, it falls back to the job's `TEST_OWNER` and lists the candidate owners in the job log. One exception: failing Playwright specs owned by the job's `TEST_OWNER` (the shared flows and the framework of the Orchestration Cluster E2E suite) do not count against a single other owner, because they fail together with the area whose change broke them. Java tests owned by `TEST_OWNER` still count.
+3. A **strict** rule decides the submitted owner: the resolved code owner is used as `user_description` only when there is at least one failing test class **and** every failing class resolves to the **same** non-empty owner. If any failing class cannot be attributed (e.g. a compile/setup failure with no test class, or a test whose source file cannot be located) or the failing tests span **multiple** owners, no owner is resolved here, attribution continues with the next tier of the order above (ultimately the job's `TEST_OWNER`), and the candidate owners are listed in the job log. One exception: failing Playwright specs owned by the job's `TEST_OWNER` (the shared flows and the framework of the Orchestration Cluster E2E suite) do not count against a single other owner, because they fail together with the area whose change broke them. Java tests owned by `TEST_OWNER` still count.
 
-This keeps the job owner as a safe default — an ambiguous or unattributable failure is never confidently misrouted to the wrong team — while single-team failures are attributed to their real code owner. An explicitly provided `user_description` input still takes precedence over both. Resolution runs only on failed jobs, so the green path is unaffected.
+This keeps the job owner as a safe default — an ambiguous or unattributable failure is never confidently misrouted to the wrong team — while single-team failures are attributed to their real code owner. Resolution runs only on failed jobs without an explicit `user_description`, so the green path is unaffected.
+
+##### Pre-test failures are routed to Engineering Operations
+
+Failures that happen before any test runs (checkout, setup, artifact download, Docker image build) say nothing about the tests of the job's owner, and there is no failing test class to attribute. A job can opt in by passing the outcome of its test-running step to the action:
+
+```yaml
+- name: Maven Test Build Integration
+  id: maven-it
+  # ...
+- name: Observe build status
+  if: always()
+  uses: ./.github/actions/observe-build-status
+  with:
+    build_status: ${{ job.status }}
+    test_step_outcome: ${{ steps.maven-it.outcome }}
+```
+
+The `integration-tests` job in `ci.yml` does this: when the job failed **and** its `Maven Test Build Integration` step was skipped because an earlier step failed, the failure is attributed to `pre_test_owner` (`@camunda/engineering-operations` unless overridden) instead of the shard's `matrix.owner`, at tier 3 of the [attribution order](#automatic-alert-attribution).
+
+Failures of the Maven step itself (compilation or test failures), cancelled or timed-out jobs and successful jobs do not reach this tier and keep the resolution described above. The rule keys on the step outcome, not on log text. Jobs that do not pass `test_step_outcome` are unaffected.
 
 ### Legacy CI
 

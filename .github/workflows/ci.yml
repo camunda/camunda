@@ -1814,6 +1814,7 @@ jobs:
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       - name: Maven Test Build Integration
+        id: maven-it
         env:
           GH_TOKEN: ${{ github.token }}
           # Propagate matrix test filters (may be empty for other matrix entries)
@@ -1868,6 +1869,10 @@ jobs:
         with:
           job_name: ${{ format('integration-tests/{0}{1}', matrix.group, matrix.stressRun != 1 && format('/{0}', matrix.stressRun) || '') }}
           build_status: ${{ job.status }}
+          # A failed job whose Maven step never ran (outcome 'skipped') broke before any test
+          # executed (checkout, setup, distball download, image build), so observe-build-status
+          # attributes it to @camunda/engineering-operations instead of matrix.owner.
+          test_step_outcome: ${{ steps.maven-it.outcome }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
           detailed_junit_tests: true
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
