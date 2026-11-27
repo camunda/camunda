@@ -101,6 +101,7 @@ jobs:
       # Reading the fix PRs either agent has open is what keeps this job from
       # dispatching a test another PR already covers.
       pull-requests: read
+      id-token: write # Vault JWT login
     env:
       GH_TOKEN: ${{ github.token }}
       REPO: ${{ github.repository }}
@@ -319,9 +320,10 @@ jobs:
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          method: jwt
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           exportEnv: false
           secrets: |
             secret/data/products/qa/ci/common SLACK_BOT_USER_OAUTH_TOKEN ;
@@ -335,9 +337,10 @@ jobs:
           github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
           github-app-private-key-vault-key: GITHUB_APP_SECRET
           github-app-private-key-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
-          vault-auth-method: approle
-          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-auth-method: jwt
+          vault-auth-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-auth-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-auth-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           vault-url: ${{ secrets.VAULT_ADDR }}
           owner: camunda
           repositories: camunda
@@ -548,14 +551,18 @@ jobs:
           job_name: "c8-orchestration-cluster-flakiness-fix/pick"
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   janitor:
     name: Delete abandoned flaky-fix branches
     if: github.event_name == 'schedule' || inputs.spec == ''
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write # Vault JWT login
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -573,9 +580,10 @@ jobs:
           github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
           github-app-private-key-vault-key: GITHUB_APP_SECRET
           github-app-private-key-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
-          vault-auth-method: approle
-          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-auth-method: jwt
+          vault-auth-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-auth-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-auth-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           vault-url: ${{ secrets.VAULT_ADDR }}
           owner: camunda
           repositories: camunda
@@ -609,8 +617,9 @@ jobs:
           job_name: "c8-orchestration-cluster-flakiness-fix/janitor"
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   # ─── Fix mode: one test ───────────────────────────────────────────────────
   prepare:
@@ -618,6 +627,9 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && inputs.spec != ''
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: read
+      id-token: write # Vault JWT login
     outputs:
       skip: ${{ steps.prep.outputs.skip }}
       target_ref: ${{ steps.prep.outputs.target_ref }}
@@ -691,18 +703,23 @@ jobs:
           job_name: "c8-orchestration-cluster-flakiness-fix/prepare"
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   baseline:
     name: Baseline
     needs: [prepare]
     if: needs.prepare.outputs.skip == 'false'
     uses: ./.github/workflows/c8-orchestration-cluster-flakiness-shards.yml
+    permissions:
+      contents: read
+      id-token: write # Vault JWT login
     secrets:
       VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
-      VAULT_ROLE_ID: ${{ secrets.VAULT_ROLE_ID }}
-      VAULT_SECRET_ID: ${{ secrets.VAULT_SECRET_ID }}
+      VAULT_JWT_ROLE: ${{ secrets.VAULT_JWT_ROLE }}
+      VAULT_JWT_PATH: ${{ secrets.VAULT_JWT_PATH }}
+      VAULT_JWT_AUDIENCE: ${{ secrets.VAULT_JWT_AUDIENCE }}
     with:
       version: ${{ inputs.version }}
       test_ref: ${{ needs.prepare.outputs.target_ref }}
@@ -719,10 +736,14 @@ jobs:
     needs: [prepare, baseline]
     if: ${{ !cancelled() && needs.baseline.outputs.verdict == 'scored' }}
     uses: ./.github/workflows/c8-orchestration-cluster-flakiness-agent.yml
+    permissions:
+      contents: read
+      id-token: write # Vault JWT login
     secrets:
       VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
-      VAULT_ROLE_ID: ${{ secrets.VAULT_ROLE_ID }}
-      VAULT_SECRET_ID: ${{ secrets.VAULT_SECRET_ID }}
+      VAULT_JWT_ROLE: ${{ secrets.VAULT_JWT_ROLE }}
+      VAULT_JWT_PATH: ${{ secrets.VAULT_JWT_PATH }}
+      VAULT_JWT_AUDIENCE: ${{ secrets.VAULT_JWT_AUDIENCE }}
     with:
       version: ${{ inputs.version }}
       target_ref: ${{ needs.prepare.outputs.target_ref }}
@@ -740,10 +761,14 @@ jobs:
     needs: [prepare, fix1]
     if: ${{ !cancelled() && needs.fix1.outputs.changed == 'true' }}
     uses: ./.github/workflows/c8-orchestration-cluster-flakiness-shards.yml
+    permissions:
+      contents: read
+      id-token: write # Vault JWT login
     secrets:
       VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
-      VAULT_ROLE_ID: ${{ secrets.VAULT_ROLE_ID }}
-      VAULT_SECRET_ID: ${{ secrets.VAULT_SECRET_ID }}
+      VAULT_JWT_ROLE: ${{ secrets.VAULT_JWT_ROLE }}
+      VAULT_JWT_PATH: ${{ secrets.VAULT_JWT_PATH }}
+      VAULT_JWT_AUDIENCE: ${{ secrets.VAULT_JWT_AUDIENCE }}
     with:
       version: ${{ inputs.version }}
       test_ref: ${{ needs.fix1.outputs.sha }}
@@ -761,6 +786,9 @@ jobs:
     if: ${{ !cancelled() && needs.validate1.outputs.verdict != '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: read
+      id-token: write # Vault JWT login
     outputs:
       run_iter2: ${{ steps.next.outputs.run_iter2 }}
       base: ${{ steps.next.outputs.base }}
@@ -801,18 +829,23 @@ jobs:
           job_name: "c8-orchestration-cluster-flakiness-fix/plan-iter2"
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   fix2:
     name: Fix attempt 2
     needs: [prepare, plan-iter2]
     if: ${{ !cancelled() && needs.plan-iter2.outputs.run_iter2 == 'true' }}
     uses: ./.github/workflows/c8-orchestration-cluster-flakiness-agent.yml
+    permissions:
+      contents: read
+      id-token: write # Vault JWT login
     secrets:
       VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
-      VAULT_ROLE_ID: ${{ secrets.VAULT_ROLE_ID }}
-      VAULT_SECRET_ID: ${{ secrets.VAULT_SECRET_ID }}
+      VAULT_JWT_ROLE: ${{ secrets.VAULT_JWT_ROLE }}
+      VAULT_JWT_PATH: ${{ secrets.VAULT_JWT_PATH }}
+      VAULT_JWT_AUDIENCE: ${{ secrets.VAULT_JWT_AUDIENCE }}
     with:
       version: ${{ inputs.version }}
       target_ref: ${{ needs.prepare.outputs.target_ref }}
@@ -830,10 +863,14 @@ jobs:
     needs: [prepare, fix2]
     if: ${{ !cancelled() && needs.fix2.outputs.changed == 'true' }}
     uses: ./.github/workflows/c8-orchestration-cluster-flakiness-shards.yml
+    permissions:
+      contents: read
+      id-token: write # Vault JWT login
     secrets:
       VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
-      VAULT_ROLE_ID: ${{ secrets.VAULT_ROLE_ID }}
-      VAULT_SECRET_ID: ${{ secrets.VAULT_SECRET_ID }}
+      VAULT_JWT_ROLE: ${{ secrets.VAULT_JWT_ROLE }}
+      VAULT_JWT_PATH: ${{ secrets.VAULT_JWT_PATH }}
+      VAULT_JWT_AUDIENCE: ${{ secrets.VAULT_JWT_AUDIENCE }}
     with:
       version: ${{ inputs.version }}
       test_ref: ${{ needs.fix2.outputs.sha }}
@@ -851,6 +888,9 @@ jobs:
     if: always() && needs.prepare.result == 'success' && needs.prepare.outputs.skip == 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write # Vault JWT login
     outputs:
       # `act` is allowed to overrule the verdict: only it knows whether the
       # target branch gained the same fix while this run was validating.
@@ -910,9 +950,10 @@ jobs:
           github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
           github-app-private-key-vault-key: GITHUB_APP_SECRET
           github-app-private-key-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
-          vault-auth-method: approle
-          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-auth-method: jwt
+          vault-auth-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-auth-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-auth-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           vault-url: ${{ secrets.VAULT_ADDR }}
           owner: camunda
           repositories: camunda
@@ -1158,8 +1199,9 @@ jobs:
           job_name: "c8-orchestration-cluster-flakiness-fix/decide"
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   # ─── Live Slack board ─────────────────────────────────────────────────────
   # One row of the pick job's daily message, rewritten the moment this run
@@ -1174,6 +1216,9 @@ jobs:
     # The verdict is already on the state branch, in the run summary and -- for
     # a fix -- in the PR. Reporting it to Slack failing must not turn a run
     # that opened a fix PR red; the job itself still shows the failure.
+    permissions:
+      contents: read
+      id-token: write # Vault JWT login
     continue-on-error: true
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -1193,9 +1238,10 @@ jobs:
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          method: jwt
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           exportEnv: false
           secrets: |
             secret/data/products/qa/ci/common SLACK_BOT_USER_OAUTH_TOKEN ;
@@ -1208,9 +1254,10 @@ jobs:
           github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
           github-app-private-key-vault-key: GITHUB_APP_SECRET
           github-app-private-key-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
-          vault-auth-method: approle
-          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-auth-method: jwt
+          vault-auth-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-auth-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-auth-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           vault-url: ${{ secrets.VAULT_ADDR }}
           owner: camunda
           repositories: camunda
@@ -1281,8 +1328,9 @@ jobs:
           job_name: "c8-orchestration-cluster-flakiness-fix/board"
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   # ─── Copilot review round ─────────────────────────────────────────────────
   # The fix PR is opened ready for review, so Copilot reviews it within a couple
@@ -1297,6 +1345,9 @@ jobs:
     if: always() && needs.decide.outputs.pr_url != ''
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write # Vault JWT login
     outputs:
       pr: ${{ steps.copilot_review.outputs.pr }}
       threads: ${{ steps.copilot_review.outputs.thread_count }}
@@ -1322,9 +1373,10 @@ jobs:
           github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
           github-app-private-key-vault-key: GITHUB_APP_SECRET
           github-app-private-key-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
-          vault-auth-method: approle
-          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-auth-method: jwt
+          vault-auth-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-auth-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-auth-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           vault-url: ${{ secrets.VAULT_ADDR }}
           owner: camunda
           repositories: camunda
@@ -1481,8 +1533,9 @@ jobs:
           job_name: "c8-orchestration-cluster-flakiness-fix/flaky-review-fetch"
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   flaky-review-agent:
     name: Answer the Copilot review
@@ -1492,6 +1545,9 @@ jobs:
       && needs.flaky-review-fetch.outputs.threads != '0'
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    permissions:
+      contents: read
+      id-token: write # Vault JWT login
     outputs:
       job_id: ${{ job.check_run_id }}
     env:
@@ -1520,9 +1576,10 @@ jobs:
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          method: jwt
+          role: ${{ secrets.VAULT_JWT_ROLE }}
+          path: ${{ secrets.VAULT_JWT_PATH }}
+          jwtGithubAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           exportEnv: false
           secrets: |
             secret/data/products/qa/ci/common CLAUDE_API_KEY | ANTHROPIC_API_KEY ;
@@ -1706,6 +1763,9 @@ jobs:
     if: always() && needs.flaky-review-agent.result != 'skipped'
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write # Vault JWT login
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -1725,8 +1785,9 @@ jobs:
           job_id: ${{ needs.flaky-review-agent.outputs.job_id }}
           build_status: ${{ needs.flaky-review-agent.result }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   # Publication is a job of its own, on a runner the responder never touched.
   # The agent could otherwise leave something behind that runs here while a
@@ -1743,6 +1804,9 @@ jobs:
       && needs.flaky-review-fetch.outputs.threads != '0'
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    permissions:
+      contents: read
+      id-token: write # Vault JWT login
     env:
       SUITE_PATH: qa/c8-orchestration-cluster-e2e-test-suite
     steps:
@@ -1782,9 +1846,10 @@ jobs:
           github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
           github-app-private-key-vault-key: GITHUB_APP_SECRET
           github-app-private-key-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
-          vault-auth-method: approle
-          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-auth-method: jwt
+          vault-auth-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-auth-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-auth-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
           vault-url: ${{ secrets.VAULT_ADDR }}
           owner: camunda
           repositories: camunda
@@ -2145,5 +2210,6 @@ jobs:
           job_name: "c8-orchestration-cluster-flakiness-fix/review-publish"
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
