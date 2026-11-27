@@ -187,7 +187,11 @@ class StoreScopeTest {
         "-, arn:aws:secretsmanager:eu-west-1:123456789012:secret:app-config-AbCdEf, -, app-config,"
             + " true",
         "-, arn:aws:secretsmanager:eu-west-1:123456789012:secret:app-config-AbCdEf, -, app-jobs,"
-            + " false"
+            + " false",
+        "arn:aws:secretsmanager:eu-west-1:123456789012:secret:, app-config-AbCdEf, -, app-config,"
+            + " true",
+        "arn:aws:secretsmanager:eu-west-1:123456789012:secret:app-config-, -, -, app-config, true",
+        "arn:aws:secretsmanager:eu-west-1:123456789012:secret:app-config-, -, -, app-jobs, false"
       })
   void shouldCompareAnAwsArnAsTheSecretNameItHolds(
       final String firstPrefix,

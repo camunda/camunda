@@ -31,14 +31,22 @@ import org.jspecify.annotations.Nullable;
  *     environment, which may match any other
  * @param prefix the prefix of every secret id the store reads
  * @param container the one secret the store reads, if it reads secrets out of a container
+ * @param alias one more secret the store can read, when its prefix is the start of a full ARN
  */
-record StoreScope(@Nullable String backend, String prefix, @Nullable String container) {
+record StoreScope(
+    @Nullable String backend, String prefix, @Nullable String container, @Nullable String alias) {
 
   private static final int HTTPS_PORT = 443;
   private static final Pattern PROJECT_NUMBER = Pattern.compile("[0-9]+");
   private static final Pattern SECRET_ARN =
       Pattern.compile("arn:[^:]+:secretsmanager:[^:]*:[^:]*:secret:(.*)");
   private static final Pattern ARN_SUFFIX = Pattern.compile("-[0-9A-Za-z]{6}$");
+  private static final Pattern PARTIAL_ARN_SUFFIX = Pattern.compile("(.*)-[0-9A-Za-z]{0,5}");
+
+  StoreScope(
+      final @Nullable String backend, final String prefix, final @Nullable String container) {
+    this(backend, prefix, container, null);
+  }
 
   static StoreScope of(final FileStore store) {
     final var directory = realPath(Path.of(store.getPath())).toString();
@@ -51,7 +59,8 @@ record StoreScope(@Nullable String backend, String prefix, @Nullable String cont
   }
 
   /**
-   * A blank region is left to the environment. An ARN is compared as the secret name it ends with.
+   * A blank region is left to the environment. An ARN is compared as the secret name it ends with,
+   * and a full ARN's random suffix can complete a prefix that ends partway into one.
    */
   static StoreScope of(final AwsSecretsManagerStore store) {
     final var region = store.getRegion();
@@ -59,10 +68,16 @@ record StoreScope(@Nullable String backend, String prefix, @Nullable String cont
     final var container = store.getContainerSecretId();
     final var prefix = pathPrefix == null || pathPrefix.isBlank() ? "" : pathPrefix;
     final var backend = region == null || region.isBlank() ? null : region;
-    if (prefix.isEmpty() && container != null) {
-      return new StoreScope(backend, "", containerName(container));
+    if (container != null) {
+      return new StoreScope(backend, "", containerName(prefix + container));
     }
-    return new StoreScope(backend, secretName(prefix), container);
+    final var name = secretName(prefix);
+    final var partialSuffix = PARTIAL_ARN_SUFFIX.matcher(name);
+    final var alias =
+        SECRET_ARN.matcher(prefix).matches() && partialSuffix.matches()
+            ? partialSuffix.group(1)
+            : null;
+    return new StoreScope(backend, name, null, alias);
   }
 
   static StoreScope of(final GcpSecretManagerStore store) {
@@ -87,6 +102,9 @@ record StoreScope(@Nullable String backend, String prefix, @Nullable String cont
     if (backend != null && other.backend != null && !backend.equals(other.backend)) {
       return false;
     }
+    if (reaches(other.alias) || other.reaches(alias)) {
+      return true;
+    }
     if (container != null && other.container != null) {
       return (prefix + container).equals(other.prefix + other.container);
     }
@@ -97,6 +115,13 @@ record StoreScope(@Nullable String backend, String prefix, @Nullable String cont
       return (other.prefix + other.container).startsWith(prefix);
     }
     return prefix.startsWith(other.prefix) || other.prefix.startsWith(prefix);
+  }
+
+  private boolean reaches(final @Nullable String name) {
+    if (name == null) {
+      return false;
+    }
+    return container == null ? name.startsWith(prefix) : name.equals(prefix + container);
   }
 
   /**
