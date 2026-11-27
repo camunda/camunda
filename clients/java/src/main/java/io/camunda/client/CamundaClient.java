@@ -46,6 +46,7 @@ import io.camunda.client.api.command.CreateDocumentLinkCommandStep1;
 import io.camunda.client.api.command.CreateGlobalTaskListenerCommandStep1;
 import io.camunda.client.api.command.CreateGroupCommandStep1;
 import io.camunda.client.api.command.CreateMappingRuleCommandStep1;
+import io.camunda.client.api.command.CreateProbeCommandStep1;
 import io.camunda.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.client.api.command.CreateRoleCommandStep1;
 import io.camunda.client.api.command.CreateTenantCommandStep1;
@@ -215,6 +216,7 @@ import io.camunda.client.api.statistics.request.ProcessInstanceWaitStateStatisti
 import io.camunda.client.api.statistics.request.UsageMetricsStatisticsRequest;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1;
+import io.camunda.client.api.worker.probe.ProbeWorkerBuilderStep1;
 import io.camunda.client.impl.CamundaClientBuilderImpl;
 import io.camunda.client.impl.CamundaClientCloudBuilderImpl;
 import io.camunda.client.impl.CamundaClientImpl;
@@ -814,6 +816,28 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the worker registration
    */
   JobWorkerBuilderStep1 newWorker();
+
+  /**
+   * Registers a probe worker that answers the probes of its probe IDs (alpha). It polls for all its
+   * probe IDs in one request, runs the handler of each probe's probe ID, and sends the answer the
+   * handler returns, all over REST.
+   *
+   * <pre>
+   * camundaClient
+   *  .newProbeWorker()
+   *  .probeId("validate-configuration/io.camunda:aws-credential:1", awsCredentialHandler)
+   *  .probeId("validate-configuration/io.camunda:slack:1", slackHandler)
+   *  .name("connectors-runtime")
+   *  .open();
+   * </pre>
+   *
+   * <p>Probe workers are marked as <strong>experimental</strong> and may undergo changes or
+   * improvements in future releases.
+   *
+   * @return a builder for the worker
+   */
+  @ExperimentalApi("https://github.com/camunda/camunda/issues/71322")
+  ProbeWorkerBuilderStep1 newProbeWorker();
 
   /**
    * Command to delete a resource.
@@ -3583,6 +3607,29 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    */
   IncidentProcessInstanceStatisticsByErrorRequest
       newIncidentProcessInstanceStatisticsByErrorRequest();
+
+  /**
+   * Command to send a probe and wait for the answer of the worker that collected it (alpha).
+   *
+   * <pre>
+   * camundaClient
+   *  .newCreateProbeCommand()
+   *  .probeId("validate-configuration/io.camunda:aws-credential:1")
+   *  .input("={region: \"eu-west-1\", accessKey: camunda.secrets.awsKey}")
+   *  .requestTimeout(Duration.ofSeconds(10))
+   *  .send();
+   * </pre>
+   *
+   * <p>A probe that no worker collected before its deadline fails with a {@code ProblemException}
+   * with status 404 ({@code NO_WORKER}), as every error of the cluster does.
+   *
+   * <p>The command is marked as <strong>experimental</strong> and may undergo changes or
+   * improvements in future releases.
+   *
+   * @return a builder for the command
+   */
+  @ExperimentalApi("https://github.com/camunda/camunda/issues/71322")
+  CreateProbeCommandStep1 newCreateProbeCommand();
 
   /**
    * Command to evaluate an expression.
