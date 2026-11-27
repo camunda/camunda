@@ -653,9 +653,13 @@ jobs:
               the failures you were dispatched for. Apply your fixes there, push, and do NOT open a
               second PR; put that PR's number in /tmp/fix-meta.json.
             - Otherwise: cut a new branch as named above.
-          Opening a second PR for a version that already has one is the duplication this check
-          exists to prevent — two PRs editing the same specs from the same base, neither aware of
-          the other.
+          Opening a second PR for the same version+bucket slot as an existing one is the
+          duplication this check exists to prevent — two PRs editing the same specs from the
+          same base, neither aware of the other.
+          This per-dispatch slot (${branch_slot}) is authoritative and OVERRIDES the manual's
+          version-only branch examples and its "One PR per version" rule for test fixes: triage
+          dispatches a version's cheap (e2e/API-ES) and RDBMS failures separately, so open or
+          reuse ONE PR per version AND bucket, never a single PR spanning both buckets.
           Commit + PR title prefix: 'test:' for test-only changes, 'ci:' for workflow-only
           changes, 'fix:' for other code changes (NEVER 'fix:' for test-only changes —
           commitlint rejects it).
