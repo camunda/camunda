@@ -37,6 +37,13 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.Executor;
+<<<<<<< HEAD
+=======
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.function.Supplier;
+import org.agrona.CloseHelper;
+>>>>>>> 9e14e4aff (refactor: inject how the journal creates its segment preparation executor)
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,6 +73,11 @@ final class SegmentsManager implements AutoCloseable {
   private final String name;
   private final JournalMetaStore metaStore;
   private final Executor deletionExecutor;
+<<<<<<< HEAD
+=======
+  private final Supplier<ExecutorService> preparationExecutors;
+  private @Nullable ExecutorService bgIoExecutor;
+>>>>>>> 9e14e4aff (refactor: inject how the journal creates its segment preparation executor)
 
   private volatile @Nullable Segment currentSegment;
 
@@ -77,7 +89,8 @@ final class SegmentsManager implements AutoCloseable {
       final SegmentLoader segmentLoader,
       final JournalMetrics journalMetrics,
       final JournalMetaStore metaStore,
-      final Executor deletionExecutor) {
+      final Executor deletionExecutor,
+      final Supplier<ExecutorService> preparationExecutors) {
     this.name = checkNotNull(name, "name cannot be null");
     this.journalIndex = journalIndex;
     this.maxSegmentSize = maxSegmentSize;
@@ -86,6 +99,7 @@ final class SegmentsManager implements AutoCloseable {
     this.journalMetrics = journalMetrics;
     this.metaStore = metaStore;
     this.deletionExecutor = deletionExecutor;
+    this.preparationExecutors = preparationExecutors;
   }
 
   @Override
@@ -383,6 +397,23 @@ final class SegmentsManager implements AutoCloseable {
     // node was stopped. It is safe to delete it now since there are no readers opened for these
     // segments.
     deleteDeferredFiles();
+<<<<<<< HEAD
+=======
+
+    // created last, so that nothing above can fail while holding an executor that no one would
+    // close; the executor is only needed once open() has returned, to prepare the next segment
+    bgIoExecutor = preparationExecutors.get();
+  }
+
+  /**
+   * The executor that pre-creates the next segment of a journal: a single daemon thread, named
+   * after the journal so that it can be found in thread dumps.
+   */
+  static ExecutorService newBackgroundIoExecutor(final String journalName) {
+    return Executors.newSingleThreadExecutor(
+        task ->
+            Thread.ofPlatform().name("journal-bg-io-" + journalName).daemon(true).unstarted(task));
+>>>>>>> 9e14e4aff (refactor: inject how the journal creates its segment preparation executor)
   }
 
   private void prepareNextSegment() {
