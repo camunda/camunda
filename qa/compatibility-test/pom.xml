@@ -76,6 +76,13 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <!-- Spring Boot's Jackson 2 auto-configuration: provides the ObjectMapper that applications
+           without an own one get, see CompatibilityJsonMapperJavaTimeIT -->
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-jackson2</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>io.micrometer</groupId>
       <artifactId>micrometer-core</artifactId>
       <scope>test</scope>
@@ -111,6 +118,7 @@
           <ignoredUnusedDeclaredDependencies>
             <dependency>org.springframework.boot:spring-boot-actuator-autoconfigure</dependency>
             <dependency>org.springframework.boot:spring-boot-actuator</dependency>
+            <dependency>org.springframework.boot:spring-boot-jackson2</dependency>
           </ignoredUnusedDeclaredDependencies>
         </configuration>
       </plugin>

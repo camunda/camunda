@@ -13,6 +13,7 @@ dependencies {
   testImplementation(libs.org.springframework.boot.spring.boot.actuator.autoconfigure)
   testImplementation(libs.org.springframework.boot.spring.boot.actuator)
   testImplementation(libs.com.fasterxml.jackson.core.jackson.databind)
+  testImplementation(libs.org.springframework.boot.spring.boot.jackson2)
   testImplementation(libs.io.micrometer.micrometer.core)
   testImplementation(libs.org.springframework.boot.spring.boot.test)
 }
