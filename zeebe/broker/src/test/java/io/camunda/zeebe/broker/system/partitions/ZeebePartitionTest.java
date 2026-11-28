@@ -217,6 +217,34 @@ public class ZeebePartitionTest {
   }
 
   @Test
+  public void shouldStopCommandApiBeforeTransitioningToFollower() {
+    // given
+    schedulerRule.submitActor(partition);
+
+    // when
+    partition.onNewRole(Role.FOLLOWER, 1);
+    schedulerRule.workUntilDone();
+
+    // then
+    final InOrder inOrder = inOrder(commandApiService, transition);
+    inOrder.verify(commandApiService).onNoLongerLeader(0);
+    inOrder.verify(transition).toFollower(1);
+  }
+
+  @Test
+  public void shouldNotStopCommandApiWhenBecomingLeader() {
+    // given
+    schedulerRule.submitActor(partition);
+
+    // when
+    partition.onNewRole(Role.LEADER, 1);
+    schedulerRule.workUntilDone();
+
+    // then
+    verify(commandApiService, never()).onNoLongerLeader(anyInt());
+  }
+
+  @Test
   public void shouldResumeLogStreamWritesOnRoleChange() {
     // given
     final var logStream = mock(LogStream.class);

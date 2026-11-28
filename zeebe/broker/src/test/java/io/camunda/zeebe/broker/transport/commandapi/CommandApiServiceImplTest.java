@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.transport.commandapi;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.clearInvocations;
@@ -22,14 +23,26 @@ import io.camunda.cluster.PartitionId;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.system.configuration.QueryApiCfg;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
+import io.camunda.zeebe.broker.test.TestPublishMessageRequest;
 import io.camunda.zeebe.logstreams.log.LogStream;
+import io.camunda.zeebe.protocol.impl.encoding.ErrorResponse;
+import io.camunda.zeebe.protocol.impl.encoding.ExecuteQueryRequest;
+import io.camunda.zeebe.protocol.record.ErrorCode;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
+import io.camunda.zeebe.transport.RequestHandler;
 import io.camunda.zeebe.transport.RequestType;
+import io.camunda.zeebe.transport.ServerOutput;
 import io.camunda.zeebe.transport.ServerTransport;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import io.camunda.zeebe.util.buffer.BufferWriter;
+import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
+import org.agrona.ExpandableArrayBuffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -37,6 +50,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Mock.Strictness;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -139,6 +153,53 @@ public class CommandApiServiceImplTest {
     verify(serverTransport, times(1)).unsubscribe(eq(PARTITION_ID), eq(RequestType.COMMAND));
   }
 
+  @RegressionTest("https://github.com/camunda/camunda/issues/70461")
+  public void shouldReturnLeaderMismatchWhenPausedAfterNoLongerLeader() {
+    // given
+    when(logStream.newLogStreamWriter()).thenReturn(mock());
+    commandApiService.registerHandlers(1, logStream, mock());
+    scheduler.workUntilDone();
+    final var commandHandler = ArgumentCaptor.forClass(RequestHandler.class);
+    verify(serverTransport)
+        .subscribe(eq(PARTITION_ID), eq(RequestType.COMMAND), commandHandler.capture());
+
+    // when
+    commandApiService.onNoLongerLeader(1);
+    commandApiService.onPaused(1);
+    final var errorCode = sendCommand(commandHandler.getValue());
+    scheduler.workUntilDone();
+
+    // then
+    assertThat(errorCode)
+        .succeedsWithin(Duration.ofSeconds(5))
+        .isEqualTo(ErrorCode.PARTITION_LEADER_MISMATCH);
+  }
+
+  @Test
+  public void shouldReturnLeaderMismatchForQueryAfterNoLongerLeader() {
+    // given
+    when(queryApi.isEnabled()).thenReturn(true);
+    when(logStream.newLogStreamWriter()).thenReturn(mock());
+    commandApiService.registerHandlers(1, logStream, mock());
+    scheduler.workUntilDone();
+    final var queryHandler = ArgumentCaptor.forClass(RequestHandler.class);
+    verify(serverTransport)
+        .subscribe(eq(PARTITION_ID), eq(RequestType.QUERY), queryHandler.capture());
+
+    // when
+    commandApiService.onNoLongerLeader(1);
+    final var errorCode =
+        sendRequest(
+            queryHandler.getValue(),
+            new ExecuteQueryRequest().setPartitionId(1).setKey(1).setValueType(ValueType.JOB));
+    scheduler.workUntilDone();
+
+    // then
+    assertThat(errorCode)
+        .succeedsWithin(Duration.ofSeconds(5))
+        .isEqualTo(ErrorCode.PARTITION_LEADER_MISMATCH);
+  }
+
   @RegressionTest("https://github.com/camunda/camunda/issues/25897")
   @Timeout(value = 10)
   public void shouldUnsubscribeOnceWhenTransitioningFromFollowerToInactive() {
@@ -196,5 +257,33 @@ public class CommandApiServiceImplTest {
     // then - subscriptions are cleaned up
     verify(serverTransport, times(1)).unsubscribe(eq(PARTITION_ID), eq(RequestType.QUERY));
     verify(serverTransport, times(1)).unsubscribe(eq(PARTITION_ID), eq(RequestType.COMMAND));
+  }
+
+  private CompletableFuture<ErrorCode> sendCommand(final RequestHandler handler) {
+    final var request =
+        new TestPublishMessageRequest("test", "1").setMessageId("1").setTimeToLive(0);
+    request.serializeValue();
+    return sendRequest(handler, request);
+  }
+
+  private CompletableFuture<ErrorCode> sendRequest(
+      final RequestHandler handler, final BufferWriter request) {
+    final var requestBuffer = BufferUtil.createCopy(request);
+
+    final var errorCode = new CompletableFuture<ErrorCode>();
+    final ServerOutput output =
+        response -> {
+          final var buffer = new ExpandableArrayBuffer();
+          response.write(buffer, 0);
+          final var error = new ErrorResponse();
+          if (error.tryWrap(buffer)) {
+            error.wrap(buffer, 0, response.getLength());
+            errorCode.complete(error.getErrorCode());
+          } else {
+            errorCode.completeExceptionally(new AssertionError("Expected an error response"));
+          }
+        };
+    handler.onRequest(output, 1, 0, requestBuffer, 0, requestBuffer.capacity());
+    return errorCode;
   }
 }

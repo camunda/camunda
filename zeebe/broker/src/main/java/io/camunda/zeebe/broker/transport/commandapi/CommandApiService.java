@@ -33,4 +33,11 @@ public interface CommandApiService {
 
   /** Unregisters command and query handlers for the given partition. */
   ActorFuture<Void> deactivateHandlers(final int partitionId);
+
+  /**
+   * Makes the handlers answer a leader mismatch for the given partition. Unlike {@link
+   * #deactivateHandlers(int)}, this reaches the handlers before anything the caller submits to
+   * another actor afterwards, such as pausing the stream processor.
+   */
+  void onNoLongerLeader(final int partitionId);
 }

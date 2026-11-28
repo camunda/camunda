@@ -318,6 +318,12 @@ public final class ZeebePartition extends Actor
     if (context.getLogStream() != null) {
       context.getLogStream().resumeWrites();
     }
+    // the transition pauses the stream processor, and a paused leader answers PARTITION_UNAVAILABLE
+    // to clients; dropping the handlers first makes every request after that a leader mismatch,
+    // which the gateway resends to the new leader
+    if (newRole != Role.LEADER) {
+      context.getCommandApiService().onNoLongerLeader(context.getPartitionId());
+    }
     switch (newRole) {
       case LEADER:
         leaderTransition(newTerm);
