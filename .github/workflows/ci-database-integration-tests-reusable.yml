@@ -239,6 +239,13 @@ jobs:
           -pl 'qa/acceptance-tests'
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
+      # Container state and logs are gone after `down`; keep them for failed or timed-out runs so a
+      # database container that exited or crashed leaves evidence behind.
+      - name: Dump Database service logs
+        if: ${{ (failure() || cancelled()) && inputs.database-type != 'h2' }}
+        run: |
+          docker compose -f db/docker-compose.yml --project-name db ps --all || true
+          docker compose -f db/docker-compose.yml --project-name db logs --no-color --tail 300 || true
       # manually bring down docker compose
       # as the action currently has an issue with large amounts of logs
       # from docker compose https://github.com/hoverkraft-tech/compose-action/issues/297
