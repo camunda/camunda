@@ -13,8 +13,8 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.actuate.endpoint.web.WebEndpointResponse;
 import org.springframework.boot.actuate.endpoint.web.annotation.RestControllerEndpoint;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -52,7 +52,7 @@ public final class ExportingEndpoint {
    * makes "every tenant is attempted" true even for a tenant that fails before returning a future.
    */
   @PostMapping(path = "/{operationKey}")
-  public WebEndpointResponse<?> post(
+  public ResponseEntity<?> post(
       @PathVariable("operationKey") final String operationKey,
       @RequestParam(defaultValue = "false") final boolean soft,
       @RequestParam(required = false) final @Nullable String physicalTenant) {
@@ -61,18 +61,18 @@ public final class ExportingEndpoint {
     try {
       targets = PhysicalTenantScope.resolve(physicalTenant, physicalTenantIds);
     } catch (final UnknownPhysicalTenantException e) {
-      return new WebEndpointResponse<>(e.getMessage(), WebEndpointResponse.STATUS_BAD_REQUEST);
+      return ResponseEntity.badRequest().body(e.getMessage());
     }
 
     final var failure =
         PhysicalTenantFanOut.firstFailure(
             PhysicalTenantFanOut.over(targets, tenant -> apply(operationKey, soft, tenant)));
     if (failure == null) {
-      return new WebEndpointResponse<>(WebEndpointResponse.STATUS_NO_CONTENT);
+      return ResponseEntity.noContent().build();
     }
     final var message =
         failure.getCause() != null ? failure.getCause().getMessage() : failure.getMessage();
-    return new WebEndpointResponse<>(message, WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR);
+    return ResponseEntity.internalServerError().body(message);
   }
 
   private CompletableFuture<Void> apply(

@@ -30,7 +30,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.springframework.boot.actuate.endpoint.web.WebEndpointResponse;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 
 final class ExportingEndpointTest {
 
@@ -60,8 +61,7 @@ final class ExportingEndpointTest {
 
     // then
     assertThat(endpoint.post(operation, false, null))
-        .returns(
-            WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR, from(WebEndpointResponse::getStatus));
+        .returns(HttpStatus.INTERNAL_SERVER_ERROR, from(ResponseEntity::getStatusCode));
   }
 
   @ParameterizedTest
@@ -79,8 +79,7 @@ final class ExportingEndpointTest {
 
     // then
     assertThat(endpoint.post(operation, false, null))
-        .returns(
-            WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR, from(WebEndpointResponse::getStatus));
+        .returns(HttpStatus.INTERNAL_SERVER_ERROR, from(ResponseEntity::getStatusCode));
   }
 
   @ParameterizedTest
@@ -96,7 +95,7 @@ final class ExportingEndpointTest {
 
     // then
     assertThat(endpoint.post(operation, false, null))
-        .returns(WebEndpointResponse.STATUS_NO_CONTENT, from(WebEndpointResponse::getStatus));
+        .returns(HttpStatus.NO_CONTENT, from(ResponseEntity::getStatusCode));
   }
 
   @ParameterizedTest
@@ -115,8 +114,7 @@ final class ExportingEndpointTest {
 
     // then
     assertThat(endpoint.post(operation, false, null))
-        .returns(
-            WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR, from(WebEndpointResponse::getStatus))
+        .returns(HttpStatus.INTERNAL_SERVER_ERROR, from(ResponseEntity::getStatusCode))
         .satisfies(
             resp -> {
               if (message != null) {
@@ -149,7 +147,7 @@ final class ExportingEndpointTest {
     final var response = endpoint.post(operation, false, null);
 
     // then
-    assertThat(response.getStatus()).isEqualTo(WebEndpointResponse.STATUS_NO_CONTENT);
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
     for (final var tenantAccess : List.of(byTenantA, byTenantB)) {
       if (ExportingEndpoint.PAUSE.equals(operation)) {
         verify(tenantAccess).pauseExporting();
@@ -179,7 +177,7 @@ final class ExportingEndpointTest {
     final var response = endpoint.post(operation, false, "tenantb");
 
     // then
-    assertThat(response.getStatus()).isEqualTo(WebEndpointResponse.STATUS_NO_CONTENT);
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
     if (ExportingEndpoint.PAUSE.equals(operation)) {
       verify(byTenantB).pauseExporting();
     } else {
@@ -205,7 +203,7 @@ final class ExportingEndpointTest {
 
     // then the remaining tenant is still attempted, so the operator is not left with a mixed
     // cluster that the response says nothing about
-    assertThat(response.getStatus()).isEqualTo(WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR);
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
     assertThat(response.getBody()).asString().contains("tenanta has no leader");
     verify(byTenantB).pauseExporting();
   }
@@ -225,7 +223,7 @@ final class ExportingEndpointTest {
     final var response = endpoint.post(ExportingEndpoint.PAUSE, false, null);
 
     // then
-    assertThat(response.getStatus()).isEqualTo(WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR);
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
     assertThat(response.getBody()).asString().contains("tenanta is down");
     verify(byTenantB).pauseExporting();
   }
@@ -240,7 +238,7 @@ final class ExportingEndpointTest {
     final var response = endpoint.post(ExportingEndpoint.PAUSE, false, "tenantz");
 
     // then
-    assertThat(response.getStatus()).isEqualTo(WebEndpointResponse.STATUS_BAD_REQUEST);
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     assertThat(response.getBody())
         .asString()
         .isEqualTo("Unknown physical tenant 'tenantz'. Configured physical tenants: [tenanta].");
@@ -261,7 +259,7 @@ final class ExportingEndpointTest {
     final var response = endpoint.post(ExportingEndpoint.PAUSE, false, "  ");
 
     // then
-    assertThat(response.getStatus()).isEqualTo(WebEndpointResponse.STATUS_NO_CONTENT);
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
     verify(byTenantA).pauseExporting();
     verify(byTenantB).pauseExporting();
   }
