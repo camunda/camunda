@@ -47,7 +47,7 @@ const VariablesPanelTabs: React.FC<TabsProps> = ({inputsAndOutputs, result}) => 
 				className="flex min-h-0 grow flex-col gap-0"
 			>
 				<div className="flex h-12 min-h-12 items-center border-b border-border px-4">
-					<TabsList aria-label={t('operate.decisionInstance.ds.variablesPanel.tabsLabel')}>
+					<TabsList variant="line" aria-label={t('operate.decisionInstance.ds.variablesPanel.tabsLabel')}>
 						<TabsTrigger value={INPUTS_AND_OUTPUTS_TAB}>
 							{t('operate.decisionInstance.ds.variablesPanel.inputsAndOutputs')}
 						</TabsTrigger>
