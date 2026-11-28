@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.service.db.es.report.interpreter.view.process.frequency;
 
+import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_AGENT_RUN_FREQUENCY;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_INSTANCE_FREQUENCY;
 
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -26,7 +27,7 @@ public class ProcessViewInstanceFrequencyInterpreterES
 
   @Override
   public Set<ProcessView> getSupportedViews() {
-    return Set.of(PROCESS_VIEW_INSTANCE_FREQUENCY);
+    return Set.of(PROCESS_VIEW_INSTANCE_FREQUENCY, PROCESS_VIEW_AGENT_RUN_FREQUENCY);
   }
 
   @Override

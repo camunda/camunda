@@ -52,6 +52,7 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
   protected boolean instantPreviewReport = false;
   protected boolean agenticControlReport = false;
   protected boolean businessValueReport = false;
+  protected boolean agentInsightsReport = false;
 
   public ProcessReportDataDto(
       @Valid final List<ProcessFilterDto<?>> filter,
@@ -106,6 +107,11 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
       businessValueReport = b.businessValueReportValue;
     } else {
       businessValueReport = defaultBusinessValueReport();
+    }
+    if (b.agentInsightsReportSet) {
+      agentInsightsReport = b.agentInsightsReportValue;
+    } else {
+      agentInsightsReport = defaultAgentInsightsReport();
     }
   }
 
@@ -378,9 +384,21 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
     this.businessValueReport = businessValueReport;
   }
 
+  public boolean isAgentInsightsReport() {
+    return agentInsightsReport;
+  }
+
+  public void setAgentInsightsReport(final boolean agentInsightsReport) {
+    this.agentInsightsReport = agentInsightsReport;
+  }
+
   @JsonIgnore
   public boolean isSystemGeneratedReport() {
-    return managementReport || instantPreviewReport || agenticControlReport || businessValueReport;
+    return managementReport
+        || instantPreviewReport
+        || agenticControlReport
+        || businessValueReport
+        || agentInsightsReport;
   }
 
   protected boolean canEqual(final Object other) {
@@ -397,6 +415,7 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
         && instantPreviewReport == that.instantPreviewReport
         && agenticControlReport == that.agenticControlReport
         && businessValueReport == that.businessValueReport
+        && agentInsightsReport == that.agentInsightsReport
         && Objects.equals(filter, that.filter)
         && Objects.equals(view, that.view)
         && Objects.equals(groupBy, that.groupBy)
@@ -415,7 +434,8 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
         managementReport,
         instantPreviewReport,
         agenticControlReport,
-        businessValueReport);
+        businessValueReport,
+        agentInsightsReport);
   }
 
   @Override
@@ -438,6 +458,8 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
         + isAgenticControlReport()
         + ", businessValueReport="
         + isBusinessValueReport()
+        + ", agentInsightsReport="
+        + isAgentInsightsReport()
         + ")";
   }
 
@@ -466,6 +488,10 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
     return false;
   }
 
+  private static boolean defaultAgentInsightsReport() {
+    return false;
+  }
+
   public static ProcessReportDataDtoBuilder<?, ?> builder() {
     return new ProcessReportDataDtoBuilderImpl();
   }
@@ -482,6 +508,7 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
     public static final String instantPreviewReport = "instantPreviewReport";
     public static final String agenticControlReport = "agenticControlReport";
     public static final String businessValueReport = "businessValueReport";
+    public static final String agentInsightsReport = "agentInsightsReport";
   }
 
   public abstract static class ProcessReportDataDtoBuilder<
@@ -503,6 +530,8 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
     private boolean agenticControlReportSet;
     private boolean businessValueReportValue;
     private boolean businessValueReportSet;
+    private boolean agentInsightsReportValue;
+    private boolean agentInsightsReportSet;
 
     public B filter(@Valid final List<ProcessFilterDto<?>> filter) {
       filterValue = filter;
@@ -555,6 +584,12 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
       return self();
     }
 
+    public B agentInsightsReport(final boolean agentInsightsReport) {
+      agentInsightsReportValue = agentInsightsReport;
+      agentInsightsReportSet = true;
+      return self();
+    }
+
     @Override
     protected abstract B self();
 
@@ -583,6 +618,8 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
           + agenticControlReportValue
           + ", businessValueReportValue="
           + businessValueReportValue
+          + ", agentInsightsReportValue="
+          + agentInsightsReportValue
           + ")";
     }
   }

@@ -8,14 +8,18 @@
 package io.camunda.optimize.service.db.report.plan.process;
 
 import static io.camunda.optimize.dto.optimize.query.report.single.ViewProperty.AUTOMATION_RATE;
+import static io.camunda.optimize.dto.optimize.query.report.single.ViewProperty.CACHE_READ_TOKENS;
+import static io.camunda.optimize.dto.optimize.query.report.single.ViewProperty.CACHE_WRITE_TOKENS;
 import static io.camunda.optimize.dto.optimize.query.report.single.ViewProperty.DURATION;
 import static io.camunda.optimize.dto.optimize.query.report.single.ViewProperty.FREQUENCY;
 import static io.camunda.optimize.dto.optimize.query.report.single.ViewProperty.INPUT_TOKENS;
 import static io.camunda.optimize.dto.optimize.query.report.single.ViewProperty.OUTPUT_TOKENS;
 import static io.camunda.optimize.dto.optimize.query.report.single.ViewProperty.PERCENTAGE;
+import static io.camunda.optimize.dto.optimize.query.report.single.ViewProperty.REASONING_TOKENS;
 import static io.camunda.optimize.dto.optimize.query.report.single.ViewProperty.TOOL_CALLS;
 import static io.camunda.optimize.dto.optimize.query.report.single.ViewProperty.TOTAL_TOKENS;
 import static io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity.AGENT_INSTANCE;
+import static io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity.AGENT_RUN;
 import static io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity.FLOW_NODE;
 import static io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity.INCIDENT;
 import static io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity.PROCESS_INSTANCE;
@@ -46,7 +50,14 @@ public enum ProcessView {
   PROCESS_VIEW_AGENT_OUTPUT_TOKENS(new ProcessViewDto(AGENT_INSTANCE, OUTPUT_TOKENS)),
   PROCESS_VIEW_AGENT_TOOL_CALLS(new ProcessViewDto(AGENT_INSTANCE, TOOL_CALLS)),
   PROCESS_VIEW_AGENT_TOTAL_TOKENS(new ProcessViewDto(AGENT_INSTANCE, TOTAL_TOKENS)),
-  PROCESS_VIEW_FLOW_NODE_TOOL_CALLS(new ProcessViewDto(FLOW_NODE, TOOL_CALLS));
+  PROCESS_VIEW_FLOW_NODE_TOOL_CALLS(new ProcessViewDto(FLOW_NODE, TOOL_CALLS)),
+  PROCESS_VIEW_AGENT_RUN_FREQUENCY(new ProcessViewDto(AGENT_RUN, FREQUENCY)),
+  PROCESS_VIEW_AGENT_RUN_TOTAL_TOKENS(new ProcessViewDto(AGENT_RUN, TOTAL_TOKENS)),
+  PROCESS_VIEW_AGENT_RUN_INPUT_TOKENS(new ProcessViewDto(AGENT_RUN, INPUT_TOKENS)),
+  PROCESS_VIEW_AGENT_RUN_OUTPUT_TOKENS(new ProcessViewDto(AGENT_RUN, OUTPUT_TOKENS)),
+  PROCESS_VIEW_AGENT_RUN_CACHE_READ_TOKENS(new ProcessViewDto(AGENT_RUN, CACHE_READ_TOKENS)),
+  PROCESS_VIEW_AGENT_RUN_CACHE_WRITE_TOKENS(new ProcessViewDto(AGENT_RUN, CACHE_WRITE_TOKENS)),
+  PROCESS_VIEW_AGENT_RUN_REASONING_TOKENS(new ProcessViewDto(AGENT_RUN, REASONING_TOKENS));
 
   private final ProcessViewDto processViewDto;
   private final ProcessPartDto processPartDto;

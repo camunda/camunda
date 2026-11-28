@@ -23,12 +23,21 @@ import io.camunda.optimize.dto.optimize.TenantDto;
 import io.camunda.optimize.dto.optimize.query.definition.DefinitionResponseDto;
 import io.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
+import io.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
+import io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
+import io.camunda.optimize.rest.AgenticPhase2Guard;
+import io.camunda.optimize.rest.exceptions.BadRequestException;
 import io.camunda.optimize.rest.exceptions.ForbiddenException;
+import io.camunda.optimize.rest.exceptions.NotFoundException;
 import io.camunda.optimize.service.DefinitionService;
 import io.camunda.optimize.service.identity.CollapsedSubprocessNodesService;
 import io.camunda.optimize.service.report.ReportService;
+import io.camunda.optimize.service.util.configuration.ConfigurationService;
+import io.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import io.camunda.optimize.service.variable.ProcessVariableService;
 import java.util.Arrays;
 import java.util.List;
@@ -57,10 +66,12 @@ class ReportEvaluationHandlerTest {
   @Mock private DefinitionService definitionService;
   @Mock private CollapsedSubprocessNodesService collapsedSubprocessNodesService;
 
+  private ConfigurationService configurationService;
   private ReportEvaluationHandler underTest;
 
   @BeforeEach
   void setUp() {
+    configurationService = ConfigurationServiceBuilder.createDefaultConfiguration();
     underTest =
         new PlainReportEvaluationHandler(
             reportService,
@@ -68,7 +79,82 @@ class ReportEvaluationHandlerTest {
             combinedReportEvaluator,
             processVariableService,
             definitionService,
-            collapsedSubprocessNodesService);
+            collapsedSubprocessNodesService,
+            new AgenticPhase2Guard(configurationService));
+  }
+
+  @Test
+  void shouldFillInAllFullyImportedDefinitionsForAgentInsightsReport() {
+    // given
+    configurationService.getAgenticPhase2Configuration().setEnabled(true);
+    final String processKey = uniqueKey();
+    final ProcessReportDataDto reportData = agentRunReportData();
+    reportData.setAgentInsightsReport(true);
+    when(definitionService.getFullyImportedDefinitions(DefinitionType.PROCESS, USER_ID))
+        .thenReturn(List.of(definition(processKey, "Process", "tenant-a")));
+
+    // when
+    underTest.evaluateReport(evaluationWithoutSelection(reportData));
+
+    // then the stored report has no definitions, so the user's definitions are filled in
+    assertThat(reportData.getDefinitions())
+        .singleElement()
+        .satisfies(
+            definition -> {
+              assertThat(definition.getKey()).isEqualTo(processKey);
+              assertThat(definition.getTenantIds()).containsExactly("tenant-a");
+            });
+  }
+
+  @Test
+  void shouldHideAgentInsightsReportWhenPhase2IsOff() {
+    // given
+    final ProcessReportDataDto reportData = agentRunReportData();
+    reportData.setAgentInsightsReport(true);
+
+    // when / then
+    assertThatThrownBy(() -> underTest.evaluateReport(evaluationWithoutSelection(reportData)))
+        .isInstanceOf(NotFoundException.class);
+  }
+
+  @Test
+  void shouldRejectAgentRunViewOutsideAgentInsightsReport() {
+    // given
+    configurationService.getAgenticPhase2Configuration().setEnabled(true);
+    final ProcessReportDataDto reportData = agentRunReportData();
+
+    // when / then
+    assertThatThrownBy(() -> underTest.evaluateReport(evaluationWithoutSelection(reportData)))
+        .isInstanceOf(BadRequestException.class)
+        .hasMessageContaining("agentRun");
+  }
+
+  // Additional variable filters for variables the report does not know are dropped when they are
+  // merged into the report, so they must be rejected before that instead of being ignored.
+  @Test
+  void shouldRejectUnsupportedFilterSentWithAgentRunReportEvaluation() {
+    // given
+    configurationService.getAgenticPhase2Configuration().setEnabled(true);
+    final ProcessReportDataDto reportData = agentRunReportData();
+    reportData.setAgentInsightsReport(true);
+    final ReportEvaluationInfo evaluation =
+        ReportEvaluationInfo.builder(new SingleProcessReportDefinitionRequestDto(reportData))
+            .userId(USER_ID)
+            .additionalFilters(
+                new AdditionalProcessReportEvaluationFilterDto(
+                    ProcessFilterBuilder.filter()
+                        .variable()
+                        .booleanType()
+                        .name(uniqueKey())
+                        .booleanTrue()
+                        .add()
+                        .buildList()))
+            .build();
+
+    // when / then
+    assertThatThrownBy(() -> underTest.evaluateReport(evaluation))
+        .isInstanceOf(BadRequestException.class)
+        .hasMessageContaining("not supported for agentRun views");
   }
 
   @Test
@@ -278,6 +364,12 @@ class ReportEvaluationHandlerTest {
         Arguments.of("business value report", businessValueReportData()),
         Arguments.of("agentic control report", agentic),
         Arguments.of("management report", management));
+  }
+
+  private static ProcessReportDataDto agentRunReportData() {
+    final ProcessReportDataDto reportData = new ProcessReportDataDto();
+    reportData.setView(new ProcessViewDto(ProcessViewEntity.AGENT_RUN, ViewProperty.TOTAL_TOKENS));
+    return reportData;
   }
 
   private static ReportEvaluationInfo evaluationWithoutSelection(
