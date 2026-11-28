@@ -90,6 +90,27 @@ spec:
             key: zeebeGrpcAddress
             name: load-test-credentials
 
+      # Optimize client, used by the `optimize` test
+      - name: OPTIMIZE_BASE_URL
+        value: http://optimize
+      - name: OPTIMIZE_CLIENT_ID
+        value: optimize-loadtest
+      - name: OPTIMIZE_CLIENT_SECRET
+        valueFrom:
+          secretKeyRef:
+            key: identity-optimize-loadtest-client-secret
+            name: camunda-credentials
+            optional: true
+      - name: OPTIMIZE_OAUTH_URL
+        valueFrom:
+          secretKeyRef:
+            key: authServer
+            name: load-test-credentials
+      - name: OPTIMIZE_TOKEN_AUDIENCE
+        value: optimize-api
+      - name: OPTIMIZE_TOKEN_SCOPE
+        value: openid
+
     resources:
       limits:
         cpu: 200m
@@ -208,6 +229,27 @@ spec:
           secretKeyRef:
             key: zeebeGrpcAddress
             name: load-test-credentials
+
+      # Optimize client, used by the `optimize` test
+      - name: OPTIMIZE_BASE_URL
+        value: http://optimize
+      - name: OPTIMIZE_CLIENT_ID
+        value: optimize-loadtest
+      - name: OPTIMIZE_CLIENT_SECRET
+        valueFrom:
+          secretKeyRef:
+            key: identity-optimize-loadtest-client-secret
+            name: camunda-credentials
+            optional: true
+      - name: OPTIMIZE_OAUTH_URL
+        valueFrom:
+          secretKeyRef:
+            key: authServer
+            name: load-test-credentials
+      - name: OPTIMIZE_TOKEN_AUDIENCE
+        value: optimize-api
+      - name: OPTIMIZE_TOKEN_SCOPE
+        value: openid
 
     resources:
       limits:

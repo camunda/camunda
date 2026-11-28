@@ -8,9 +8,15 @@ import http from "k6/http";
 import { sleep } from "k6";
 
 export class Client {
-  constructor() {
+  /**
+   * @param {string} [envPrefix="CAMUNDA"] - Prefix of the environment variables that configure the
+   *   client: `<prefix>_BASE_URL`, `_CLIENT_ID`, `_CLIENT_SECRET`, `_OAUTH_URL` and
+   *   `_TOKEN_AUDIENCE`. The optional `<prefix>_TOKEN_SCOPE` is sent as the token `scope`.
+   */
+  constructor(envPrefix = "CAMUNDA") {
+    this.envPrefix = envPrefix;
     this.#ensureEnvVars();
-    this.baseURL = __ENV.CAMUNDA_BASE_URL;
+    this.baseURL = __ENV[`${envPrefix}_BASE_URL`];
     // Empty token. The first request fetches the actual token.
     this.token = { accessToken: null, renewalDate: 0 };
   }
@@ -133,12 +139,12 @@ export class Client {
 
   #ensureEnvVars() {
     const vars = [
-      "CAMUNDA_BASE_URL",
-      "CAMUNDA_CLIENT_ID",
-      "CAMUNDA_CLIENT_SECRET",
-      "CAMUNDA_OAUTH_URL",
-      "CAMUNDA_TOKEN_AUDIENCE",
-    ];
+      "BASE_URL",
+      "CLIENT_ID",
+      "CLIENT_SECRET",
+      "OAUTH_URL",
+      "TOKEN_AUDIENCE",
+    ].map((name) => `${this.envPrefix}_${name}`);
 
     const missing = vars.filter((name) => {
       const value = __ENV[name];
@@ -155,15 +161,19 @@ export class Client {
   }
 
   #fetchToken() {
-    const tokenURL = __ENV.CAMUNDA_OAUTH_URL;
+    const env = (name) => __ENV[`${this.envPrefix}_${name}`];
+    const tokenURL = env("OAUTH_URL");
     console.debug(`Fetching authentication token from: ${tokenURL}`);
 
     const payload = {
       grant_type: "client_credentials",
-      audience: __ENV.CAMUNDA_TOKEN_AUDIENCE,
-      client_id: __ENV.CAMUNDA_CLIENT_ID,
-      client_secret: __ENV.CAMUNDA_CLIENT_SECRET,
+      audience: env("TOKEN_AUDIENCE"),
+      client_id: env("CLIENT_ID"),
+      client_secret: env("CLIENT_SECRET"),
     };
+    if (env("TOKEN_SCOPE")) {
+      payload.scope = env("TOKEN_SCOPE");
+    }
 
     const params = {
       tags: { name: "token-request" },
