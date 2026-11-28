@@ -8,7 +8,7 @@
 
 import React, {useCallback, useEffect, useEffectEvent, useLayoutEffect, useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
-import {Heading} from '@camunda/design-system';
+import {DataTable, Heading, type DataTableColumn} from '@camunda/design-system';
 import SvgErrorRobot from '#/shared/svg/ErrorRobot';
 import {EmptyState} from '#/operate/components/EmptyState/shadcn.components/EmptyState';
 import type {ExpandableListRow} from './ExpandableList.types';
@@ -51,6 +51,12 @@ const sumRealRowHeights = (entries: RowHeightEntry[], targetRealRowCount: number
 
 	return total;
 };
+
+type ErrorTableRow = {id: string};
+
+const errorTableColumns = (header: string): DataTableColumn<ErrorTableRow>[] => [
+	{id: 'name', header, cell: ({row}) => row.original.id},
+];
 
 type Props = {
 	isPending: boolean;
@@ -281,16 +287,20 @@ const ExpandableList: React.FC<Props> = ({
 	if (!isPending) {
 		if (isError) {
 			return (
-				<div className="flex flex-1 flex-col gap-2">
-					<Heading as="h2" variant="heading-md">
-						{header}
-					</Heading>
-					<EmptyState
-						icon={<SvgErrorRobot aria-hidden />}
-						heading={t('operate.dashboard.fetchErrorHeading')}
-						description={t('operate.dashboard.fetchErrorDescription')}
-					/>
-				</div>
+				<DataTable
+					aria-label={header}
+					columns={errorTableColumns(header)}
+					data={[]}
+					getRowId={(row) => row.id}
+					emptyState={
+						<EmptyState
+							icon={<SvgErrorRobot aria-hidden />}
+							heading={t('operate.dashboard.fetchErrorHeading')}
+							description={t('operate.dashboard.fetchErrorDescription')}
+						/>
+					}
+					className="flex flex-1 flex-col overflow-hidden"
+				/>
 			);
 		}
 

@@ -208,15 +208,15 @@ describe.each(EXPANDABLE_LIST_VARIANT_IDS)('<ExpandableList /> (variant: %s)', (
 		await expect.element(screen.getByRole('table', {name: 'Process name'})).toHaveAttribute('aria-busy', 'true');
 	});
 
-	it('should show the fetch-error empty state on error', async () => {
+	it('should keep an empty table header with the fetch-error empty state on error', async () => {
 		// given / when
 		const screen = await renderList({variant, isError: true});
 
 		// then
-		await expect.element(screen.getByRole('heading', {name: 'Process name'})).toBeVisible();
+		await expect.element(screen.getByRole('table', {name: 'Process name'})).toBeVisible();
+		await expect.element(screen.getByText('Process name', {exact: true})).toBeVisible();
 		await expect.element(screen.getByText("Couldn't fetch data")).toBeVisible();
 		await expect.element(screen.getByText('Refresh the page to try again')).toBeVisible();
-		await expect.element(screen.getByRole('table', {name: 'Process name'})).not.toBeInTheDocument();
 	});
 
 	it('should render the caller-provided empty state instead of the table when given one', async () => {
