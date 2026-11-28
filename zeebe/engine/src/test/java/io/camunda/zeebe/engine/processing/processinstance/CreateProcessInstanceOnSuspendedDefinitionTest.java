@@ -163,7 +163,7 @@ public class CreateProcessInstanceOnSuspendedDefinitionTest {
             RecordingExporter.processInstanceCreationRecords().onlyCommandRejections().getFirst())
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to find process definition with process ID '%s', but none found"
+            "Expected to find process definition with process ID '%s', but no active definition was found"
                 .formatted(processId));
   }
 

@@ -413,7 +413,7 @@ public class CreateProcessInstanceRejectionTest {
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
             String.format(
-                "Expected to find process definition with process ID '%s', but none found",
+                "Expected to find process definition with process ID '%s', but no active definition was found",
                 processId, fakeTenantId));
   }
 

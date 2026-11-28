@@ -148,10 +148,6 @@ public final class ProcessDefinitionSuspensionBehavior {
     return value.getProcessDefinitionKey() > 0;
   }
 
-  /**
-   * A caller without access to a definition looked up by key gets this same rejection, so they
-   * can't tell an unauthorized key from an unknown one.
-   */
   private Rejection notFoundByKey(final ProcessDefinitionSuspensionRecord value) {
     return new Rejection(
         RejectionType.NOT_FOUND,
@@ -188,8 +184,9 @@ public final class ProcessDefinitionSuspensionBehavior {
    * authorized for, like resource deletion does. The definition's tenant then goes on the record,
    * so the events and the response carry it.
    *
-   * <p>The BPMN process ID to authorize against is only known after the lookup, so every failure is
-   * a {@code NOT_FOUND}.
+   * <p>The BPMN process ID to authorize against is only known after the lookup, so a caller without
+   * the permission gets {@code FORBIDDEN} for an existing key and {@code NOT_FOUND} for an unknown
+   * one, like resource deletion does.
    */
   private Either<Rejection, Iterator<DeployedProcess>> findByKey(
       final TypedRecord<ProcessDefinitionSuspensionRecord> command) {
@@ -210,8 +207,7 @@ public final class ProcessDefinitionSuspensionBehavior {
             command,
             requiredAuthorization(bufferAsString(process.getBpmnProcessId())),
             process,
-            notFound,
-            rejection -> notFound,
+            forbidden(),
             process.getTenantId(),
             notFound)
         .flatMap(authorized -> rejectIfDraining(authorized))
