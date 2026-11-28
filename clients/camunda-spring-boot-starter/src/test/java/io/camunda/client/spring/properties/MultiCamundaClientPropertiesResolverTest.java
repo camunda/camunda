@@ -85,6 +85,41 @@ class MultiCamundaClientPropertiesResolverTest {
   }
 
   @Test
+  void shouldLetPerClientMtlsPathsReplaceSharedInlineMtlsContent() {
+    // given shared inline mTLS material and one client that configures file paths instead
+    final StandardEnvironment environment =
+        environmentWith(
+            Map.of(
+                "camunda.client.mtls.cert", "shared cert pem",
+                "camunda.client.mtls.key", "shared key pem",
+                "camunda.client.mtls.ca", "shared ca pem",
+                "camunda.clients.finance.mtls.cert-path", "/certs/finance.crt",
+                "camunda.clients.finance.mtls.key-path", "/certs/finance.key",
+                "camunda.clients.finance.mtls.ca-path", "/certs/finance-ca.crt",
+                "camunda.clients.risk.physical-tenant-id", "riskproduction"));
+
+    // when
+    final MultiCamundaClientProperties properties =
+        MultiCamundaClientPropertiesResolver.resolve(environment);
+
+    // then the per-client paths replace the shared inline content, which would otherwise win
+    final CamundaClientMtlsProperties finance = properties.getClients().get("finance").getMtls();
+    assertThat(finance.getCertPath()).isEqualTo("/certs/finance.crt");
+    assertThat(finance.getKeyPath()).isEqualTo("/certs/finance.key");
+    assertThat(finance.getCaPath()).isEqualTo("/certs/finance-ca.crt");
+    assertThat(finance.getCert()).isNull();
+    assertThat(finance.getKey()).isNull();
+    assertThat(finance.getCa()).isNull();
+
+    // and a client without its own mTLS keys still inherits the shared inline content
+    final CamundaClientMtlsProperties risk = properties.getClients().get("risk").getMtls();
+    assertThat(risk.getCert()).isEqualTo("shared cert pem");
+    assertThat(risk.getKey()).isEqualTo("shared key pem");
+    assertThat(risk.getCa()).isEqualTo("shared ca pem");
+    assertThat(risk.getCertPath()).isNull();
+  }
+
+  @Test
   void shouldFallBackToClientDefaultsWhenUnset() {
     // given a client with only a physical-tenant-id and no global base
     final StandardEnvironment environment =

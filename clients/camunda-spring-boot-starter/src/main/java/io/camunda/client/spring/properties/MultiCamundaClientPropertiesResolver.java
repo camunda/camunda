@@ -97,12 +97,36 @@ public final class MultiCamundaClientPropertiesResolver {
       // Seed with the shared base, then overlay the per-client keys (per-client wins, else global).
       binder.bind(CLIENT_PREFIX, Bindable.ofInstance(properties));
       binder.bind(CLIENTS_PREFIX + "." + name, Bindable.ofInstance(properties));
+      replaceSharedMtlsContentWithClientPaths(binder, name, properties.getMtls());
       normalizePhysicalTenantId(properties);
       validatePhysicalTenantId(name, properties.getPhysicalTenantId());
       resolved.put(name, properties);
     }
     validateSingleAuthType(resolved);
     return new MultiCamundaClientProperties(resolved, resolvePrimaryClientName(binder, names));
+  }
+
+  /**
+   * Drops shared inline mTLS content for each item the named client configures as a file path. The
+   * Java client lets inline content win over a path for the same item, so without this a per-client
+   * {@code mtls.*-path} could never replace shared inline {@code camunda.client.mtls.*} material.
+   */
+  private static void replaceSharedMtlsContentWithClientPaths(
+      final Binder binder, final String name, final CamundaClientMtlsProperties mtls) {
+    final String prefix = CLIENTS_PREFIX + "." + name + ".mtls.";
+    if (isBound(binder, prefix + "cert-path") && !isBound(binder, prefix + "cert")) {
+      mtls.setCert(null);
+    }
+    if (isBound(binder, prefix + "key-path") && !isBound(binder, prefix + "key")) {
+      mtls.setKey(null);
+    }
+    if (isBound(binder, prefix + "ca-path") && !isBound(binder, prefix + "ca")) {
+      mtls.setCa(null);
+    }
+  }
+
+  private static boolean isBound(final Binder binder, final String key) {
+    return binder.bind(key, Bindable.of(String.class)).isBound();
   }
 
   /**
