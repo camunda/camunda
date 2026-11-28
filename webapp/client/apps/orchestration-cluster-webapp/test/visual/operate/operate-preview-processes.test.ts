@@ -51,25 +51,27 @@ const BPMN_XML = `<?xml version="1.0" encoding="UTF-8"?>
   </bpmndi:BPMNDiagram>
 </bpmn:definitions>`;
 
-test.beforeEach(({network}) => {
-	network.use(
-		mockCurrentUserEndpoint({
-			successResponse: HttpResponse.json(createCurrentUser({authorizedComponents: ['operate']})),
-		}),
-		mockSystemConfigurationEndpoint({
-			successResponse: HttpResponse.json(createSystemConfiguration({components: {active: ['operate']}})),
-		}),
-		mockLicenseEndpoint({
-			successResponse: HttpResponse.json(createLicense()),
-		}),
-		mockQueryProcessDefinitionsEndpoint({
-			successResponse: HttpResponse.json(createQueryProcessDefinitionsResponse()),
-		}),
-		mockQueryBatchOperationItemsEndpoint({
-			successResponse: HttpResponse.json(createPaginatedResponse({items: []})),
-		}),
-	);
-});
+const defaultOperatePreviewProcessesVisualHandlers = [
+	mockCurrentUserEndpoint({
+		successResponse: HttpResponse.json(createCurrentUser({authorizedComponents: ['operate']})),
+	}),
+	mockSystemConfigurationEndpoint({
+		successResponse: HttpResponse.json(createSystemConfiguration({components: {active: ['operate']}})),
+	}),
+	mockLicenseEndpoint({
+		successResponse: HttpResponse.json(createLicense()),
+	}),
+	mockQueryProcessDefinitionsEndpoint({
+		successResponse: HttpResponse.json(createQueryProcessDefinitionsResponse()),
+	}),
+	mockQueryBatchOperationItemsEndpoint({
+		successResponse: HttpResponse.json(createPaginatedResponse({items: []})),
+	}),
+];
+
+export {defaultOperatePreviewProcessesVisualHandlers};
+
+test.use({handlers: [defaultOperatePreviewProcessesVisualHandlers, {scope: 'test'}]});
 
 test('should match the instances table snapshot with active, incident, and completed instances', async ({
 	network,
@@ -193,19 +195,28 @@ test('should match the diagram panel header snapshot with a long process name an
 
 test('should match the instances table snapshot when the search fails', async ({
 	network,
-	operatePreviewProcessesPage,
 	page,
+	operatePreviewProcessesPage,
 }) => {
 	network.use(
 		mockQueryProcessInstancesEndpoint({
 			successResponse: new HttpResponse(null, {status: 500}),
 		}),
 	);
+	const waitForRetriedFailures = (async () => {
+		for (const _ of [1, 2, 3, 4]) {
+			await page.waitForResponse(
+				(response) =>
+					response.request().method() === 'POST' &&
+					response.url().endsWith('/v2/process-instances/search') &&
+					response.status() === 500,
+			);
+		}
+	})();
 	await page.goto(`${operatePreviewProcessesPage.processesUrl}?active=true`);
+	await waitForRetriedFailures;
 
-	await expect(operatePreviewProcessesPage.instancesTable.getByText("Couldn't fetch data")).toBeVisible({
-		timeout: 15000,
-	});
+	await expect(operatePreviewProcessesPage.instancesTable.getByText("Couldn't fetch data")).toBeVisible();
 	await expect(operatePreviewProcessesPage.instancesTable).toHaveScreenshot();
 });
 
@@ -221,9 +232,7 @@ test('should match the instances table snapshot when the search is forbidden', a
 	);
 	await page.goto(`${operatePreviewProcessesPage.processesUrl}?active=true`);
 
-	await expect(operatePreviewProcessesPage.instancesTable.getByText('You need permission')).toBeVisible({
-		timeout: 15000,
-	});
+	await expect(operatePreviewProcessesPage.instancesTable.getByText('You need permission')).toBeVisible();
 	await expect(operatePreviewProcessesPage.instancesTable).toHaveScreenshot();
 });
 
@@ -298,4 +307,26 @@ test.describe('batch move mode', () => {
 		await expect(dialog.getByRole('button', {name: 'Exit'})).toBeVisible();
 		await expect(dialog).toHaveScreenshot();
 	});
+});
+
+test('should match the start date range field snapshot', async ({operatePreviewProcessesPage, page}) => {
+	await page.goto(operatePreviewProcessesPage.processesUrl);
+	await page.getByRole('button', {name: 'More filters'}).click();
+	await page.getByRole('menuitem', {name: 'Start date range'}).click();
+	const dateRange = page.getByRole('group', {name: 'Start date range'});
+	await expect(dateRange).toBeVisible();
+
+	await expect(dateRange).toHaveScreenshot();
+});
+
+test('should match the start date range picker snapshot when open', async ({operatePreviewProcessesPage, page}) => {
+	await page.clock.setFixedTime(new Date('2026-10-14T12:00:00.000Z'));
+	await page.goto(operatePreviewProcessesPage.processesUrl);
+	await page.getByRole('button', {name: 'More filters'}).click();
+	await page.getByRole('menuitem', {name: 'Start date range'}).click();
+	await page.getByRole('button', {name: 'Start date range', exact: true}).click();
+	const picker = page.getByRole('dialog');
+	await expect(picker).toBeVisible();
+
+	await expect(picker).toHaveScreenshot();
 });

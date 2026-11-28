@@ -142,6 +142,46 @@ describe('<Processes /> (design system)', () => {
 		await expect.poll(() => screen.router.state.location.search).toMatchObject({errorMessage: 'timeout'});
 	});
 
+	it.for([
+		{name: 'Start date range', field: 'startDate', otherField: 'endDate'},
+		{name: 'End date range', field: 'endDate', otherField: 'startDate'},
+	])(
+		'should apply the $name picked from a quick range to the $field filter',
+		async ({name, field, otherField}, {worker}) => {
+			const screen = await renderWithRouter(Harness, {
+				path: PATH,
+				initialEntry: `${PATH}?process=order&version=2&active=true`,
+			});
+			worker.use(
+				mockQueryProcessInstancesEndpoint({
+					schema: z.object({
+						filter: z.object({
+							[field]: z.strictObject({$gt: z.string(), $lt: z.string()}),
+							[otherField]: z.never().optional(),
+						}),
+					}),
+					successResponse: HttpResponse.json(
+						createQueryProcessInstancesResponse({
+							items: [createProcessInstance({processInstanceKey: '2251799813685251'})],
+						}),
+					),
+					failureResponse: new HttpResponse(null, {status: 400}),
+				}),
+			);
+
+			await userEvent.click(screen.getByRole('button', {name: 'More filters'}));
+			await userEvent.click(screen.getByRole('menuitem', {name}));
+			await userEvent.click(screen.getByRole('button', {name: new RegExp(`^${name}`)}));
+			await userEvent.click(screen.getByRole('button', {name: 'Last 24 hours'}));
+			await userEvent.click(screen.getByRole('button', {name: 'Apply'}));
+
+			await expect
+				.element(screen.getByRole('button', {name: new RegExp(`^${name}`)}))
+				.toMatchTextContent(/[A-Z][a-z]{2}\s\d{1,2},\s\d{4}.*[A-Z][a-z]{2}\s\d{1,2},\s\d{4}/);
+			await expect.element(screen.getByRole('link', {name: /View instance 2251799813685251/})).toBeVisible();
+		},
+	);
+
 	it('should reset all filters', async () => {
 		const screen = await renderWithRouter(Harness, {
 			path: PATH,
