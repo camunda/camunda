@@ -12,6 +12,7 @@ import static io.camunda.it.util.TestHelper.deployProcessAndWaitForIt;
 import static io.camunda.it.util.TestHelper.startProcessInstance;
 import static io.camunda.it.util.TestHelper.waitForBatchOperationCompleted;
 import static io.camunda.it.util.TestHelper.waitForBatchOperationWithCorrectTotalCount;
+import static io.camunda.it.util.TestHelper.waitForElementInstances;
 import static io.camunda.it.util.TestHelper.waitForProcessInstances;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToBeCompleted;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -72,7 +73,8 @@ public class DeleteProcessInstanceHistoryIT {
         processId + ".bpmn");
     final long piKey1 = startProcessInstance(camundaClient, processId).getProcessInstanceKey();
     final long piKey2 = startProcessInstance(camundaClient, processId).getProcessInstanceKey();
-    waitForProcessInstances(camundaClient, f -> f.processDefinitionId(processId), 2);
+    waitForCompletedProcessInstanceData(camundaClient, piKey1);
+    waitForCompletedProcessInstanceData(camundaClient, piKey2);
 
     // when - delete by process definition id
     final var batchResult =
@@ -126,6 +128,7 @@ public class DeleteProcessInstanceHistoryIT {
     final ProcessInstance subprocessInstance = subprocessSearchResult.items().getFirst();
     assertThat(subprocessInstance.getProcessInstanceKey()).isNotEqualTo(rootProcessInstanceKey);
     assertThat(subprocessInstance.getRootProcessInstanceKey()).isEqualTo(rootProcessInstanceKey);
+    waitForCompletedProcessInstanceData(camundaClient, subprocessInstance.getProcessInstanceKey());
 
     // when - delete by (sub) process definition id
     final var batchResult =
@@ -158,7 +161,8 @@ public class DeleteProcessInstanceHistoryIT {
         processId + ".bpmn");
     final long piKey1 = startProcessInstance(camundaClient, processId).getProcessInstanceKey();
     final long piKey2 = startProcessInstance(camundaClient, processId).getProcessInstanceKey();
-    waitForProcessInstances(camundaClient, f -> f.processDefinitionId(processId), 2);
+    waitForCompletedProcessInstanceData(camundaClient, piKey1);
+    waitForCompletedProcessInstanceData(camundaClient, piKey2);
 
     // when - delete only one by key
     final var batchResult =
@@ -241,7 +245,7 @@ public class DeleteProcessInstanceHistoryIT {
         Bpmn.createExecutableProcess(processId).startEvent().endEvent().done(),
         processId + ".bpmn");
     final long piKey = startProcessInstance(camundaClient, processId).getProcessInstanceKey();
-    waitForProcessInstances(camundaClient, f -> f.processInstanceKey(piKey), 1);
+    waitForCompletedProcessInstanceData(camundaClient, piKey);
 
     // when - delete using singular deletion
     final DeleteProcessInstanceResponse result =
@@ -262,7 +266,8 @@ public class DeleteProcessInstanceHistoryIT {
         processId + ".bpmn");
     final long piKey1 = startProcessInstance(camundaClient, processId).getProcessInstanceKey();
     final long piKey2 = startProcessInstance(camundaClient, processId).getProcessInstanceKey();
-    waitForProcessInstances(camundaClient, f -> f.processDefinitionId(processId), 2);
+    waitForCompletedProcessInstanceData(camundaClient, piKey1);
+    waitForCompletedProcessInstanceData(camundaClient, piKey2);
 
     // when - delete only one by key
     final DeleteProcessInstanceResponse result =
@@ -436,6 +441,29 @@ public class DeleteProcessInstanceHistoryIT {
                       .items();
               assertThat(elementInstances).isNotEmpty();
             });
+  }
+
+  /**
+   * Waits until a completed start-to-end process instance, both of its element instances and its
+   * sequence flow can be found in secondary storage. They are in separate indices, each with its
+   * own refresh, and the history deletion only deletes the documents it can find when it runs, so a
+   * document that becomes searchable only after that would be left behind.
+   */
+  private static void waitForCompletedProcessInstanceData(
+      final CamundaClient client, final long processInstanceKey) {
+    waitForProcessInstancesToBeCompleted(client, f -> f.processInstanceKey(processInstanceKey), 1);
+    waitForElementInstances(client, f -> f.processInstanceKey(processInstanceKey), 2);
+    Awaitility.await("should wait until the sequence flow is available")
+        .atMost(DELETION_TIMEOUT)
+        .ignoreExceptions()
+        .untilAsserted(
+            () ->
+                assertThat(
+                        client
+                            .newProcessInstanceSequenceFlowsRequest(processInstanceKey)
+                            .send()
+                            .join())
+                    .hasSize(1));
   }
 
   /**
