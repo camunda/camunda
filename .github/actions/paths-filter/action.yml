@@ -301,11 +301,12 @@ outputs:
         steps.filter-scripts.outputs.load-test-k6-change == 'true'
       }}
   gradle-changes:
-    description: Output whether Gradle/Maven build definitions changed, based on files changed only (not on the GitHub event)
+    description: Output whether Gradle/Maven build definitions or CI-relevant GitHub Actions inputs changed, based on files changed only (not on the GitHub event)
     value: >-
       ${{
         steps.filter-common.outputs.gradle-change == 'true' ||
-        steps.filter-common.outputs.maven-change == 'true'
+        steps.filter-common.outputs.maven-change == 'true' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true'
       }}
 
 runs:

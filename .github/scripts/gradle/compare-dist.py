@@ -7,8 +7,9 @@ The original mode compares JAR names in a Gradle distTar with an exploded Maven
 
     python3 compare-dist.py <gradle-tar.gz> <maven-dist-dir>
 
-When both arguments are ZIP archives, the tool compares the versioned distribution
-root and JAR names/versions under `lib/`; other file contents are intentionally ignored.
+When both arguments are archives (ZIP, TAR, or TAR.GZ in any combination), the tool compares
+the versioned distribution root and JAR names/versions under `lib/`; other file contents are
+intentionally ignored.
 If a Gradle dependency manifest is available, patch-only version differences are ignored
 only for artifacts marked transitive. Narrow Maven-only metadata-variant exceptions are listed
 in the adjacent `distribution-parity-exceptions.json` file:
@@ -76,10 +77,25 @@ def jars_from_dir(path: str) -> dict[str, list[str]]:
     return result
 
 
+ARCHIVE_SUFFIXES = (".zip", ".tar", ".tar.gz", ".tgz")
+
+
+def is_archive(path: str) -> bool:
+    return path.lower().endswith(ARCHIVE_SUFFIXES)
+
+
+def archive_member_names(path: str) -> list[str]:
+    if path.lower().endswith(".zip"):
+        with ZipFile(path) as archive:
+            return [name for name in archive.namelist() if not name.endswith("/")]
+    # "r:*" detects compression, so plain .tar and .tar.gz both work.
+    with tarfile.open(path, "r:*") as archive:
+        return [member.name for member in archive.getmembers() if member.isfile()]
+
+
 def archive_inventory(path: str) -> tuple[str, list[str]]:
     """Return the archive root and member names without reading member payloads."""
-    with ZipFile(path) as archive:
-        files = [name.rstrip("/") for name in archive.namelist() if not name.endswith("/")]
+    files = [name.removeprefix("./").rstrip("/") for name in archive_member_names(path)]
 
     roots = {name.split("/", 1)[0] for name in files}
     if len(roots) != 1:
@@ -264,7 +280,7 @@ def compare(
     gradle_manifest: str | None = None,
 ) -> int:
     gradle_manifest = gradle_manifest or default_gradle_manifest_path(gradle_path)
-    if gradle_path.lower().endswith(".zip") and maven_path.lower().endswith(".zip"):
+    if is_archive(gradle_path) and is_archive(maven_path):
         return compare_archives(gradle_path, maven_path, gradle_manifest)
 
     manifest_bases, direct_bases = load_gradle_manifest(gradle_manifest)
