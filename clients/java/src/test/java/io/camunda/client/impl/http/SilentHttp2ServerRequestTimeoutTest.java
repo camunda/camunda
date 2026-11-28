@@ -24,8 +24,13 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.response.ActivateJobsResponse;
 import io.camunda.client.api.worker.JobWorker;
+import io.camunda.client.api.worker.JobWorkerMetrics;
+import io.camunda.client.api.worker.metrics.MicrometerJobWorkerMetricsBuilder.Names;
 import io.camunda.client.impl.CamundaClientBuilderImpl;
 import io.camunda.client.impl.CamundaClientImpl;
+import io.micrometer.core.instrument.LongTaskTimer;
+import io.micrometer.core.instrument.Tags;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
@@ -202,6 +207,95 @@ class SilentHttp2ServerRequestTimeoutTest {
       assertThatThrownBy(() -> waiting.get(30, TimeUnit.SECONDS))
           .isNotInstanceOf(TimeoutException.class)
           .isInstanceOf(ExecutionException.class);
+    }
+  }
+
+  @Test
+  void shouldShowAPollTheServerNeverAnswersAsInFlight() {
+    // given a worker on Micrometer metrics, polling a server that accepts requests and never
+    // answers, which is how a stalled poll looked in SUPPORT-34883
+    final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+    final Tags tags = Tags.of("type", "silent");
+    final LongTaskTimer pollInFlight =
+        meterRegistry.more().longTaskTimer(Names.POLL_IN_FLIGHT.asString(), tags);
+    final JobWorker worker =
+        client
+            .newWorker()
+            .jobType("silent")
+            .handler((jobClient, job) -> {})
+            .requestTimeout(Duration.ofSeconds(1))
+            .pollInterval(Duration.ofMillis(100))
+            .metrics(
+                JobWorkerMetrics.micrometer()
+                    .withMeterRegistry(meterRegistry)
+                    .withTags(tags)
+                    .build())
+            .open();
+
+    // when / then: the request reached the server, and the poll is reported as in flight for as
+    // long as the server keeps silent, with an age that real time keeps increasing
+    try {
+      await()
+          .atMost(Duration.ofSeconds(30))
+          .untilAsserted(
+              () -> {
+                assertThat(receivedRequests.get()).isPositive();
+                assertThat(pollInFlight.activeTasks()).isEqualTo(1);
+                assertThat(pollInFlight.max(TimeUnit.MILLISECONDS)).isGreaterThanOrEqualTo(500);
+              });
+    } finally {
+      worker.close();
+    }
+
+    // and a worker that is closed is not reported as stalled afterwards
+    assertThat(pollInFlight.activeTasks()).isZero();
+  }
+
+  @Test
+  void shouldCompleteTheStalledPollWhenItsDeadlineFailsIt() {
+    // given a worker whose polls the server never answers
+    final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+    final Tags tags = Tags.of("type", "silent");
+    final JobWorkerMetrics micrometer =
+        JobWorkerMetrics.micrometer().withMeterRegistry(meterRegistry).withTags(tags).build();
+    final AtomicInteger pollsStarted = new AtomicInteger();
+    final AtomicInteger pollsCompleted = new AtomicInteger();
+    final JobWorkerMetrics countingMetrics =
+        new JobWorkerMetrics() {
+          @Override
+          public void pollStarted() {
+            pollsStarted.incrementAndGet();
+            micrometer.pollStarted();
+          }
+
+          @Override
+          public void pollCompleted() {
+            pollsCompleted.incrementAndGet();
+            micrometer.pollCompleted();
+          }
+        };
+    final JobWorker worker =
+        client
+            .newWorker()
+            .jobType("silent")
+            .handler((jobClient, job) -> {})
+            .requestTimeout(Duration.ofSeconds(1))
+            .pollInterval(Duration.ofMillis(100))
+            .metrics(countingMetrics)
+            .open();
+
+    // when / then: the client fails the poll once its deadline passes, which ends the poll in the
+    // metrics, and the worker goes on to send the next one
+    try {
+      await()
+          .atMost(Duration.ofSeconds(30))
+          .untilAsserted(
+              () -> {
+                assertThat(pollsCompleted.get()).isPositive();
+                assertThat(pollsStarted.get()).isGreaterThanOrEqualTo(2);
+              });
+    } finally {
+      worker.close();
     }
   }
 

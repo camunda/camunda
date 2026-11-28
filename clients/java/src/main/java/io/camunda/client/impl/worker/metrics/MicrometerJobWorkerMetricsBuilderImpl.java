@@ -18,6 +18,7 @@ package io.camunda.client.impl.worker.metrics;
 import io.camunda.client.api.worker.JobWorkerMetrics;
 import io.camunda.client.api.worker.metrics.MicrometerJobWorkerMetricsBuilder;
 import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.LongTaskTimer;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tag;
@@ -48,11 +49,14 @@ public final class MicrometerJobWorkerMetricsBuilderImpl
     final Counter jobExpiredCounter = meterRegistry.counter(Names.JOB_EXPIRED.asString(), tags);
     final Counter streamInactivityRecreatedCounter =
         meterRegistry.counter(Names.STREAM_INACTIVITY_RECREATED.asString(), tags);
+    final LongTaskTimer pollInFlightTimer =
+        meterRegistry.more().longTaskTimer(Names.POLL_IN_FLIGHT.asString(), tags);
     return new MicrometerJobWorkerMetrics(
         jobActivatedCounter,
         jobHandledCounter,
         jobRefusedCounter,
         jobExpiredCounter,
-        streamInactivityRecreatedCounter);
+        streamInactivityRecreatedCounter,
+        pollInFlightTimer);
   }
 }
