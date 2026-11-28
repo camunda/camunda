@@ -66,6 +66,26 @@
       <artifactId>camunda-security-library-validation</artifactId>
     </dependency>
 
+    <!-- the engine only uses the generated models, not the JSON reader and writer -->
+    <dependency>
+      <groupId>io.camunda.fanout</groupId>
+      <artifactId>fanout-protocol</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>tools.jackson.core</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>com.networknt</groupId>
+          <artifactId>json-schema-validator</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.jruby.joni</groupId>
+          <artifactId>joni</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-secret-store-api</artifactId>
