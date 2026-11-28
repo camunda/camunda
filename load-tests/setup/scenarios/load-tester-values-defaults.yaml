@@ -41,12 +41,12 @@ global:
 # Values for the load-tester subchart (nested under its alias).
 # global.* keys above propagate automatically; only non-global keys need nesting.
 load-tester:
-  # OAuth configuration for load tests
-  saas:
-    # Enable OAuth authentication
+  # OIDC configuration for load tests
+  oidc:
+    # Enable OIDC authentication
     enabled: true
 
-    # Credentials for the OAuth authentication
+    # Credentials for the OIDC authentication
     credentials:
       # The name of the Kubernetes secrets where to find the OIDC parameters.
       # The "load-test-credentials" Secret is created by the "load-test-setup"
