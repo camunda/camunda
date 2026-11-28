@@ -131,34 +131,45 @@ public final class JobPollerImpl implements JobPoller {
     activateCommand
         .requestTimeout(requestTimeout)
         .send()
-        .exceptionally(
-            throwable -> {
-              if (openSupplier.getAsBoolean()) {
-                try {
-                  logFailure(throwable);
-                } finally {
-                  errorCallback.accept(throwable);
+        .whenComplete(
+            (activateJobsResponse, throwable) -> {
+              try {
+                if (throwable != null) {
+                  onPollFailure(throwable);
+                } else {
+                  onPollResponse(activateJobsResponse.getJobs());
                 }
-              }
-              return null;
-            })
-        .thenApply(
-            activateJobsResponse -> {
-              final List<ActivatedJob> jobs = activateJobsResponse.getJobs();
-              activatedJobs += jobs.size();
-              jobs.forEach(this::dispatch);
-              if (activatedJobs > 0) {
-                LOG.debug(
-                    "Activated {} jobs for worker {} and job type {}",
-                    activatedJobs,
+              } catch (final Throwable e) {
+                LOG.warn(
+                    "Failed to handle the result of activating jobs for worker {} and job type {}",
                     workerName,
-                    jobType);
-              } else {
-                LOG.trace("No jobs activated for worker {} and job type {}", workerName, jobType);
+                    jobType,
+                    e);
               }
-              doneCallback.accept(activatedJobs);
-              return null;
             });
+  }
+
+  private void onPollFailure(final Throwable throwable) {
+    try {
+      if (openSupplier.getAsBoolean()) {
+        logFailure(throwable);
+      }
+    } finally {
+      // also when closed: the callback hands the poller back, which isClosed() waits for
+      errorCallback.accept(throwable);
+    }
+  }
+
+  private void onPollResponse(final List<ActivatedJob> jobs) {
+    activatedJobs += jobs.size();
+    jobs.forEach(this::dispatch);
+    if (activatedJobs > 0) {
+      LOG.debug(
+          "Activated {} jobs for worker {} and job type {}", activatedJobs, workerName, jobType);
+    } else {
+      LOG.trace("No jobs activated for worker {} and job type {}", workerName, jobType);
+    }
+    doneCallback.accept(activatedJobs);
   }
 
   /**

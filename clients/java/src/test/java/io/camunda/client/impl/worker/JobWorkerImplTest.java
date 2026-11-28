@@ -1447,6 +1447,82 @@ final class JobWorkerImplTest {
   }
 
   @Test
+  void shouldReportClosedWhenThePollInFlightFailsAfterClose() {
+    // given
+    final RecordingJobPoller poller = new RecordingJobPoller();
+    final DeterministicScheduler scheduler = new AlwaysRunningDeterministicScheduler();
+    final AtomicInteger backoffs = new AtomicInteger();
+    final JobWorkerImpl worker =
+        new JobWorkerImpl(
+            MAX_JOBS_ACTIVE,
+            scheduler,
+            Duration.ofMillis(POLL_INTERVAL_IN_MS),
+            Mockito.mock(JobClient.class),
+            new RecordingJobRunnableFactory(),
+            poller,
+            new RecordingJobStreamer(),
+            delay -> {
+              backoffs.incrementAndGet();
+              return delay;
+            },
+            delay -> delay,
+            JobWorkerMetrics.noop(),
+            new BlockingExecutor(new BusyHandlerThreads(), MAX_JOBS_ACTIVE, JOB_TIMEOUT),
+            new TestNanoClock(),
+            JOB_TIMEOUT);
+    scheduler.tick(POLL_INTERVAL_IN_MS, TimeUnit.MILLISECONDS);
+    assertThat(poller.hasPollInFlight()).isTrue();
+
+    // when
+    worker.close();
+    assertThat(worker.isClosed()).isFalse();
+    poller.failPoll(new StatusRuntimeException(Status.UNAVAILABLE));
+
+    // then
+    assertThat(worker.isClosed()).isTrue();
+    assertThat(backoffs).hasValue(0);
+    assertThat(scheduler.isIdle()).isTrue();
+  }
+
+  @Test
+  void shouldReportClosedWhenThePollInFlightAnswersAfterCloseWithJobsItRefuses() {
+    // given
+    final RecordingJobPoller poller = new RecordingJobPoller();
+    final DeterministicScheduler scheduler = new AlwaysRunningDeterministicScheduler();
+    final AtomicInteger backoffs = new AtomicInteger();
+    final JobWorkerImpl worker =
+        new JobWorkerImpl(
+            MAX_JOBS_ACTIVE,
+            scheduler,
+            Duration.ofMillis(POLL_INTERVAL_IN_MS),
+            Mockito.mock(JobClient.class),
+            new RecordingJobRunnableFactory(),
+            poller,
+            new RecordingJobStreamer(),
+            delay -> {
+              backoffs.incrementAndGet();
+              return delay;
+            },
+            delay -> delay,
+            JobWorkerMetrics.noop(),
+            new BlockingExecutor(
+                DecliningExecutor.declining(Decline.REFUSES), MAX_JOBS_ACTIVE, JOB_TIMEOUT),
+            new TestNanoClock(),
+            JOB_TIMEOUT);
+    scheduler.tick(POLL_INTERVAL_IN_MS, TimeUnit.MILLISECONDS);
+    assertThat(poller.hasPollInFlight()).isTrue();
+
+    // when
+    worker.close();
+    poller.handOverJobs(TestData.jobs(MAX_JOBS_ACTIVE));
+
+    // then
+    assertThat(worker.isClosed()).isTrue();
+    assertThat(backoffs).hasValue(0);
+    assertThat(scheduler.isIdle()).isTrue();
+  }
+
+  @Test
   void shouldLetPushedJobsUseEverySlotWhileThePollFindsNoBacklog() {
     // given a streaming worker that could reserve one of its four slots for the poll, whose poll
     // comes back empty, as it does for a worker that keeps up with the jobs pushed to it
