@@ -178,7 +178,6 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
         </AccordionItem>
         <AccordionItem
           data-testid="agent-usage-section"
-          aria-label="Usage"
           title={
             <SectionTitle icon={<MeterAlt size={16} />}>
               Usage

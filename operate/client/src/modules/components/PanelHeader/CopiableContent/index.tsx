@@ -25,7 +25,7 @@ const CopiableContent: React.FC<Props> = ({
         type="inline"
         // @ts-expect-error - Carbon types are wrong
         title={copyButtonDescription}
-        aria-label={copyButtonDescription}
+        aria-label={`${content} (${copyButtonDescription})`}
         feedback="Copied to clipboard"
       >
         {content}

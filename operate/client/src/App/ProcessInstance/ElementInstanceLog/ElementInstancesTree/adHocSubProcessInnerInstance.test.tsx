@@ -79,8 +79,9 @@ describe('ElementInstancesTree - Ad Hoc Sub Process Inner Instance', () => {
     );
 
     await user.type(
-      await screen.findByLabelText('Ad Hoc Sub Process Inner Instance', {
-        selector: "[aria-expanded='false']",
+      await screen.findByRole('treeitem', {
+        name: 'Ad Hoc Sub Process Inner Instance',
+        expanded: false,
       }),
       '{arrowright}',
     );
@@ -88,8 +89,9 @@ describe('ElementInstancesTree - Ad Hoc Sub Process Inner Instance', () => {
     await user.click(screen.getByText('Ad Hoc Inner Subprocess Test'));
 
     await user.click(
-      await screen.findByLabelText('Ad Hoc Sub Process Inner Instance', {
-        selector: "[aria-expanded='true']",
+      await screen.findByRole('treeitem', {
+        name: /^Ad Hoc Sub Process Inner Instance/,
+        expanded: true,
       }),
     );
 
@@ -148,8 +150,9 @@ describe('ElementInstancesTree - Ad Hoc Sub Process Inner Instance', () => {
     await user.click(screen.getByText('Ad Hoc Inner Subprocess Test'));
 
     await user.click(
-      await screen.findByLabelText('Ad Hoc Sub Process Inner Instance', {
-        selector: "[aria-expanded='false']",
+      await screen.findByRole('treeitem', {
+        name: 'Ad Hoc Sub Process Inner Instance',
+        expanded: false,
       }),
     );
 
@@ -184,8 +187,9 @@ describe('ElementInstancesTree - Ad Hoc Sub Process Inner Instance', () => {
     mockSearchElementInstances().withSuccess(searchResult([]));
 
     await user.click(
-      await screen.findByLabelText('Ad Hoc Sub Process Inner Instance', {
-        selector: "[aria-expanded='false']",
+      await screen.findByRole('treeitem', {
+        name: 'Ad Hoc Sub Process Inner Instance',
+        expanded: false,
       }),
     );
 
@@ -226,8 +230,9 @@ describe('ElementInstancesTree - Ad Hoc Sub Process Inner Instance', () => {
     mockSearchElementInstances().withNetworkError();
 
     await user.click(
-      await screen.findByLabelText('Ad Hoc Sub Process Inner Instance', {
-        selector: "[aria-expanded='false']",
+      await screen.findByRole('treeitem', {
+        name: 'Ad Hoc Sub Process Inner Instance',
+        expanded: false,
       }),
     );
 
@@ -339,8 +344,9 @@ describe('ElementInstancesTree - Ad Hoc Sub Process Inner Instance', () => {
       await user.click(screen.getByText('Ad Hoc Inner Subprocess Test'));
 
       await user.click(
-        await screen.findByLabelText('Ad Hoc Sub Process Inner Instance', {
-          selector: "[aria-expanded='false']",
+        await screen.findByRole('treeitem', {
+          name: 'Ad Hoc Sub Process Inner Instance',
+          expanded: false,
         }),
       );
     };

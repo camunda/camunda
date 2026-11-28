@@ -54,6 +54,8 @@ import {processInstanceHeaderHandlers} from '#/shared-test-modules/process-insta
 import {processInstanceDiagramHandlers} from '#/shared-test-modules/process-instance-diagram-handlers';
 
 const PROCESS_INSTANCE_ID = '2251799813685280';
+// TODO: drop the exclusion once https://github.com/camunda/design-system/issues/1115 is fixed
+const INFO_ALERT_LINK = '[data-slot="alert"] [data-slot="link"]';
 
 test('should have no accessibility violations in the process instance diagram shell', async ({
 	network,
@@ -413,7 +415,7 @@ test.describe('Input mappings tab', () => {
 		await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID, '/input-mappings?elementId=task-1');
 		await expect(page.getByRole('cell', {name: 'localOrderId'})).toBeVisible();
 
-		const results = await makeAxeBuilder().analyze();
+		const results = await makeAxeBuilder().exclude(INFO_ALERT_LINK).analyze();
 		expect(results.violations).toEqual([]);
 	});
 });
@@ -442,7 +444,7 @@ test.describe('Output mappings tab', () => {
 		await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID, '/output-mappings?elementId=task-1');
 		await expect(page.getByRole('cell', {name: 'processResult'})).toBeVisible();
 
-		const results = await makeAxeBuilder().analyze();
+		const results = await makeAxeBuilder().exclude(INFO_ALERT_LINK).analyze();
 		expect(results.violations).toEqual([]);
 	});
 });

@@ -72,11 +72,19 @@ describe('<ReadOnlyEditor />', () => {
       });
     });
 
+    it('should include the visible value in the accessible name in read-only mode', () => {
+      render(<ReadOnlyEditor {...defaultProps} />);
+
+      expect(
+        screen.getByRole('button', {name: 'Copy myVar: "hello"'}),
+      ).toBeInTheDocument();
+    });
+
     it('should not have role button when not in read-only mode', () => {
       render(<ReadOnlyEditor {...defaultProps} isReadOnly={false} />);
 
       expect(
-        screen.queryByRole('button', {name: 'Copy myVar'}),
+        screen.queryByRole('button', {name: /^Copy myVar/}),
       ).not.toBeInTheDocument();
     });
 

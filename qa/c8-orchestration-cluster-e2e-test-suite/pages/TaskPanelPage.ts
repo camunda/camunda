@@ -10,6 +10,10 @@ import {Page, Locator, expect} from '@playwright/test';
 import {waitForAssertion} from 'utils/waitForAssertion';
 import {sleep} from 'utils/sleep';
 
+// Older images append "(suspended)" via aria-label; newer ones name the link
+// after its content, which includes the suspended icon's description.
+const SUSPENDED_TASK_NAME = /\(suspended\)$|Process instance suspended\./;
+
 export type TaskCard = {
   readonly name: string;
   readonly assignee?: string;
@@ -34,14 +38,10 @@ class TaskPanelPage {
     });
     this.taskCards = this.availableTasks.locator('article');
     this.scrollableList = this.availableTasks.getByTestId('scrollable-list');
-    // The old Carbon expandable filter sidebar (`[aria-label="Filter
-    // controls"]`, "Expand to show filters") no longer exists. Filtering is
-    // now a single dropdown-trigger button (id="filter-select") whose
-    // accessible name is the `taskFiltersHeaderAria` string ("Filters");
-    // clicking it opens a Radix DropdownMenu of filter options.
+    // "Filters" on older images, "Filters: <selected filter>" on newer ones;
+    // this suite runs against the published image, which can lag behind.
     this.filterSelectButton = page.getByRole('button', {
-      name: 'Filters',
-      exact: true,
+      name: /^Filters(:|$)/,
     });
     this.taskListPageBanner = page.getByRole('link', {
       name: 'Camunda logo',
@@ -99,11 +99,11 @@ class TaskPanelPage {
     const link = this.taskLinkByName(name);
     await expect(link).toBeVisible({timeout: 15_000});
     if (suspended) {
-      await expect(link).toHaveAccessibleName(/\(suspended\)$/, {
+      await expect(link).toHaveAccessibleName(SUSPENDED_TASK_NAME, {
         timeout: 15_000,
       });
     } else {
-      await expect(link).not.toHaveAccessibleName(/\(suspended\)$/, {
+      await expect(link).not.toHaveAccessibleName(SUSPENDED_TASK_NAME, {
         timeout: 15_000,
       });
     }

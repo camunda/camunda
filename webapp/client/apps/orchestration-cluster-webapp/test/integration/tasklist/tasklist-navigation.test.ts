@@ -115,7 +115,7 @@ test.describe('Tasks panel', () => {
 
 		await expect(tasklistIndexPage.taskItem('Approve purchase order')).toBeVisible();
 		await expect(tasklistIndexPage.taskItem('Review contract')).toHaveAccessibleName(
-			'Unassigned task: Review contract (suspended)',
+			/Process instance suspended\. Available again when it resumes\./,
 		);
 	});
 

@@ -24,6 +24,9 @@ const VirtualBar = forwardRef<HTMLDivElement, Props>(
       <Container ref={ref} data-testid={`node-details-${elementInstanceKey}`}>
         <Stack orientation="horizontal" gap={5}>
           <NodeName>{elementName}</NodeName>
+          <span className="cds--visually-hidden">
+            , this element instance is planned to be added
+          </span>
         </Stack>
         <ModificationIcons
           elementId={elementId}

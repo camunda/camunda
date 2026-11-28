@@ -109,7 +109,7 @@ describe('DiagramPanel', () => {
 
     await user.click(
       screen.getByRole('button', {
-        name: 'Process ID / Click to copy',
+        name: 'bigVarProcess (Process ID / Click to copy)',
       }),
     );
     expect(await screen.findByText('Copied to clipboard')).toBeInTheDocument();

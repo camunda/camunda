@@ -68,7 +68,7 @@ const ReadOnlyEditor = ({value, placeholder, label, height, isInvalid, renderBut
 				style={{maxHeight: height}}
 				tabIndex={0}
 				role="button"
-				aria-label={t('operate.shared.editors.copyValue', {label})}
+				aria-label={t('operate.shared.editors.copyValue', {label, value: value || placeholder})}
 				aria-disabled={isCopying}
 				onClick={handleCopy}
 				onKeyDown={(event) => {

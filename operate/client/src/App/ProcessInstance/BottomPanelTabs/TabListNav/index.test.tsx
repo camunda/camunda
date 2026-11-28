@@ -34,7 +34,6 @@ const MOCK_TABS = [
   {
     key: 'key',
     title: 'A tab',
-    label: 'A tab',
     selected: true,
     to: {
       pathname: '/first',
@@ -43,7 +42,6 @@ const MOCK_TABS = [
   {
     key: 'key2',
     title: 'Another tab',
-    label: 'Another tab',
     selected: false,
     to: {
       pathname: '/second',

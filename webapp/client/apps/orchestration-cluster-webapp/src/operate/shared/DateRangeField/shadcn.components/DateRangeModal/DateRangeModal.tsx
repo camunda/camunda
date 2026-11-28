@@ -25,6 +25,7 @@ import {DateInput} from './DateInput';
 import {TimeInput} from './TimeInput';
 import {parseCompleteDate} from './dateValidation';
 import {getTimeZoneLabel} from '../../getTimeZoneLabel';
+import {labelDayButton} from '../../labelDayButton';
 
 const defaultTime = {
 	from: '00:00:00',
@@ -98,6 +99,7 @@ const DateRangeModal: React.FC<Props> = ({defaultValues, onApply, onCancel, titl
 										numberOfMonths={1}
 										fixedWeeks
 										showOutsideDays
+										labels={{labelDayButton}}
 										// Without this, react-day-picker v10 treats a click against an existing
 										// complete range as moving one boundary instead of starting a fresh
 										// selection, so a single click would otherwise fill both dates/times

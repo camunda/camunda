@@ -223,7 +223,6 @@ const ModificationDropdown: React.FC<Props> = observer(
                         <Button
                           kind="ghost"
                           title="Cancel selected instance in this element"
-                          aria-label="Cancel selected instance in this element"
                           size="sm"
                           renderIcon={Error}
                           onClick={() => {
@@ -274,7 +273,6 @@ const ModificationDropdown: React.FC<Props> = observer(
                         <Button
                           kind="ghost"
                           title="Move selected instance in this element to another target"
-                          aria-label="Move selected instance in this element to another target"
                           size="sm"
                           renderIcon={ArrowRight}
                           onClick={() => {

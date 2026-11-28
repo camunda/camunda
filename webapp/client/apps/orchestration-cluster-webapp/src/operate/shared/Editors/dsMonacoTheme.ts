@@ -18,6 +18,7 @@ const WORKBENCH_COLORS = {
 	'editorGutter.background': '--input-background',
 	'editor.foreground': '--foreground',
 	'editorCursor.foreground': '--foreground',
+	'editor.placeholder.foreground': '--neutral-foreground-subtle',
 	'editor.lineHighlightBackground': '--neutral-background-medium',
 	'editor.selectionBackground': '--accent-background-strong',
 	'editor.inactiveSelectionBackground': '--accent-background-subtle',

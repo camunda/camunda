@@ -230,7 +230,7 @@ describe('<BottomPanelTabs />', () => {
 
     expect(screen.getByRole('link', {name: /^Variables$/i})).toBeVisible();
     expect(
-      screen.queryByRole('link', {name: /^Incidents$/i}),
+      screen.queryByRole('link', {name: /^Incidents \d+$/i}),
     ).not.toBeInTheDocument();
   });
 
@@ -269,7 +269,7 @@ describe('<BottomPanelTabs />', () => {
 
     expect(screen.getByRole('link', {name: /^Variables$/i})).toBeVisible();
     expect(
-      screen.queryByRole('link', {name: /^Incidents$/i}),
+      screen.queryByRole('link', {name: /^Incidents \d+$/i}),
     ).not.toBeInTheDocument();
   });
 
@@ -287,7 +287,7 @@ describe('<BottomPanelTabs />', () => {
     render(<BottomPanelTabs isHistoryTabVisible />, {wrapper: getWrapper()});
 
     expect(
-      await screen.findByRole('link', {name: /^Incidents$/i}),
+      await screen.findByRole('link', {name: /^Incidents \d+$/i}),
     ).toBeVisible();
   });
 
@@ -309,13 +309,13 @@ describe('<BottomPanelTabs />', () => {
     });
 
     expect(
-      await screen.findByRole('link', {name: /^Incidents$/i}),
+      await screen.findByRole('link', {name: /^Incidents \d+$/i}),
     ).toBeVisible();
 
     const tabs = screen.getAllByRole('link');
     expect(tabs).toHaveLength(8);
     expect(tabs[0]).toHaveAccessibleName('Instance History');
-    expect(tabs[1]).toHaveAccessibleName('Incidents');
+    expect(tabs[1]).toHaveAccessibleName(/^Incidents \d+$/);
     expect(tabs[2]).toHaveAccessibleName('Details');
     expect(tabs[3]).toHaveAccessibleName('Variables');
     expect(tabs[4]).toHaveAccessibleName('Input Mappings');
@@ -422,7 +422,7 @@ describe('<BottomPanelTabs />', () => {
     });
 
     const incidentsTab = await screen.findByRole('link', {
-      name: /^Incidents$/i,
+      name: /^Incidents \d+$/i,
     });
 
     await user.click(incidentsTab);
@@ -563,7 +563,7 @@ describe('<BottomPanelTabs />', () => {
     render(<BottomPanelTabs isHistoryTabVisible />, {wrapper: getWrapper()});
 
     const incidentsTab = await screen.findByRole('link', {
-      name: /^Incidents$/i,
+      name: /^Incidents \d+$/i,
     });
     expect(incidentsTab).toBeVisible();
     expect(await screen.findByText('5')).toBeVisible();
@@ -603,7 +603,7 @@ describe('<BottomPanelTabs />', () => {
     });
 
     expect(
-      await screen.findByRole('link', {name: /^Incidents$/i}),
+      await screen.findByRole('link', {name: /^Incidents \d+$/i}),
     ).toBeVisible();
     expect(await screen.findByText('2')).toBeVisible();
   });
@@ -664,7 +664,7 @@ describe('<BottomPanelTabs />', () => {
     });
 
     expect(
-      await screen.findByRole('link', {name: /^Incidents$/i}),
+      await screen.findByRole('link', {name: /^Incidents \d+$/i}),
     ).toBeVisible();
     expect(await screen.findByText('3')).toBeVisible();
   });

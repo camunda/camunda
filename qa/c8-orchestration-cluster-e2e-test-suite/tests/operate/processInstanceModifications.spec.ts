@@ -15,6 +15,14 @@ import {waitForAssertion} from 'utils/waitForAssertion';
 import {assertJsonEqual} from '../../utils/assertJsonEqual';
 import {searchVariableByNameAndProcessInstanceKey} from 'utils/requestHelpers/variable-requestHelpers';
 
+// Planned tree items are named "<element>, this element instance is planned to
+// be added". Newer builds render the suffix as visually hidden text, which
+// browsers join to the element name with a space before the comma.
+const plannedTreeItemName = (elementName: string) =>
+  new RegExp(
+    `${elementName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s?, this element instance is planned to be added`,
+  );
+
 type ProcessInstance = {
   processInstanceKey: string;
 };
@@ -332,7 +340,7 @@ test.describe('Process Instance Modifications', () => {
         'test3',
         '1',
       );
-      const addedTokenInHistory = `${neverFailsHistoryItem}, this element instance is planned to be added`;
+      const addedTokenInHistory = plannedTreeItemName(neverFailsHistoryItem);
       await operateProcessInstancePage.clickTreeItem(addedTokenInHistory);
       await expect(operateProcessInstancePage.noVariablesText).toBeVisible();
 
@@ -362,7 +370,7 @@ test.describe('Process Instance Modifications', () => {
         'test3',
         '1',
       );
-      const addedTokenInHistory = `${neverFailsHistoryItem}, this element instance is planned to be added`;
+      const addedTokenInHistory = plannedTreeItemName(neverFailsHistoryItem);
       await operateProcessInstancePage.clickTreeItem(addedTokenInHistory);
       await expect(page.getByText(/The element has no Variables/i)).toBeVisible(
         {timeout: 30000},
@@ -543,11 +551,13 @@ test.describe('Process Instance Modifications', () => {
         operateProcessInstancePage,
         operateProcessInstanceViewModificationModePage,
       }) => {
-        const newNestedParentName = `${activityFirstSubprocess}, this element instance is planned to be added`;
+        const newNestedParentName = plannedTreeItemName(
+          activityFirstSubprocess,
+        );
         await operateProcessInstancePage.expandTreeItemInHistory(
           newNestedParentName,
         );
-        const addedTokenInHistory = `${activityCollectMoney}, this element instance is planned to be added`;
+        const addedTokenInHistory = plannedTreeItemName(activityCollectMoney);
         await operateProcessInstancePage.clickTreeItem(addedTokenInHistory);
 
         await expect(
@@ -574,11 +584,13 @@ test.describe('Process Instance Modifications', () => {
         operateProcessInstancePage,
         operateProcessInstanceViewModificationModePage,
       }) => {
-        const newNestedParentName = `${activityFirstSubprocess}, this element instance is planned to be added`;
+        const newNestedParentName = plannedTreeItemName(
+          activityFirstSubprocess,
+        );
         await operateProcessInstancePage.expandTreeItemInHistory(
           newNestedParentName,
         );
-        const addedTokenInHistory = `${activityCollectMoney}, this element instance is planned to be added`;
+        const addedTokenInHistory = plannedTreeItemName(activityCollectMoney);
         await operateProcessInstancePage.clickTreeItem(addedTokenInHistory);
 
         await operateProcessInstanceViewModificationModePage.addNewVariable(
@@ -689,11 +701,13 @@ test.describe('Process Instance Modifications', () => {
         operateProcessInstancePage,
         operateProcessInstanceViewModificationModePage,
       }) => {
-        const newNestedParentName = `${activityFirstSubprocess}, this element instance is planned to be added`;
+        const newNestedParentName = plannedTreeItemName(
+          activityFirstSubprocess,
+        );
         await operateProcessInstancePage.expandTreeItemInHistory(
           newNestedParentName,
         );
-        const addedTokenInHistory = `${activityCollectMoney}, this element instance is planned to be added`;
+        const addedTokenInHistory = plannedTreeItemName(activityCollectMoney);
         await operateProcessInstancePage.clickTreeItem(addedTokenInHistory);
 
         await operateProcessInstanceViewModificationModePage.addNewVariable(
