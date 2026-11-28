@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {OPERATE_BASE} from '#/shared/operateBase';
+import {OPERATE_BASE, OPERATE_DECISIONS_BASE} from '#/shared/operateBase';
 import {createLink} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
 import {Link} from '@camunda/design-system';
@@ -67,7 +67,7 @@ const CellEntityKey: React.FC<Props> = ({item, processDefinitionName, decisionDe
 		if (item.entityType === 'DECISION' && item.operationType === 'EVALUATE') {
 			return (
 				<EntityLink
-					to={`${OPERATE_BASE}/decisions/$decisionInstanceId` as const}
+					to={`${OPERATE_DECISIONS_BASE}/$decisionInstanceId` as const}
 					params={{decisionInstanceId: item.entityKey}}
 					search={{tenantId}}
 					title={linkLabel}

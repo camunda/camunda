@@ -9,12 +9,38 @@
 import {BasePage} from '#/pages/BasePage';
 
 class OperateDecisionsPage extends BasePage {
+	readonly decisionsUrl = '/operate/decisions';
+
 	async goto(search = '') {
-		return this.page.goto(`/operate/decisions${search}`);
+		return this.page.goto(`${this.decisionsUrl}${search}`);
+	}
+
+	get heading() {
+		return this.page.getByRole('heading', {name: 'Decisions'});
+	}
+
+	get moreFiltersButton() {
+		return this.page.getByRole('button', {name: 'More filters'});
+	}
+
+	get decisionPanel() {
+		return this.page.getByRole('region', {name: 'Decision Panel'});
+	}
+
+	get decisionViewer() {
+		return this.page.getByTestId('decision-viewer');
+	}
+
+	get instancesTable() {
+		return this.page.getByTestId('decision-instances-table');
+	}
+
+	get panelResizeHandle() {
+		return this.page.locator('.__dbk__dragger');
 	}
 
 	get deleteDefinitionButton() {
-		return this.page.getByRole('button', {name: /Delete Decision Definition/});
+		return this.page.getByRole('button', {name: /Delete decision definition/});
 	}
 
 	get deleteDefinitionDialog() {

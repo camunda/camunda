@@ -84,7 +84,7 @@ test.describe('Decision Filters', () => {
     });
 
     await test.step('Verify name filter is visibly applied', async () => {
-      await expect(operateDecisionsPage.decisionNameFilter).toHaveValue(
+      await expect(operateDecisionsPage.decisionNameFilter).toHaveText(
         'Invoice Classification',
       );
     });
@@ -214,7 +214,7 @@ test.describe('Decision Filter Reset', () => {
   }) => {
     await test.step('Apply decision name filter', async () => {
       await operateDecisionsPage.selectDecisionName('Invoice Classification');
-      await expect(operateDecisionsPage.decisionNameFilter).toHaveValue(
+      await expect(operateDecisionsPage.decisionNameFilter).toHaveText(
         'Invoice Classification',
       );
     });
@@ -233,7 +233,7 @@ test.describe('Decision Filter Reset', () => {
     });
 
     await test.step('Verify decision name filter is cleared', async () => {
-      await expect(operateDecisionsPage.decisionNameFilter).not.toHaveValue(
+      await expect(operateDecisionsPage.decisionNameFilter).not.toHaveText(
         'Invoice Classification',
       );
     });

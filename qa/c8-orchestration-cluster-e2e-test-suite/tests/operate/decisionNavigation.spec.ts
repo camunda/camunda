@@ -229,12 +229,12 @@ test.describe('Decision Navigation', () => {
       ).not.toHaveCount(0);
     });
 
-    const viewDecisionInstanceLink = operateDecisionsPage.decisionInstancesList
-      .getByRole('row')
-      .filter({
-        hasText: processInstanceWithSuccessfulDecision.processInstanceKey,
-      })
-      .getByRole('link', {name: /View decision instance/})
+    const viewDecisionInstanceLink = operateDecisionsPage
+      .decisionInstanceLinksIn(
+        operateDecisionsPage.decisionInstancesList.getByRole('row').filter({
+          hasText: processInstanceWithSuccessfulDecision.processInstanceKey,
+        }),
+      )
       .first();
 
     await test.step('Open the first Assign Approver Group decision instance', async () => {

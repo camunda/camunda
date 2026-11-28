@@ -14,8 +14,16 @@ class OperateDecisionInstancePage extends BasePage {
 		return this.page.goto(`/operate/decisions/${decisionInstanceId}`);
 	}
 
-	async gotoPreview(decisionInstanceId: string) {
-		return this.page.goto(`/operate-preview/decisions/${decisionInstanceId}`);
+	get instanceHeader() {
+		return this.page.getByRole('group', {name: 'Instance header', exact: true});
+	}
+
+	get variablesPanel() {
+		return this.page.getByRole('tabpanel');
+	}
+
+	get evaluatedStateOverlay() {
+		return this.drdPanel.getByRole('img', {name: /: Evaluated$/}).first();
 	}
 
 	get decisionPanel() {
@@ -24,6 +32,10 @@ class OperateDecisionInstancePage extends BasePage {
 
 	get drdPanel() {
 		return this.page.getByRole('region', {name: 'DRD panel'});
+	}
+
+	get drdDiagram() {
+		return this.page.getByTestId('drd');
 	}
 
 	get drdResizeHandle() {
@@ -42,18 +54,6 @@ class OperateDecisionInstancePage extends BasePage {
 		return this.page.getByRole('button', {name: 'Close DRD panel'});
 	}
 
-	async resizeDrdBy(delta: number) {
-		const bounds = await this.drdResizeHandle.boundingBox();
-		if (bounds === null) {
-			throw new Error('Missing DRD resize handle bounds');
-		}
-		const x = bounds.x + bounds.width / 2;
-		await this.page.mouse.move(x, bounds.y + bounds.height / 2);
-		await this.page.mouse.down();
-		await this.page.mouse.move(x - delta, bounds.y + bounds.height / 2, {steps: 4});
-		await this.page.mouse.up();
-	}
-
 	async boundsOf(locator: Locator) {
 		const bounds = await locator.boundingBox();
 		if (bounds === null) {
@@ -62,32 +62,8 @@ class OperateDecisionInstancePage extends BasePage {
 		return bounds;
 	}
 
-	get loadingSpinner() {
-		return this.decisionPanel.getByRole('img', {name: 'loading'});
-	}
-
 	get decisionTableLabel() {
 		return this.decisionPanel.getByText('Invoice Amount');
-	}
-
-	get xmlForbiddenMessage() {
-		return this.decisionPanel.getByText('Missing permissions to view the Definition');
-	}
-
-	get panelErrorMessage() {
-		return this.decisionPanel.getByText("Couldn't fetch data");
-	}
-
-	get panelRetryButton() {
-		return this.decisionPanel.getByRole('button', {name: 'Try again'});
-	}
-
-	get pageErrorHeading() {
-		return this.page.getByRole('heading', {name: 'Something went wrong'});
-	}
-
-	get pageErrorRetryButton() {
-		return this.page.getByRole('button', {name: 'Try again'});
 	}
 }
 

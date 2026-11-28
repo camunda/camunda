@@ -32,7 +32,7 @@ import {
 import {camundaAppIcons, type NavIcon, type SidebarNode} from '@camunda/design-system';
 import type {AuthenticatedCurrentUser} from '@camunda/camunda-api-zod-schemas/8.11';
 import {isAdminSectionAvailable, useAdminSectionConfig, type AdminSectionKey} from '#/admin/adminSections';
-import {OPERATE_BASE} from '#/shared/operateBase';
+import {OPERATE_BASE, OPERATE_DECISIONS_BASE} from '#/shared/operateBase';
 import {hasComponentAccess} from '#/shared/componentAccess';
 import {ENABLE_CASE_MANAGEMENT} from '#/shared/feature-flags';
 import {useActiveComponentHomeRoute} from '#/shared/useActiveComponentHomeRoute';
@@ -44,7 +44,7 @@ const tabRoutes = {
 	tasklistCases: '/tasklist/cases',
 	operateDashboard: OPERATE_BASE,
 	operateProcesses: `${OPERATE_BASE}/processes`,
-	operateDecisions: `${OPERATE_BASE}/decisions`,
+	operateDecisions: OPERATE_DECISIONS_BASE,
 	operateOperationsLog: `${OPERATE_BASE}/operations-log`,
 	operateBatchOperations: `${OPERATE_BASE}/batch-operations`,
 	adminIndex: '/admin',
