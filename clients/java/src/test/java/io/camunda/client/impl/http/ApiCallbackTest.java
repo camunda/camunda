@@ -20,6 +20,7 @@ import static org.mockito.Mockito.*;
 
 import io.camunda.client.CredentialsProvider.StatusCode;
 import io.camunda.client.impl.http.ApiResponseConsumer.ApiResponse;
+import java.net.URI;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Predicate;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,6 +29,10 @@ import org.junit.jupiter.api.Test;
 class ApiCallbackTest {
 
   public static final int DEFAULT_REMAINING_RETRIES = 2;
+  // irrelevant here: these tests never exercise a connection failure
+  private static final URI GATEWAY_ADDRESS = URI.create("http://gateway:8080");
+  private static final TransportFailureTranslator FAILURE_TRANSLATOR =
+      new TransportFailureTranslator(GATEWAY_ADDRESS);
   private CompletableFuture<String> response;
   private JsonResponseAndStatusCodeTransformer<String, String> transformer;
   private Predicate<StatusCode> retryPredicate;
@@ -50,7 +55,8 @@ class ApiCallbackTest {
             retryPredicate,
             retryAction,
             DEFAULT_REMAINING_RETRIES,
-            false);
+            false,
+            FAILURE_TRANSLATOR);
   }
 
   @Test
@@ -154,7 +160,8 @@ class ApiCallbackTest {
             retryPredicate,
             retryAction,
             DEFAULT_REMAINING_RETRIES,
-            false);
+            false,
+            FAILURE_TRANSLATOR);
 
     final ApiResponse<String> apiResponse = mock(ApiResponse.class);
     when(apiResponse.getCode()).thenReturn(503);
@@ -183,7 +190,8 @@ class ApiCallbackTest {
             retryPredicate,
             retryAction,
             DEFAULT_REMAINING_RETRIES,
-            false);
+            false,
+            FAILURE_TRANSLATOR);
 
     final ApiResponse<String> apiResponse = mock(ApiResponse.class);
     when(apiResponse.getCode()).thenReturn(500);
@@ -210,7 +218,8 @@ class ApiCallbackTest {
             retryPredicate,
             retryAction,
             DEFAULT_REMAINING_RETRIES,
-            true);
+            true,
+            FAILURE_TRANSLATOR);
     final ApiResponse<String> apiResponse = mock(ApiResponse.class);
     when(apiResponse.getCode()).thenReturn(500);
     when(apiResponse.entity()).thenReturn(ApiEntity.of("super-secret-value"));
@@ -239,7 +248,8 @@ class ApiCallbackTest {
             retryPredicate,
             retryAction,
             DEFAULT_REMAINING_RETRIES,
-            false);
+            false,
+            FAILURE_TRANSLATOR);
 
     final ApiResponse<String> apiResponse = mock(ApiResponse.class);
     when(apiResponse.getCode()).thenReturn(400);
