@@ -1,4 +1,5 @@
 import buildlogic.ARTIFACT_KIND
+import buildlogic.readMavenLicenseSettings
 import buildlogic.skipWhen
 import buildlogic.spotbugsEngineVersion
 import buildlogic.requiredVersion
@@ -103,6 +104,32 @@ tasks.named<Checkstyle>("checkstyleTest") {
 // Maven -Dquickly skips checks (skipChecks); do the same here.
 tasks.withType<Checkstyle>().configureEach { skipWhen(quickly) }
 
+// Maven's license-maven-plugin check over the module's java sources, as a separate Spotless format
+// so that javaChecks can run it without google-java-format. Header file and skipExistingHeaders are
+// inherited from the module's POMs, as in Maven. Spotless cannot accept arbitrary existing headers,
+// so modules that set skipExistingHeaders (code moved in with its original header) are not checked.
+private val licenseSettings =
+  readMavenLicenseSettings(layout.projectDirectory.file("pom.xml").asFile) { pom ->
+    providers.fileContents(layout.projectDirectory.file(pom.absolutePath)).asText.orNull
+  }
+
+if (!licenseSettings.skipExistingHeaders) {
+  val headerComment =
+    layout.settingsDirectory
+      .file(licenseSettings.headerFile)
+      .asFile
+      .readLines()
+      .joinToString("\n", prefix = "/*\n", postfix = "\n */\n") {
+        if (it.isBlank()) " *" else " * " + it.replace("\${year}", "\$YEAR")
+      }
+  extensions.configure<SpotlessExtension> {
+    format("license") {
+      target("src/**/*.java")
+      licenseHeader(headerComment, "package |import |module |open module |@")
+    }
+  }
+}
+
 // Same effort, threshold and filters as Maven's spotbugs profile (parent/pom.xml). Maven applies
 // the shared exclude filter and, when the module has one, spotbugs/spotbugs-exclude.xml too.
 val spotbugsFilterDir = layout.settingsDirectory.dir("build-tools/src/main/resources/spotbugs")
@@ -137,9 +164,11 @@ tasks.withType<SpotBugsTask>().configureEach { skipWhen(quickly) }
 // Runs the checks of Maven's "Java Checks" CI job. Spotless is not part of it; it has its own job.
 tasks.register("javaChecks") {
   group = "verification"
-  description = "Runs the checks of the Maven Java Checks job: checkstyle, spotbugs"
+  description = "Runs the checks of the Maven Java Checks job: checkstyle, license headers, spotbugs"
   // Not every Checkstyle task: extra source sets (e.g. src/tool) are not checked by Maven.
   dependsOn("checkstyleMain", "checkstyleTest", "spotbugsMain", "testClasses")
+  // The license format only exists for modules whose headers are checked (see above).
+  tasks.findByName("spotlessLicenseCheck")?.let { dependsOn(it) }
 }
 
 publishing {
