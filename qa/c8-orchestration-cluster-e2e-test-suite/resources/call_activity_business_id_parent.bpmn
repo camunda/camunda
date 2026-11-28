@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_call_activity_business_id_parent" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.39.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.8.0">
+  <bpmn:process id="PARENT_PROCESS_ID_PLACEHOLDER" name="Call Activity Business ID Parent" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:outgoing>Flow_start_to_call</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_start_to_call" sourceRef="StartEvent_1" targetRef="call_child" />
+    <bpmn:callActivity id="call_child" name="Call child">
+      <bpmn:extensionElements>
+        <zeebe:calledElement processId="child_business_id_process" propagateAllChildVariables="true" CALLED_ELEMENT_BUSINESS_ID_ATTR />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_start_to_call</bpmn:incoming>
+      <bpmn:outgoing>Flow_call_to_end</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:endEvent id="Event_end">
+      <bpmn:incoming>Flow_call_to_end</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_call_to_end" sourceRef="call_child" targetRef="Event_end" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="PARENT_PROCESS_ID_PLACEHOLDER">
+      <bpmndi:BPMNShape id="StartEvent_1_di" bpmnElement="StartEvent_1">
+        <dc:Bounds x="152" y="102" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="call_child_di" bpmnElement="call_child">
+        <dc:Bounds x="260" y="80" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_end_di" bpmnElement="Event_end">
+        <dc:Bounds x="432" y="102" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_start_to_call_di" bpmnElement="Flow_start_to_call">
+        <di:waypoint x="188" y="120" />
+        <di:waypoint x="260" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_call_to_end_di" bpmnElement="Flow_call_to_end">
+        <di:waypoint x="360" y="120" />
+        <di:waypoint x="432" y="120" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
