@@ -725,6 +725,18 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   }
 
   @Override
+  public long getDocumentVersion(final String indexName, final String entryId) {
+    final GetRequest getRequest =
+        OptimizeGetRequestBuilderES.of(
+            r -> r.optimizeIndex(getOptimizeElasticClient(), indexName).id(entryId));
+    try {
+      return getOptimizeElasticClient().get(getRequest, Object.class).version();
+    } catch (final IOException e) {
+      throw new OptimizeRuntimeException(e);
+    }
+  }
+
+  @Override
   public <T> Optional<T> getDatabaseEntryById(
       final String indexName, final String entryId, final Class<T> type) {
     final GetRequest getRequest =
