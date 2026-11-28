@@ -232,7 +232,11 @@ public final class ProcessInstanceStateTransitionGuard {
   }
 
   private Either<String, ?> canActivateDrainingDefinition(final BpmnElementContext context) {
-    if (context.getBpmnElementType() != BpmnElementType.PROCESS) {
+    // An existing instance in ELEMENT_ACTIVATING is retried after an incident resolution. Draining
+    // only blocks new instances; rejecting the retry would leave the instance stuck.
+    if (context.getBpmnElementType() != BpmnElementType.PROCESS
+        || hasElementInstanceWithState(context, ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .isRight()) {
       return Either.right(null);
     }
     return stateBehavior
