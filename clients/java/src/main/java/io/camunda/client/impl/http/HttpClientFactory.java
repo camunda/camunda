@@ -147,6 +147,10 @@ public class HttpClientFactory {
             .setSslContext(createSslContext())
             .setHostnameVerifier(hostnameVerifier)
             .build();
+    // httpclient5 waits up to 3 minutes per resolved address, so an address that does not answer,
+    // like the one of a deleted pod, would block a request, and a job worker's poll, for minutes.
+    // The response timeout and the response deadline only start once the connection exists.
+    final Timeout connectTimeout = Timeout.of(config.getConnectTimeout());
     final PoolingAsyncClientConnectionManagerBuilder connectionManagerBuilder =
         PoolingAsyncClientConnectionManagerBuilder.create()
             .setTlsStrategy(tlsStrategy)
@@ -157,7 +161,10 @@ public class HttpClientFactory {
             .setMessageMultiplexing(false)
             .setMaxConnPerRoute(config.getMaxHttpConnections())
             .setDefaultConnectionConfig(
-                ConnectionConfig.custom().setTimeToLive(connectionTimeToLive).build());
+                ConnectionConfig.custom()
+                    .setConnectTimeout(connectTimeout)
+                    .setTimeToLive(connectionTimeToLive)
+                    .build());
 
     if (config.useClientSideLoadBalancing()) {
       connectionManagerBuilder.setDnsResolver(new RandomizedDnsResolver());
@@ -165,7 +172,10 @@ public class HttpClientFactory {
       // DNS. Otherwise the randomized DNS resolver only takes effect when a new connection is
       // created, which would rarely happen and defeat load balancing.
       connectionManagerBuilder.setDefaultConnectionConfig(
-          ConnectionConfig.custom().setTimeToLive(TimeValue.ofSeconds(1)).build());
+          ConnectionConfig.custom()
+              .setConnectTimeout(connectTimeout)
+              .setTimeToLive(TimeValue.ofSeconds(1))
+              .build());
     }
 
     return connectionManagerBuilder.build();

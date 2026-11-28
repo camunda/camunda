@@ -213,6 +213,11 @@ public class SpringCamundaClientConfiguration implements CamundaClientConfigurat
   }
 
   @Override
+  public Duration getConnectTimeout() {
+    return camundaClientProperties.getConnectTimeout();
+  }
+
+  @Override
   public List<ClientInterceptor> getInterceptors() {
     return interceptors;
   }

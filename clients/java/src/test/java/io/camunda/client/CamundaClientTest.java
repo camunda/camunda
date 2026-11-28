@@ -16,6 +16,7 @@
 package io.camunda.client;
 
 import static io.camunda.client.ClientProperties.CLOUD_REGION;
+import static io.camunda.client.ClientProperties.CONNECT_TIMEOUT;
 import static io.camunda.client.ClientProperties.DEFAULT_JOB_WORKER_TENANT_FILTER_MODE;
 import static io.camunda.client.ClientProperties.DEFAULT_JOB_WORKER_TENANT_IDS;
 import static io.camunda.client.ClientProperties.DEFAULT_REQUEST_TIMEOUT;
@@ -36,6 +37,7 @@ import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_MESSAGE_TT
 import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_REST_ADDRESS;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.CAMUNDA_CLIENT_WORKER_STREAM_ENABLED;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.CA_CERTIFICATE_VAR;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.CONNECT_TIMEOUT_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.DEFAULT_JOB_WORKER_TENANT_FILTER_MODE_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.DEFAULT_JOB_WORKER_TENANT_IDS_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.DEFAULT_TENANT_ID_VAR;
@@ -130,6 +132,7 @@ public final class CamundaClientTest {
           .containsExactly(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
       assertThat(configuration.preferRestOverGrpc()).isTrue();
       assertThat(configuration.getMaxHttpConnections()).isEqualTo(DEFAULT_MAX_HTTP_CONNECTIONS);
+      assertThat(configuration.getConnectTimeout()).isEqualTo(Duration.ofSeconds(10));
       assertThat(configuration.jobHandlingExecutor()).isNull();
       assertThat(configuration.jobWorkerSchedulingExecutor()).isNull();
     }
@@ -417,6 +420,57 @@ public final class CamundaClientTest {
 
     // then
     assertThat(builder.getKeepAlive()).isEqualTo(Duration.ofSeconds(15));
+  }
+
+  @Test
+  public void shouldSetConnectTimeout() {
+    // given
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    builder.connectTimeout(Duration.ofSeconds(3));
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getConnectTimeout()).isEqualTo(Duration.ofSeconds(3));
+  }
+
+  @Test
+  public void shouldSetConnectTimeoutWithProperty() {
+    // given
+    final Properties properties = new Properties();
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    properties.setProperty(CONNECT_TIMEOUT, "4000");
+    builder.withProperties(properties);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getConnectTimeout()).isEqualTo(Duration.ofSeconds(4));
+  }
+
+  @Test
+  public void shouldOverrideConnectTimeoutWithEnvVar() {
+    // given
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    builder.connectTimeout(Duration.ofSeconds(3));
+    Environment.system().put(CONNECT_TIMEOUT_VAR, "5000");
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getConnectTimeout()).isEqualTo(Duration.ofSeconds(5));
+  }
+
+  @Test
+  public void shouldRejectNonPositiveConnectTimeout() {
+    // when/then
+    assertThatThrownBy(() -> new CamundaClientBuilderImpl().connectTimeout(Duration.ZERO))
+        .isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(() -> new CamundaClientBuilderImpl().connectTimeout(Duration.ofSeconds(-2)))
+        .isInstanceOf(IllegalArgumentException.class);
   }
 
   @Test
@@ -1668,6 +1722,11 @@ public final class CamundaClientTest {
             }
 
             @Override
+            public Duration getConnectTimeout() {
+              return Duration.ofSeconds(3);
+            }
+
+            @Override
             public List<ClientInterceptor> getInterceptors() {
               return Collections.singletonList(interceptor);
             }
@@ -1787,6 +1846,7 @@ public final class CamundaClientTest {
           .isEqualTo(source.getDefaultRequestTimeoutOffset());
       assertThat(builder.getCaCertificatePath()).isEqualTo(source.getCaCertificatePath());
       assertThat(builder.getKeepAlive()).isEqualTo(source.getKeepAlive());
+      assertThat(builder.getConnectTimeout()).isEqualTo(source.getConnectTimeout());
       assertThat(builder.getOverrideAuthority()).isEqualTo(source.getOverrideAuthority());
       assertThat(builder.getMaxMessageSize()).isEqualTo(source.getMaxMessageSize());
       assertThat(builder.getMaxMetadataSize()).isEqualTo(source.getMaxMetadataSize());

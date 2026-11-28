@@ -189,6 +189,11 @@ public final class ClientProperties {
   public static final String KEEP_ALIVE = "camunda.client.keepalive";
 
   /**
+   * @see CamundaClientBuilder#connectTimeout(Duration)
+   */
+  public static final String CONNECT_TIMEOUT = "camunda.client.connectTimeout";
+
+  /**
    * @see CamundaClientBuilder#overrideAuthority(String)
    */
   public static final String OVERRIDE_AUTHORITY = "camunda.client.overrideauthority";

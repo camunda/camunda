@@ -250,6 +250,10 @@
       "defaultValue": "PT45S"
     },
     {
+      "name": "camunda.client.connect-timeout",
+      "defaultValue": "PT10S"
+    },
+    {
       "name": "camunda.client.worker.override",
       "defaultValue": {}
     },

@@ -156,6 +156,9 @@ public class AlignmentTest {
           entry(
               "camunda.client.keep-alive",
               new Getter(CamundaClientProperties::getKeepAlive, DURATION_MAPPER)),
+          entry(
+              "camunda.client.connect-timeout",
+              new Getter(CamundaClientProperties::getConnectTimeout, DURATION_MAPPER)),
           entry("camunda.client.mode", new Getter(CamundaClientProperties::getMode)),
           entry(
               "camunda.client.override-authority",

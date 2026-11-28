@@ -40,6 +40,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
       "camunda.client.grpcAddress=https://localhost:1234",
       "camunda.client.restAddress=https://localhost:8080",
       "camunda.client.max-http-connections=1234",
+      "camunda.client.connect-timeout=7s",
       "camunda.client.worker.defaults.poll-interval=99s",
       "camunda.client.worker.defaults.name=testName",
       "camunda.client.auth.client-secret=processOrchestration"
@@ -62,6 +63,11 @@ public class JavaClientPropertiesTest {
   @Test
   public void hasMaxHttpConnections() {
     assertThat(properties.getMaxHttpConnections()).isEqualTo(1234);
+  }
+
+  @Test
+  public void hasConnectTimeout() {
+    assertThat(properties.getConnectTimeout()).isEqualTo(Duration.ofSeconds(7));
   }
 
   @Test

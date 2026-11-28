@@ -321,6 +321,12 @@ public class CamundaClientCloudBuilderImpl
   }
 
   @Override
+  public CamundaClientBuilder connectTimeout(final Duration connectTimeout) {
+    innerBuilder.connectTimeout(connectTimeout);
+    return this;
+  }
+
+  @Override
   public CamundaClientBuilder withInterceptors(final ClientInterceptor... interceptor) {
     innerBuilder.withInterceptors(interceptor);
     return this;

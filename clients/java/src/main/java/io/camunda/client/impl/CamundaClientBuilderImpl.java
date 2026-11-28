@@ -17,6 +17,7 @@ package io.camunda.client.impl;
 
 import static io.camunda.client.ClientProperties.APPLY_ENVIRONMENT_VARIABLES_OVERRIDES;
 import static io.camunda.client.ClientProperties.CA_CERTIFICATE_PATH;
+import static io.camunda.client.ClientProperties.CONNECT_TIMEOUT;
 import static io.camunda.client.ClientProperties.DEFAULT_JOB_WORKER_NAME;
 import static io.camunda.client.ClientProperties.DEFAULT_MESSAGE_TIME_TO_LIVE;
 import static io.camunda.client.ClientProperties.DEFAULT_TENANT_ID;
@@ -51,6 +52,7 @@ import static io.camunda.client.impl.CamundaClientEnvironmentVariables.BASIC_AUT
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.BASIC_AUTH_ENV_USERNAME;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.CAMUNDA_CLIENT_WORKER_STREAM_ENABLED;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.CA_CERTIFICATE_VAR;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.CONNECT_TIMEOUT_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.DEFAULT_JOB_WORKER_TENANT_FILTER_MODE_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.DEFAULT_JOB_WORKER_TENANT_IDS_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.DEFAULT_TENANT_ID_VAR;
@@ -122,6 +124,7 @@ public final class CamundaClientBuilderImpl
   public static final int DEFAULT_MAX_MESSAGE_SIZE = 5 * ONE_MB;
   public static final int DEFAULT_MAX_METADATA_SIZE = 16 * ONE_KB;
   public static final Duration DEFAULT_KEEP_ALIVE = Duration.ofSeconds(45);
+  public static final Duration DEFAULT_CONNECT_TIMEOUT = Duration.ofSeconds(10);
   public static final Duration DEFAULT_REQUEST_TIMEOUT = Duration.ofSeconds(10);
   public static final Duration DEFAULT_REQUEST_TIMEOUT_OFFSET = Duration.ofSeconds(1);
   public static final List<String> DEFAULT_JOB_WORKER_TENANT_IDS =
@@ -172,6 +175,7 @@ public final class CamundaClientBuilderImpl
   private String mtlsTruststorePassword;
   private CredentialsProvider credentialsProvider;
   private Duration keepAlive = DEFAULT_KEEP_ALIVE;
+  private Duration connectTimeout = DEFAULT_CONNECT_TIMEOUT;
   private JsonMapper jsonMapper = new CamundaObjectMapper();
   private String overrideAuthority;
   private int maxMessageSize = DEFAULT_MAX_MESSAGE_SIZE;
@@ -334,6 +338,11 @@ public final class CamundaClientBuilderImpl
   @Override
   public Duration getKeepAlive() {
     return keepAlive;
+  }
+
+  @Override
+  public Duration getConnectTimeout() {
+    return connectTimeout;
   }
 
   @Override
@@ -535,6 +544,7 @@ public final class CamundaClientBuilderImpl
         properties, value -> mtlsTruststorePassword = value, MTLS_TRUSTSTORE_PASSWORD);
 
     BuilderUtils.applyPropertyValueIfNotNull(properties, this::keepAlive, KEEP_ALIVE);
+    BuilderUtils.applyPropertyValueIfNotNull(properties, this::connectTimeout, CONNECT_TIMEOUT);
 
     BuilderUtils.applyPropertyValueIfNotNull(
         properties, this::overrideAuthority, OVERRIDE_AUTHORITY);
@@ -794,6 +804,16 @@ public final class CamundaClientBuilderImpl
   }
 
   @Override
+  public CamundaClientBuilder connectTimeout(final Duration connectTimeout) {
+    if (connectTimeout.isNegative() || connectTimeout.isZero()) {
+      throw new IllegalArgumentException("The connect timeout must be a positive number.");
+    }
+
+    this.connectTimeout = connectTimeout;
+    return this;
+  }
+
+  @Override
   public CamundaClientBuilder withInterceptors(final ClientInterceptor... interceptors) {
     this.interceptors.addAll(Arrays.asList(interceptors));
     return this;
@@ -878,6 +898,10 @@ public final class CamundaClientBuilderImpl
     keepAlive(Duration.ofMillis(Long.parseUnsignedLong(keepAlive)));
   }
 
+  private void connectTimeout(final String connectTimeout) {
+    connectTimeout(Duration.ofMillis(Long.parseUnsignedLong(connectTimeout)));
+  }
+
   private void applyOverrides() {
     applyEnvironmentValueIfNotNull(this::caCertificatePath, CA_CERTIFICATE_VAR);
     applyEnvironmentValueIfNotNull(value -> mtlsCertPath = value, MTLS_CERT_PATH_VAR);
@@ -896,6 +920,7 @@ public final class CamundaClientBuilderImpl
     applyEnvironmentValueIfNotNull(
         value -> mtlsTruststorePassword = value, MTLS_TRUSTSTORE_PASSWORD_VAR);
     applyEnvironmentValueIfNotNull(this::keepAlive, KEEP_ALIVE_VAR);
+    applyEnvironmentValueIfNotNull(this::connectTimeout, CONNECT_TIMEOUT_VAR);
     applyEnvironmentValueIfNotNull(this::overrideAuthority, OVERRIDE_AUTHORITY_VAR);
     if (shouldUseOAuthCredentialsProvider()) {
       credentialsProvider = createOAuthCredentialsProvider();
@@ -951,6 +976,7 @@ public final class CamundaClientBuilderImpl
     BuilderUtils.appendProperty(sb, "defaultMessageTimeToLive", defaultMessageTimeToLive);
     BuilderUtils.appendProperty(sb, "defaultRequestTimeout", defaultRequestTimeout);
     BuilderUtils.appendProperty(sb, "defaultRequestTimeoutOffset", defaultRequestTimeoutOffset);
+    BuilderUtils.appendProperty(sb, "connectTimeout", connectTimeout);
     BuilderUtils.appendProperty(sb, "overrideAuthority", overrideAuthority);
     BuilderUtils.appendProperty(sb, "maxMessageSize", maxMessageSize);
     BuilderUtils.appendProperty(sb, "maxMetadataSize", maxMetadataSize);
@@ -1043,6 +1069,7 @@ public final class CamundaClientBuilderImpl
     setIfNotNull(properties, MTLS_TRUSTSTORE_PATH, configuration.getMtlsTruststorePath());
     setIfNotNull(properties, MTLS_TRUSTSTORE_PASSWORD, configuration.getMtlsTruststorePassword());
     setDurationMillis(properties, KEEP_ALIVE, configuration.getKeepAlive());
+    setDurationMillis(properties, CONNECT_TIMEOUT, configuration.getConnectTimeout());
     setIfNotNull(properties, OVERRIDE_AUTHORITY, configuration.getOverrideAuthority());
     setIfNotNull(properties, MAX_MESSAGE_SIZE, configuration.getMaxMessageSize());
     setIfNotNull(properties, MAX_METADATA_SIZE, configuration.getMaxMetadataSize());

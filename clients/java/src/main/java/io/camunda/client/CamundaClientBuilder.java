@@ -337,6 +337,20 @@ public interface CamundaClientBuilder {
   CamundaClientBuilder keepAlive(Duration keepAlive);
 
   /**
+   * The maximum time to establish a connection to one address of the REST API. The REST client
+   * tries every address a host name resolves to one after the other, and an address that does not
+   * answer, for example the one of a deleted pod, blocks the request until this time has passed.
+   * The default is 10 seconds. The same limit applies to the TLS handshake that follows. Does not
+   * apply to gRPC.
+   *
+   * <p>Property: {@code camunda.client.connectTimeout} (milliseconds). Environment variable: {@code
+   * CAMUNDA_CONNECT_TIMEOUT} (milliseconds).
+   *
+   * @throws IllegalArgumentException if the timeout is zero or negative
+   */
+  CamundaClientBuilder connectTimeout(Duration connectTimeout);
+
+  /**
    * Custom implementations of the gRPC {@code ClientInterceptor} middleware API. The interceptors
    * will be applied to every gRPC call that the client makes. More details can be found at {@link
    * <a href="https://grpc.io/docs/guides/interceptors/">grpc.io</a>}.
