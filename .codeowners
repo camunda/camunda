@@ -391,9 +391,8 @@
 # operate-frontend/operate-backend team split.
 /operate/client/            @camunda/operate-admin-pod
 
-# Optimize frontend: overrides the broad /optimize/ rule above, which predates the
-# optimize-frontend/optimize-backend team split.
-/optimize/client/           @camunda/optimize-frontend
+# Optimize frontend: overrides the broad /optimize/ rule above.
+/optimize/client/           @camunda/optimize
 
 # Overrides /.github/workflows/c8-orchestration-cluster-*.yml: the suite PR check is owned with the suite.
 /.github/workflows/c8-orchestration-cluster-e2e-tests-pr.yml @camunda/test-automation-team
