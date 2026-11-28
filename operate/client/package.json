@@ -16,7 +16,7 @@
     "@codemirror/lang-json": "6.0.2",
     "@codemirror/language": "6.13.1",
     "@codemirror/state": "6.7.1",
-    "@codemirror/view": "6.43.6",
+    "@codemirror/view": "6.44.0",
     "@devbookhq/splitter": "1.4.2",
     "@floating-ui/react-dom": "2.1.8",
     "@lezer/highlight": "1.2.3",
