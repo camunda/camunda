@@ -624,9 +624,13 @@ jobs:
         env:
           INSTALL_TARGET: ${{ inputs.stable-vms && 'install-stable' || 'install' }}
           CALCULATED_IMAGE_TAG: ${{ needs.calculate-image-tag.outputs.image-tag }}
-          RESOLVED_IMAGE_REGISTRY: ${{ inputs.orchestration-tag != '' && 'docker.io' || 'registry.camunda.cloud' }}
-          CAMUNDA_REPO: ${{ inputs.orchestration-tag != '' && 'camunda/camunda' || 'team-zeebe/camunda' }}
-          OPTIMIZE_REPO: ${{ inputs.orchestration-tag != '' && 'camunda/optimize' || 'team-zeebe/optimize' }}
+          ORCHESTRATION_REGISTRY: ${{ inputs.orchestration-tag != '' && 'docker.io' || 'registry.camunda.cloud' }}
+          ORCHESTRATION_REPOSITORY: ${{ inputs.orchestration-tag != '' && 'camunda/camunda' || 'team-zeebe/camunda' }}
+          # An explicit Optimize tag is used alone. Without it, Optimize is built from source
+          # unless the orchestration image comes from Docker Hub.
+          OPTIMIZE_REGISTRY: ${{ inputs.optimize-tag == '' && inputs.orchestration-tag == '' && 'registry.camunda.cloud' || '' }}
+          OPTIMIZE_REPOSITORY: ${{ inputs.optimize-tag == '' && inputs.orchestration-tag == '' && 'team-zeebe/optimize' || '' }}
+          OPTIMIZE_IMAGE_TAG: ${{ inputs.optimize-tag != '' && inputs.optimize-tag || (inputs.orchestration-tag == '' && needs.calculate-image-tag.outputs.image-tag || '') }}
           METRICS_EXPORTER_BUILT: ${{ needs.build-metrics-exporter-image.result == 'success' }}
         run: |-
           .github/scripts/load-test-install-camunda-platform.sh \
@@ -634,17 +638,18 @@ jobs:
             "${INSTALL_TARGET}" \
             "${CALCULATED_IMAGE_TAG}" \
             "${IMAGE_REPOSITORY}" \
-            "${RESOLVED_IMAGE_REGISTRY}" \
-            "${CAMUNDA_REPO}" \
-            "${OPTIMIZE_REPO}" \
             "${PERFORM_READ_BENCHMARKS}" \
             "${ENABLE_OPTIMIZE}" \
             "${ENABLE_OPTIMIZE_METRICS}" \
             "${METRICS_EXPORTER_BUILT}" \
             "${ENABLE_CHAOS}" \
             "${PHYSICAL_TENANT_COUNT}" \
-            --optimize-tag "${OPTIMIZE_TAG}" \
-            --orchestration-tag "${ORCHESTRATION_TAG}" \
+            --orchestration-registry "${ORCHESTRATION_REGISTRY}" \
+            --orchestration-repository "${ORCHESTRATION_REPOSITORY}" \
+            --orchestration-tag "${CALCULATED_IMAGE_TAG}" \
+            --optimize-registry "${OPTIMIZE_REGISTRY}" \
+            --optimize-repository "${OPTIMIZE_REPOSITORY}" \
+            --optimize-tag "${OPTIMIZE_IMAGE_TAG}" \
             --identity-tag "${IDENTITY_TAG}" \
             --connectors-tag "${CONNECTORS_TAG}" \
             --load-test-load "${LOAD_TEST_LOAD}" \
