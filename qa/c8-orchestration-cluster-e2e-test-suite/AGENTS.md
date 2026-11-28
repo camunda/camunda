@@ -988,8 +988,9 @@ skipping.
 
 1. The repo is already on the correct target branch (`stable/<version>` or
    `main`). Verify with `git status`.
-2. Create a fix branch:
-   `git checkout -b fix/nightly-${VERSION}-<short-slug>`
+2. Create a fix branch using the exact `fix/nightly-...` slot named in your prompt
+   (it includes the cost bucket on a triage dispatch, and is version-only on a
+   manual run): `git checkout -b <branch-slot><short-slug>`
 3. Edit files under `qa/c8-orchestration-cluster-e2e-test-suite/` only.
    Touch page objects when the selector itself is wrong; touch utilities
    only when multiple tests share the same root cause.
@@ -1006,7 +1007,7 @@ skipping.
 5. Commit with `test:` (NOT `fix:` — see above on Conventional Commits):
    `git commit -m "test: <one-line description> (nightly ${VERSION})"`
 
-6. Push: `git push -u origin fix/nightly-${VERSION}-<slug>`
+6. Push: `git push -u origin <branch-slot><slug>` (the same slot from step 2)
 
 7. Check for existing open PRs before opening a new one:
 
@@ -1191,7 +1192,7 @@ What this asks of you:
 - **Code comments:** follow `## Code Comments` — no narration, history, or emphasis banners; the reasoning goes in the PR body.
 - **PR title type must be `test:`** — commitlint rejects `fix:` for test-only changes (see Commit / PR Conventions above).
 - **Never target a `release-*` branch** — your PR goes to `main` or `stable/<version>`; the release-branch backport is labelled for you (see "Backport to a frozen release branch" above).
-- **One PR per version** — a single PR may fix multiple tests on the same `stable/<version>` branch, including a mix of API and E2E failures, but never crosses branch boundaries.
+- **One PR per version and cost bucket** — triage dispatches a version's failures in up to three buckets, each on its own `fix/nightly-<version>-<bucket>-` branch slot named in your prompt: `cheap` (e2e/API-ES only), `rdbms` (RDBMS only), and `both` (a spec that fails under ES and RDBMS — verify it against both backends per Live Docker Verify). A single PR may fix multiple tests of the same bucket on the same `stable/<version>` branch, but never spans buckets or crosses branch boundaries. A manual run with no bucket uses the version-only slot.
 
 ### Result manifest
 

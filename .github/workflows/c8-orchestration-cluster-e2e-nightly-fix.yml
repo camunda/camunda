@@ -45,6 +45,10 @@ on:
         description: 'Run ID of the failing API RDBMS nightly (empty / N/A for 8.7, 8.8)'
         required: false
         default: ''
+      cost_bucket:
+        description: 'Environment-cost bucket for the PR branch slot (cheap/rdbms); empty on a manual run falls back to the version-only slot'
+        required: false
+        default: ''
       triage_run_url:
         description: 'URL of the triage run that dispatched this (for PR body)'
         required: false
@@ -541,6 +545,7 @@ jobs:
           E2E_RUN_ID:          ${{ github.event.inputs.e2e_run_id }}
           API_ES_RUN_ID:       ${{ github.event.inputs.api_es_run_id }}
           API_RDBMS_RUN_ID:    ${{ github.event.inputs.api_rdbms_run_id }}
+          COST_BUCKET:         ${{ github.event.inputs.cost_bucket }}
           TRIAGE_RUN_URL:      ${{ github.event.inputs.triage_run_url }}
           HAS_E2E:             ${{ steps.scope.outputs.has_e2e }}
           HAS_API_ES:          ${{ steps.scope.outputs.has_api_es }}
@@ -595,6 +600,22 @@ jobs:
 
           deadline_epoch=$((JOB_START_EPOCH + AGENT_DEADLINE_MINUTES_FROM_JOB_START * 60))
 
+          # Branch slot for this dispatch. Triage splits a version's failures into a
+          # cheap and an rdbms dispatch; keying the slot by version+bucket keeps each
+          # in its own PR so one bucket's verification never promotes the other's
+          # unverified fix. A manual run without cost_bucket uses the version-only slot.
+          branch_slot="fix/nightly-${VERSION}-${COST_BUCKET:+${COST_BUCKET}-}"
+
+          # The version-only slot (manual run, no bucket) is a prefix of the bucket
+          # slots, so a plain startsWith would also match fix/nightly-<v>-cheap-/-rdbms-
+          # PRs; reusing one would re-introduce the cross-bucket verification hazard.
+          # Tell the agent to exclude those heads when the slot carries no bucket.
+          if [ -n "${COST_BUCKET}" ]; then
+            reuse_exclusion=""
+          else
+            reuse_exclusion="This slot carries no bucket, so additionally EXCLUDE any head starting with fix/nightly-${VERSION}-cheap-, fix/nightly-${VERSION}-rdbms-, or fix/nightly-${VERSION}-both-: those are bucket-isolated triage PRs and are not yours to reuse or push to."
+          fi
+
           prompt=$(cat <<EOF
           You are the Camunda orchestration-cluster nightly fix agent.
           Workspace: ${ws_dir} (already on branch ${TARGET_REF}).
@@ -632,14 +653,14 @@ jobs:
             HAS_E2E=${HAS_E2E}  HAS_API_ES=${HAS_API_ES}  HAS_API_RDBMS=${HAS_API_RDBMS}
             TRIAGE_RUN_URL=${TRIAGE_RUN_URL}  REPO=${REPO}
 
-          Branch name to use: fix/nightly-${VERSION}-<short-slug> for test fixes,
+          Branch name to use: ${branch_slot}<short-slug> for test fixes,
           ci/<short-slug> for workflow-level fixes.
 
-          REUSE AN OPEN PR FOR THIS VERSION IF ONE EXISTS. Before cutting a branch, run
+          REUSE AN OPEN PR FOR THIS VERSION+BUCKET IF ONE EXISTS. Before cutting a branch, run
           \`gh pr list --repo ${REPO} --label "failing-test-fix" --state open --json number,headRefName\`
-          and look for one whose \`headRefName\` STARTS WITH \`fix/nightly-${VERSION}-\`. The prefix
-          test is not optional: a branch for another version, or a \`ci/\` branch, is not yours to
-          push to.
+          and look for one whose \`headRefName\` STARTS WITH \`${branch_slot}\`. The prefix
+          test is not optional: a branch for another version or bucket, or a \`ci/\` branch, is not
+          yours to push to. ${reuse_exclusion}
             - If one exists: \`git fetch origin <branch> && git checkout <branch>\`, then
               \`git fetch origin ${TARGET_REF} && git merge --no-edit origin/${TARGET_REF}\` — triage
               may have REOPENED a PR opened on an earlier night, so its branch can be behind its
@@ -651,9 +672,15 @@ jobs:
               the failures you were dispatched for. Apply your fixes there, push, and do NOT open a
               second PR; put that PR's number in /tmp/fix-meta.json.
             - Otherwise: cut a new branch as named above.
-          Opening a second PR for a version that already has one is the duplication this check
-          exists to prevent — two PRs editing the same specs from the same base, neither aware of
-          the other.
+          Opening a second PR for the same version+bucket slot as an existing one is the
+          duplication this check exists to prevent — two PRs editing the same specs from the
+          same base, neither aware of the other.
+          This per-dispatch slot (${branch_slot}) is authoritative and OVERRIDES the manual's
+          version-only branch examples and its "One PR per version" rule for test fixes: triage
+          dispatches a version's failures in up to three buckets, each on its own slot -- cheap
+          (e2e/API-ES only), rdbms (RDBMS only), and both (a spec that fails under ES and RDBMS,
+          which you verify against both backends). Open or reuse ONE PR per version AND bucket,
+          never a single PR spanning buckets.
           Commit + PR title prefix: 'test:' for test-only changes, 'ci:' for workflow-only
           changes, 'fix:' for other code changes (NEVER 'fix:' for test-only changes —
           commitlint rejects it).

@@ -33,8 +33,8 @@ on:
         default: true
         required: false
       daily_cap:
-        description: 'Max fix-agent dispatches this run (default: 5 -- one per supported version)'
-        default: '5'
+        description: 'Max fix-agent dispatches this run (default: 15 -- a version splits into up to three cost buckets (cheap/rdbms/both); 5 versions x 3 buckets is above the real max of 11, so no eligible bucket is dropped by the cap)'
+        default: '15'
         required: false
       send_slack_notification:
         description: 'Post triage summary and fix-agent replies to Slack (always true for scheduled runs)'
@@ -305,7 +305,11 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.github-token.outputs.token }}
           REPO:     ${{ github.repository }}
-          DAILY_CAP: ${{ github.event.inputs.daily_cap || '5' }}
+          # 15 covers the structural max of test dispatches (5 versions x up to 3 cost
+          # buckets; only 8.9/8.10/main have an rdbms nightly today, so the real max is 11).
+          # Keeping the cap above that max means .[0:cap] never drops an eligible bucket --
+          # which it otherwise would before cooldown filtering, starving e.g. main::rdbms.
+          DAILY_CAP: ${{ github.event.inputs.daily_cap || '15' }}
         run: |
           set -euo pipefail
 
@@ -410,9 +414,13 @@ jobs:
           echo "After normalization + filtering: $(jq 'length' /tmp/failures_normalized.json)"
 
           # Determine which test files are already covered by open failing-test-fix PRs.
-          # Build a map: base_ref -> [spec file paths already being fixed on that branch].
-          # This allows partial dispatch: if a branch has an open PR but the new failures
-          # are in different files, a fix agent is still dispatched for those files.
+          # Build a map: "base_ref::bucket" -> [spec file paths already being fixed there].
+          # Keying by bucket as well as ref matters because an api spec can fail under both
+          # ES (cheap bucket) and RDBMS (rdbms bucket): a cheap-bucket PR touching that file
+          # must not suppress the separate rdbms failure, whose bucket has no PR. The bucket
+          # lives in the head branch slot (fix/nightly-<version>-<bucket>-...); a version-only
+          # legacy/manual slot (or a ci/ branch) has no bucket and is stored under "::legacy",
+          # which the lookup treats as covering every bucket.
           covered_files_map='{}'
           open_pr_base_refs='[]'
           open_pr_nums=$(gh pr list --repo "$REPO" \
@@ -421,18 +429,29 @@ jobs:
             --json number --jq '.[].number' 2>/dev/null || echo '')
           for pr_num in $open_pr_nums; do
             [ -z "$pr_num" ] && continue
-            base_ref=$(gh pr view "$pr_num" --repo "$REPO" --json baseRefName \
-              --jq '.baseRefName' 2>/dev/null || echo '')
+            pr_json=$(gh pr view "$pr_num" --repo "$REPO" \
+              --json baseRefName,headRefName,files 2>/dev/null || echo '{}')
+            base_ref=$(echo "$pr_json" | jq -r '.baseRefName // ""')
             [ -z "$base_ref" ] && continue
-            pr_files=$(gh pr view "$pr_num" --repo "$REPO" --json files \
-              --jq '[.files[].path
-                     | select(test("qa/c8-orchestration-cluster-e2e-test-suite/.*\\.spec\\.[jt]s$"))
-                     | sub("^.*/qa/c8-orchestration-cluster-e2e-test-suite/"; "")
-                     | sub("^qa/c8-orchestration-cluster-e2e-test-suite/"; "")]' \
+            head_ref=$(echo "$pr_json" | jq -r '.headRefName // ""')
+            pr_files=$(echo "$pr_json" | jq \
+              '[.files[].path
+                | select(test("qa/c8-orchestration-cluster-e2e-test-suite/.*\\.spec\\.[jt]s$"))
+                | sub("^.*/qa/c8-orchestration-cluster-e2e-test-suite/"; "")
+                | sub("^qa/c8-orchestration-cluster-e2e-test-suite/"; "")]' \
               2>/dev/null || echo '[]')
+            # Derive the bucket from the head branch slot; anything that is not a
+            # recognised cheap-/rdbms- slot is treated as a legacy version-only PR.
+            version=$([ "$base_ref" = "main" ] && echo "main" || echo "${base_ref#stable/}")
+            rest=${head_ref#fix/nightly-"${version}"-}
+            case "$rest" in
+              cheap-*) bucket=cheap ;;
+              rdbms-*) bucket=rdbms ;;
+              *)       bucket=legacy ;;
+            esac
             covered_files_map=$(echo "$covered_files_map" | jq \
-              --arg ref "$base_ref" --argjson files "$pr_files" \
-              '. + {($ref): ((.[$ref] // []) + $files | unique)}')
+              --arg key "${base_ref}::${bucket}" --argjson files "$pr_files" \
+              '. + {($key): ((.[$key] // []) + $files | unique)}')
             open_pr_base_refs=$(echo "$open_pr_base_refs" | jq \
               --arg ref "$base_ref" '. + [$ref] | unique')
           done
@@ -489,22 +508,77 @@ jobs:
             jq --slurpfile run_ids /tmp/run_ids.json \
                --argjson covered "$covered_files_map" \
                --argjson cap "${DAILY_CAP}" '
-              # group failures by version
-              sort_by(.version) | group_by(.version)
+              # Classify each failure as cheap (e2e / Elasticsearch api) or rdbms (api on a
+              # non-Elasticsearch database). An rdbms failure drives the from-source Maven
+              # build in the Live Docker Verify loop -- by far the most expensive step --
+              # while cheap failures share the fast docker-compose setup, so mixing them in
+              # one dispatch forces that dispatch to pay for both.
+              #
+              # Then bucket by spec FILE, not by individual failure: a file that fails under
+              # both backends is promoted to the "both" bucket so its ES and RDBMS variants
+              # land in ONE dispatch -- one PR, verified against both backends in the same
+              # Live Docker Verify run (AGENTS.md "Live Docker Verify" runs each spec against
+              # the environment that matches it) -- rather than two PRs making the same fix.
+              # A file failing under only one backend stays in that bucket, so purely-cheap
+              # work still skips the Maven build.
+              #
+              # Truncate a spec list to ~n without splitting the backend variants of one file.
+              # Within each file, put one representative of each (database, tasklist_mode)
+              # variant first, then pack whole files until the cap. A file that does not fit
+              # whole is included only when the remaining room still covers all its variants
+              # (reps-first, so the first "room" entries keep every backend/mode) -- otherwise
+              # it is skipped and retried on a later run, never half-included with one backend
+              # missing (which would flip HAS_API_RDBMS off and let the PR suppress the dropped
+              # backend). This also bounds any single oversized file -- e.g. one spec with
+              # dozens of failing tests -- to the cap, so the serialized dispatch payload
+              # cannot blow past the workflow_dispatch input limit.
+              def cap_by_file($n):
+                # Group representatives by the backend the fix agent actually verifies against
+                # -- ES for elasticsearch/e2e, H2 for every RDBMS engine (it never provisions
+                # the real engine) -- plus tasklist_mode. Grouping by the raw database would
+                # treat each of the ~28 RDBMS engine/deployment rows as its own variant, so a
+                # file failing on all of them with distinct diagnostics would exceed any room
+                # and be skipped whole (emptying the dispatch).
+                def vbackend: if (.database // "") != "" and (.database // "") != "elasticsearch" then "h2" else "es" end;
+                def reps: [group_by([vbackend, (.tasklist_mode // "")])[] | .[0]];
+                group_by(.file) | map(reps as $r | $r + (. - $r))
+                | reduce .[] as $g ([];
+                    ($n - length) as $room |
+                    ($g | reps | length) as $variants |
+                    if ($g | length) <= $room then . + $g
+                    elif $room >= $variants then . + ($g[0:$room])
+                    else . end);
+              map(. + {raw_kind: (
+                  if .test_type == "api"
+                     and .database != null and .database != "" and .database != "elasticsearch"
+                  then "rdbms" else "cheap" end)})
+              | (reduce (group_by([.version, .file])[]) as $g ({};
+                  .[($g[0].version + "\u0000" + $g[0].file)] =
+                    (if ([$g[].raw_kind] | unique | length) > 1 then "both" else $g[0].raw_kind end)
+                )) as $file_bucket
+              | map(. + {cost_bucket: $file_bucket[(.version + "\u0000" + .file)]} | del(.raw_kind))
+              | sort_by(.version, .cost_bucket) | group_by([.version, .cost_bucket])
               | map({
                   version: .[0].version,
-                  test_specs: (map(del(.version)) | .[0:50]),
+                  cost_bucket: .[0].cost_bucket,
+                  test_specs: (map(del(.version) | del(.cost_bucket)) | cap_by_file(50)),
                   ref: (if .[0].version == "main" then "main" else ("stable/" + .[0].version) end)
                 })
               | map(select(.test_specs | length > 0))
-              # per-file dedup: remove specs whose file is already covered by an open PR on this branch.
-              # A version is only skipped entirely when every failing spec is already being fixed.
-              # If some specs are in files not yet covered, dispatch proceeds for those specs only.
+              # per-file dedup: remove specs whose file is already covered by an open PR.
+              # Coverage is keyed by ref::bucket. A "both" PR covers a file for both backends
+              # and a legacy version-only PR (::legacy) covers all buckets, so a cheap or rdbms
+              # dispatch also unions in ::both and ::legacy; a "both" dispatch unions only
+              # ::both and ::legacy (an existing cheap/rdbms PR covers only one backend, so it
+              # must not suppress the file from the "both" dispatch that fixes both).
               | map(
                   .ref as $ref |
+                  .cost_bucket as $cb |
+                  ([$cb, "both", "legacy"] | unique) as $keys |
+                  ([$keys[] | $covered[$ref + "::" + .] // []] | add) as $cov |
                   .test_specs |= map(
                     . as $spec |
-                    select(($covered[$ref] // []) | index($spec.file) == null)
+                    select($cov | index($spec.file) == null)
                   )
                 )
               | map(select(.test_specs | length > 0))
@@ -514,9 +588,16 @@ jobs:
                   api_es_run_id:    ($run_ids[0][(.version + "/api_es")]    // ""),
                   api_rdbms_run_id: ($run_ids[0][(.version + "/api_rdbms")] // "")
                 })
-              # cap failures per version to 20 so the workflow_dispatch input
-              # stays well under the 64KB limit even with many nightly failures
-              | map(.test_specs |= .[0:20])
+              # cap failures per dispatch to ~20 and clip each error to 2000 chars so the
+              # workflow_dispatch input stays well under its 64KB limit even when many specs
+              # carry long stack traces (the fix agent reads full errors from the downloaded
+              # json-report, not from this payload). cap_by_file keeps each file and its
+              # backend variants together.
+              | map(.test_specs |= (cap_by_file(20)
+                  | map(if (.error | type) == "string" then (.error |= .[0:2000]) else . end)))
+              # drop any dispatch the caps emptied: an empty test_specs would otherwise be
+              # fired as a workflow-level dispatch (the fix workflow switches on empty specs).
+              | map(select(.test_specs | length > 0))
               # cap dispatch count
               | .[0:$cap]
             ' /tmp/failures_normalized.json > /tmp/dispatches_test.json
@@ -924,17 +1005,27 @@ jobs:
 
           while IFS= read -r d; do
             version=$(echo "$d" | jq -r '.version')
+            # Cooldown is keyed by version AND cost bucket so the cheap (e2e/api-es)
+            # and rdbms dispatches for a version -- and any workflow-level dispatch
+            # (no bucket, keyed "wf") -- each get independent same-day protection,
+            # rather than the first-dispatched bucket cooling down the others.
+            bucket=$(echo "$d" | jq -r '.cost_bucket // "wf"')
+            ledger_key="${version}::${bucket}"
+            # Reuse/reopen is scoped to this version AND bucket, matching the slot
+            # the fix workflow names its branch with, so a cheap and an rdbms
+            # dispatch never share a PR.
+            slot_prefix="fix/nightly-${version}-${bucket}-"
             specs=$(echo "$d" | jq -c '.test_specs')
             e2e=$(echo "$d"   | jq -r '.e2e_run_id')
             api_es=$(echo "$d" | jq -r '.api_es_run_id')
             api_rdbms=$(echo "$d" | jq -r '.api_rdbms_run_id')
 
             # Cooldown check — skip if already dispatched today (unless danger mode)
-            ledger_entry=$(jq -c --arg v "$version" '.[$v] // null' "$LEDGER_PATH")
+            ledger_entry=$(jq -c --arg k "$ledger_key" '.[$k] // null' "$LEDGER_PATH")
             if [ "$ledger_entry" != "null" ]; then
               dispatched_date=$(echo "$ledger_entry" | jq -r '.dispatched_at // ""' | cut -c1-10)
               if [ "$dispatched_date" = "$today_utc" ] && [ "$DANGER_FORCE_REDISPATCH" != "true" ]; then
-                echo "Version $version: already dispatched today ($dispatched_date) — skipping (use danger_force_redispatch to override)"
+                echo "Version $version ($bucket): already dispatched today ($dispatched_date) — skipping (use danger_force_redispatch to override)"
                 continue
               fi
             fi
@@ -979,7 +1070,7 @@ jobs:
             # close, a vanished branch, a branch far behind main, the reopen
             # cap), and each falls back to the agent opening a fresh PR.
             if { [ "$REOPEN_CLOSED_PRS" = "true" ] || [ "$REOPEN_DRY_RUN" = "true" ]; } \
-               && ! open_pr_exists "fix/nightly-${version}-"; then
+               && ! open_pr_exists "$slot_prefix"; then
               # Spec files only — overlap on a shared helper or page object would
               # match almost any fix PR for this version and adopt unrelated work.
               #
@@ -1003,7 +1094,7 @@ jobs:
                 echo "    reopen: skip ${version} — dispatch carries no spec files to match on"
                 reopen_pick_out=""
               else
-                reopen_pick_out=$(reopen_pick "fix/nightly-${version}-" "$version_specs" || true)
+                reopen_pick_out=$(reopen_pick "$slot_prefix" "$version_specs" || true)
               fi
               if [ -n "$reopen_pick_out" ] && [ "$REOPEN_DRY_RUN" = "true" ]; then
                 echo "    reopen: DRY RUN — would reopen #$(printf '%s' "$reopen_pick_out" | cut -f1) for ${version}; not committing"
@@ -1032,17 +1123,25 @@ jobs:
             echo "Dispatching fix agent: version=$version  failures=$(echo "$specs" | jq 'length')"
             dispatched_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
-            gh workflow run c8-orchestration-cluster-e2e-nightly-fix.yml \
+            # Under set -e a rejected dispatch (e.g. an oversized payload past the
+            # workflow_dispatch input limit) would abort the step and strand every later
+            # bucket. Tolerate it: log, and continue so the remaining buckets still dispatch.
+            # The ledger update below is skipped, so the skipped bucket is retried next run.
+            if ! gh workflow run c8-orchestration-cluster-e2e-nightly-fix.yml \
               --repo "$REPO" --ref "${FIX_AGENT_REF}" \
               -f version="$version" \
               -f test_specs="$specs" \
               -f e2e_run_id="$e2e" \
               -f api_es_run_id="$api_es" \
               -f api_rdbms_run_id="$api_rdbms" \
+              -f cost_bucket="$bucket" \
               -f triage_run_url="$TRIAGE_RUN_URL" \
               -f slack_thread_ts="$SLACK_THREAD_TS" \
               -f slack_channel="$SLACK_CHANNEL" \
-              -f send_slack_notification="${SEND_SLACK_NOTIFICATION}"
+              -f send_slack_notification="${SEND_SLACK_NOTIFICATION}"; then
+              echo "::error::Failed to dispatch fix agent for ${version} (${bucket}) -- $(echo "$specs" | jq 'length') failure(s); skipping this bucket so the rest still dispatch. Not recorded in the ledger, so it retries on the next run."
+              continue
+            fi
 
             # Poll for the newly created fix-agent run (created after dispatch)
             fix_run_id=""
@@ -1087,9 +1186,9 @@ jobs:
               /tmp/fix_agent_runs.json > /tmp/fix_agent_runs.json.tmp
             mv /tmp/fix_agent_runs.json.tmp /tmp/fix_agent_runs.json
 
-            # Update ledger — record this version as dispatched today
-            jq --arg v "$version" --arg now "$now_iso" \
-              '.[$v] = {state: "dispatched", dispatched_at: $now}' \
+            # Update ledger — record this version+bucket as dispatched today
+            jq --arg k "$ledger_key" --arg now "$now_iso" \
+              '.[$k] = {state: "dispatched", dispatched_at: $now}' \
               "$LEDGER_PATH" > "${LEDGER_PATH}.tmp" && mv "${LEDGER_PATH}.tmp" "$LEDGER_PATH"
           done < <(echo "$DISPATCHES_JSON" | jq -c '.[]')
 
