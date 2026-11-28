@@ -83,7 +83,7 @@
     "@testing-library/jest-dom": "7.0.0",
     "@testing-library/react": "16.3.2",
     "@testing-library/user-event": "14.6.1",
-    "@types/carbon__elements": "11.10.3",
+    "@types/carbon__elements": "11.100.0",
     "@types/lodash": "4.17.24",
     "@types/node": "26.6.2",
     "@types/react": "19.3.0",

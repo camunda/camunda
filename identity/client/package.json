@@ -52,7 +52,7 @@
   },
   "devDependencies": {
     "@tailwindcss/vite": "4.3.5",
-    "@types/carbon__elements": "11.10.3",
+    "@types/carbon__elements": "11.100.0",
     "@types/carbon-components-react": "7.55.13",
     "@types/event-source-polyfill": "1.0.5",
     "@types/node": "26.6.10",
