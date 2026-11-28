@@ -116,6 +116,20 @@ describe('InstanceHistory (design system)', () => {
 		await expect.element(screen.getByRole('treeitem', {name: /Leaf task/})).toBeVisible();
 	});
 
+	it('should render state icons for root and nested history rows', async ({worker}) => {
+		const screen = await renderHistory(worker);
+		const rootRow = screen.getByRole('treeitem', {name: /Order process/});
+		const subprocessRow = screen.getByRole('treeitem', {name: /Subprocess/});
+
+		await userEvent.click(subprocessRow);
+		await userEvent.keyboard('{ArrowRight}');
+		const nestedRow = screen.getByRole('treeitem', {name: /Nested task/});
+
+		await expect.element(rootRow.getByTestId('ACTIVE-icon')).toBeVisible();
+		await expect.element(subprocessRow.getByTestId('COMPLETED-icon')).toBeVisible();
+		await expect.element(nestedRow.getByTestId('INCIDENT-icon')).toBeVisible();
+	});
+
 	it('should load and show the children of a sub process when it is expanded', async ({worker}) => {
 		const screen = await renderHistory(worker);
 

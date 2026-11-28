@@ -8,6 +8,7 @@
 
 import {readFile} from 'node:fs/promises';
 import {test, expect} from '#/pw-modules/test-extend';
+import type {Locator} from '@playwright/test';
 import {HttpResponse} from 'msw';
 import {BPMN_XML} from '#/shared-test-modules/api-mocks/process-definition-xmls';
 import {
@@ -44,6 +45,19 @@ import {processInstanceHeaderHandlers} from '#/shared-test-modules/process-insta
 import {processInstanceDiagramHandlers} from '#/shared-test-modules/process-instance-diagram-handlers';
 
 const PROCESS_INSTANCE_ID = '2251799813685280';
+
+async function isHitTestable(locator: Locator) {
+	return locator.evaluate((element) => {
+		const bounds = element.getBoundingClientRect();
+		const x = (bounds.left + bounds.right) / 2;
+		const y = (bounds.top + bounds.bottom) / 2;
+		const pointerEvents = element.style.pointerEvents;
+		element.style.pointerEvents = 'all';
+		const target = document.elementFromPoint(x, y);
+		element.style.pointerEvents = pointerEvents;
+		return target !== null && (element === target || element.contains(target));
+	});
+}
 
 test.beforeEach(async ({network}) => {
 	network.use(
@@ -469,7 +483,144 @@ test.describe('Operate Process Instance DS preview (/operate-preview/processes/:
 
 		await expect(page).toHaveURL(/elementInstanceKey=%222251799813685290%22/);
 		await expect(operatePreviewProcessInstancePage.historyItem('Task 1')).toHaveAttribute('aria-selected', 'true');
+
+		const rootStateIcon = operatePreviewProcessInstancePage.historyTree
+			.locator('[role="treeitem"][aria-level="1"]')
+			.locator('[data-testid$="-icon"]');
+		const taskStateIcon = operatePreviewProcessInstancePage.historyItem('Task 1').locator('[data-testid$="-icon"]');
+		await rootStateIcon.click();
+
+		await expect(page).not.toHaveURL(/elementInstanceKey=/);
+		await expect(
+			operatePreviewProcessInstancePage.historyTree.getByRole('treeitem', {name: /My Process/}),
+		).toHaveAttribute('aria-selected', 'true');
+
+		await taskStateIcon.click();
+		await expect(page).toHaveURL(/elementInstanceKey=%222251799813685290%22/);
+		await expect(operatePreviewProcessInstancePage.historyItem('Task 1')).toHaveAttribute('aria-selected', 'true');
 	});
+
+	test('should show one full-name tooltip for a truncated history row on hover and focus', async ({
+		network,
+		operatePreviewProcessInstancePage,
+		page,
+	}) => {
+		const longElementName = `Task ${'with an exceptionally long history label '.repeat(32)}`.trim();
+		const longElementNamePattern = /Task with an exceptionally long history label/;
+		const longTask = createElementInstance({
+			elementId: 'task-long',
+			elementInstanceKey: '2251799813685291',
+			elementName: longElementName,
+		});
+		network.use(
+			mockGetElementInstanceEndpoint({successResponse: HttpResponse.json(longTask)}),
+			mockQueryElementInstancesEndpoint({
+				successResponse: HttpResponse.json(createQueryElementInstancesResponse([longTask])),
+			}),
+		);
+
+		await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
+		await page.addStyleTag({
+			content: '[data-slot="tooltip-trigger"] { max-width: 110px !important; display: block !important; }',
+		});
+		const historyTree = operatePreviewProcessInstancePage.historyTree.first();
+		const historyRow = historyTree.getByRole('treeitem', {name: longElementNamePattern}).first();
+		await expect(historyRow).toBeVisible();
+		const historyRowLabel = historyRow.locator('[data-slot="tooltip-trigger"]').first();
+		await expect(historyRowLabel).toContainText(longElementName);
+		await historyRowLabel.hover({force: true});
+		const tooltip = page.getByRole('tooltip').filter({hasText: longElementNamePattern});
+		await expect(tooltip).toHaveCount(1);
+		await expect(tooltip).toContainText(longElementName);
+		await expect(tooltip.locator('svg, img')).toHaveCount(0);
+
+		await page.mouse.move(0, 0);
+		await page.keyboard.press('Escape');
+		await expect(tooltip).toHaveCount(0);
+		await historyRow.focus();
+		await expect(tooltip).toHaveCount(1);
+		await expect(tooltip).toContainText(longElementName);
+		await expect(tooltip.locator('svg, img')).toHaveCount(0);
+	});
+
+	test('should keep history state icons in a fixed outer-left gutter without clipping', async ({
+		network,
+		operatePreviewProcessInstancePage,
+		page,
+	}) => {
+		const subprocess = createElementInstance({
+			elementId: 'start',
+			elementName: 'Start',
+			elementInstanceKey: '2251799813800101',
+			type: 'SUB_PROCESS',
+			state: 'COMPLETED',
+		});
+		const incidentTask = createElementInstance({
+			elementId: 'task-1',
+			elementName: 'Task 1',
+			elementInstanceKey: '2251799813685290',
+			state: 'ACTIVE',
+			hasIncident: true,
+		});
+		network.use(
+			mockGetElementInstanceEndpoint({successResponse: HttpResponse.json(subprocess)}),
+			mockQueryElementInstancesEndpoint({
+				successResponse: HttpResponse.json(createQueryElementInstancesResponse([subprocess, incidentTask])),
+			}),
+		);
+		await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
+		const historyPanel = page.getByRole('region', {name: 'Instance History'});
+		const historyTree = page.getByRole('tree', {name: 'Instance History'});
+		const rootRow = historyTree.locator('[role="treeitem"][aria-level="1"]').first();
+		const incidentRow = historyTree.getByRole('treeitem', {name: /Task 1/});
+		await expect(incidentRow).toBeVisible();
+
+		const activeStateIcon = rootRow.getByTestId('ACTIVE-icon');
+		const incidentStateIcon = incidentRow.getByTestId('INCIDENT-icon');
+		const rootElementIcon = rootRow.locator('[aria-hidden="true"][data-icon] svg, img[aria-hidden="true"]').first();
+		const incidentElementIcon = incidentRow
+			.locator('[aria-hidden="true"][data-icon] svg, img[aria-hidden="true"]')
+			.first();
+		const rootToggle = rootRow.locator('button').first();
+
+		await expect(activeStateIcon).toBeInViewport({ratio: 1});
+		await expect(incidentStateIcon).toBeInViewport({ratio: 1});
+		await expect(rootElementIcon).toBeInViewport({ratio: 1});
+		await expect(incidentElementIcon).toBeInViewport({ratio: 1});
+
+		const historyPanelBounds = await historyPanel.evaluate((panel) => panel.getBoundingClientRect());
+		const historyTreeBounds = await historyTree.evaluate((tree) => tree.getBoundingClientRect());
+		const activeStateIconBounds = await activeStateIcon.evaluate((icon) => icon.getBoundingClientRect());
+		const incidentStateIconBounds = await incidentStateIcon.evaluate((icon) => icon.getBoundingClientRect());
+		const rootRowBounds = await rootRow.evaluate((row) => row.getBoundingClientRect());
+		const incidentRowBounds = await incidentRow.evaluate((row) => row.getBoundingClientRect());
+		const rootToggleLeft = await rootToggle.evaluate((toggle) => toggle.getBoundingClientRect().left);
+		const activeStateIconRight = activeStateIconBounds.right;
+		const rootElementIconLeft = await rootElementIcon.evaluate((icon) => icon.getBoundingClientRect().left);
+		const rootToggleRight = await rootToggle.evaluate((toggle) => toggle.getBoundingClientRect().right);
+		const activeStateIconHitTest = await isHitTestable(activeStateIcon);
+		const incidentStateIconHitTest = await isHitTestable(incidentStateIcon);
+		const rootElementIconHitTest = await isHitTestable(rootElementIcon);
+		const incidentElementIconHitTest = await isHitTestable(incidentElementIcon);
+
+		expect(activeStateIconBounds.left).toBeGreaterThanOrEqual(historyPanelBounds.left);
+		expect(activeStateIconBounds.right).toBeLessThanOrEqual(historyPanelBounds.right);
+		expect(activeStateIconBounds.top).toBeGreaterThanOrEqual(historyPanelBounds.top);
+		expect(activeStateIconBounds.bottom).toBeLessThanOrEqual(historyPanelBounds.bottom);
+		expect(incidentStateIconBounds.left).toBeGreaterThanOrEqual(historyPanelBounds.left);
+		expect(incidentStateIconBounds.right).toBeLessThanOrEqual(historyPanelBounds.right);
+		expect(incidentStateIconBounds.top).toBeGreaterThanOrEqual(historyPanelBounds.top);
+		expect(incidentStateIconBounds.bottom).toBeLessThanOrEqual(historyPanelBounds.bottom);
+		expect(Math.abs(rootRowBounds.left - historyTreeBounds.left)).toBeLessThanOrEqual(1);
+		expect(Math.abs(incidentRowBounds.left - historyTreeBounds.left)).toBeLessThanOrEqual(1);
+		expect(activeStateIconRight).toBeLessThanOrEqual(rootToggleLeft);
+		expect(rootElementIconLeft).toBeGreaterThan(rootToggleRight);
+		expect(activeStateIconHitTest).toBe(true);
+		expect(incidentStateIconHitTest).toBe(true);
+		expect(rootElementIconHitTest).toBe(true);
+		expect(incidentElementIconHitTest).toBe(true);
+	});
+
 	test('should show the variables tab when the history path is opened on a wide viewport', async ({
 		operatePreviewProcessInstancePage,
 	}) => {
