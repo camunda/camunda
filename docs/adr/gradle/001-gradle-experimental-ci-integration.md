@@ -204,9 +204,8 @@ The temporary soft-integration period has ended. Focused Gradle compilation and 
 checks now run in Unified CI and are included in `check-results`. `gradle-compile-check` also
 compiles with `--isolated-projects` as a strict, blocking compile check. Isolated projects works
 for building only, not for running tests, so that run never executes test tasks. The separate
-`gradle-ci.yml` workflow remains non-blocking for the experimental isolated-project compatibility check;
-failures on a push to `main` send a Slack notification. Gradle unit-test execution will be added
-separately.
+`gradle-ci.yml` workflow runs the Gradle unit-test suite as a non-blocking check; failures on a
+push to `main` send a Slack notification.
 
 ## Deferred work
 
