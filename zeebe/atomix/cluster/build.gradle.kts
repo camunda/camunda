@@ -19,6 +19,12 @@ sbe {
   )
 }
 
+// Maven suppresses these checks for the message decoders (zeebe/atomix/pom.xml,
+// src/main/resources/suppression.xml); the code relies on switch fall-through.
+tasks.named<Checkstyle>("checkstyleMain") {
+  exclude("**/MessageDecoderV1.java", "**/MessageDecoderV2.java", "**/AbstractMessageDecoder.java")
+}
+
 val libsCatalog = extensions.getByType<VersionCatalogsExtension>().named("libs")
 val nettyVersion = libsCatalog.requiredVersion("netty")
 

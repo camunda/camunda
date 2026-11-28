@@ -1,19 +1,26 @@
 import buildlogic.ARTIFACT_KIND
 import buildlogic.skipWhen
+import buildlogic.spotbugsEngineVersion
 import buildlogic.requiredVersion
 import com.diffplug.gradle.spotless.SpotlessCheck
 import com.diffplug.gradle.spotless.SpotlessExtension
+import com.github.spotbugs.snom.Confidence
+import com.github.spotbugs.snom.Effort
+import com.github.spotbugs.snom.SpotBugsTask
 import io.camunda.gradle.flags.asEnabledFlag
 import io.camunda.gradle.pom.PomResolver
 import io.camunda.gradle.pom.promotedErrorProneChecks
 import net.ltgt.gradle.errorprone.errorprone
 import org.gradle.api.artifacts.VersionCatalogsExtension
+import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.testing.junitplatform.JUnitPlatformOptions
 import org.gradle.jvm.tasks.Jar
 
 plugins {
   `java-library`
   `maven-publish`
+  checkstyle
+  id("com.github.spotbugs")
   id("com.diffplug.spotless")
   id("net.ltgt.errorprone")
   id("org.gradle.test-retry")
@@ -74,6 +81,66 @@ extensions.configure<SpotlessExtension> {
 
 // Maven -Dquickly skips format checks; do the same for the per-module Spotless checks.
 tasks.withType<SpotlessCheck>().configureEach { skipWhen(quickly) }
+
+// Same checkstyle config and tool version as Maven's validate-java execution (parent/pom.xml).
+checkstyle {
+  toolVersion = versionCatalog.requiredVersion("parent-checkstyle")
+  configFile =
+    layout.settingsDirectory.file("build-tools/src/main/resources/check/.checkstyle.xml").asFile
+  maxWarnings = 0
+}
+
+// Maven checks only the *.java files in the module's own src/main/java and src/test/java; Gradle's
+// source sets also contain generated sources (SBE, protobuf, OpenAPI), which are not ours to fix.
+tasks.named<Checkstyle>("checkstyleMain") {
+  setSource(fileTree("src/main/java") { include("**/*.java") })
+}
+
+tasks.named<Checkstyle>("checkstyleTest") {
+  setSource(fileTree("src/test/java") { include("**/*.java") })
+}
+
+// Maven -Dquickly skips checks (skipChecks); do the same here.
+tasks.withType<Checkstyle>().configureEach { skipWhen(quickly) }
+
+// Same effort, threshold and filters as Maven's spotbugs profile (parent/pom.xml). Maven applies
+// the shared exclude filter and, when the module has one, spotbugs/spotbugs-exclude.xml too.
+val spotbugsFilterDir = layout.settingsDirectory.dir("build-tools/src/main/resources/spotbugs")
+val moduleExcludeFilter = layout.projectDirectory.file("spotbugs/spotbugs-exclude.xml")
+
+spotbugs {
+  // Maven's plugin 4.10.4.1 runs SpotBugs 4.10.4; a newer engine reports bugs Maven does not.
+  toolVersion = versionCatalog.requiredVersion("parent-spotbugs-maven-plugin").let(::spotbugsEngineVersion)
+  effort = Effort.MAX
+  reportLevel = Confidence.LOW
+  includeFilter = spotbugsFilterDir.file("spotbugs-include.xml")
+  excludeFilter = spotbugsFilterDir.file("spotbugs-exclude.xml")
+}
+
+// The module's own exclude filter is applied as a second -exclude, like Maven's excludeFilterFiles.
+// The path is relative so the cache key does not depend on where the repository is checked out.
+if (moduleExcludeFilter.asFile.exists()) {
+  tasks.withType<SpotBugsTask>().configureEach {
+    extraArgs.addAll("-exclude", "spotbugs/spotbugs-exclude.xml")
+    inputs
+      .file(moduleExcludeFilter)
+      .withPropertyName("moduleExcludeFilter")
+      .withPathSensitivity(PathSensitivity.RELATIVE)
+  }
+}
+
+// Maven's spotbugs check analyses main classes only (includeTests defaults to false).
+tasks.named("spotbugsTest") { enabled = false }
+
+tasks.withType<SpotBugsTask>().configureEach { skipWhen(quickly) }
+
+// Runs the checks of Maven's "Java Checks" CI job. Spotless is not part of it; it has its own job.
+tasks.register("javaChecks") {
+  group = "verification"
+  description = "Runs the checks of the Maven Java Checks job: checkstyle, spotbugs"
+  // Not every Checkstyle task: extra source sets (e.g. src/tool) are not checked by Maven.
+  dependsOn("checkstyleMain", "checkstyleTest", "spotbugsMain", "testClasses")
+}
 
 publishing {
   publications.create<MavenPublication>("maven") {

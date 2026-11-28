@@ -52,6 +52,9 @@ internal fun VersionCatalogBuilder.catalogParentVersions(
   )
   version("parent-revapi", pomVersion("version.revapi"))
   version("parent-servlet-api", pomVersion("version.servlet-api"))
+  // The one Maven plugin version kept: spotbugs-maven-plugin x.y.z.w bundles SpotBugs x.y.z, which
+  // is the engine Maven's checks actually run (not version.spotbugs).
+  version("parent-spotbugs-maven-plugin", pomVersion("plugin.version.spotbugs"))
   version(
     "parent-spring-boot-oldest-managing-protobuf",
     pomVersion("version.spring-boot-oldest-managing-protobuf"),
