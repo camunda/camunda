@@ -696,5 +696,18 @@
       "last_flake_run_id": "",
       "checked_at": "2026-11-28T06:24:29.557Z"
     }
+  },
+  "d1315db0": {
+    "version": "8.7",
+    "file": "tasklist/task-details.spec.ts",
+    "titlePath": [
+      "task details page",
+      "complete zeebe and job worker tasks"
+    ],
+    "last_action": "delete_branch",
+    "last_reason": "iter1 80% vs baseline 90% (+-10pp); needs at least +5pp",
+    "last_run": "https://github.com/camunda/camunda/actions/runs/46116489435",
+    "updated_at": "2026-11-28T07:24:20Z",
+    "cooldown_until": "2026-12-05T07:24:20Z"
   }
 }
