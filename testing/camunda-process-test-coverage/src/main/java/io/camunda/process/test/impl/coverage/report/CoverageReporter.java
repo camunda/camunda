@@ -87,6 +87,20 @@ public class CoverageReporter {
    */
   public CoverageReport createAggregatedReport(
       final Collection<CoverageReportCollector> reportCollectors) {
+    final CoverageReport aggregatedReport = aggregateReports(reportCollectors);
+
+    writeJsonReport(aggregatedReport);
+    writeHtmlReport(aggregatedReport);
+    return aggregatedReport;
+  }
+
+  /**
+   * Creates the report that combines all test runs, without writing it to the filesystem.
+   *
+   * @param reportCollectors The collectors containing the coverage data
+   */
+  public CoverageReport aggregateReports(
+      final Collection<CoverageReportCollector> reportCollectors) {
     final Collection<CoverageSuiteReport> suites =
         reportCollectors.stream()
             .map(CoverageReportCollector::getSuite)
@@ -102,12 +116,8 @@ public class CoverageReporter {
             .distinct()
             .collect(Collectors.toList());
 
-    final CoverageReport aggregatedReport =
-        CoverageReportCreator.createAggregatedCoverageReport(suites, processModels, decisionModels);
-
-    writeJsonReport(aggregatedReport);
-    writeHtmlReport(aggregatedReport);
-    return aggregatedReport;
+    return CoverageReportCreator.createAggregatedCoverageReport(
+        suites, processModels, decisionModels);
   }
 
   /**

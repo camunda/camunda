@@ -165,6 +165,15 @@ via `frontend-maven-plugin` during `generate-resources`, and the resulting `cove
 See the module's [README](camunda-process-test-coverage/README.md) and
 [CONTRIBUTING](camunda-process-test-coverage/CONTRIBUTING.md) before touching it.
 
+The public, framework-agnostic entry point is
+[`CoverageCollector`](camunda-process-test-java/src/main/java/io/camunda/process/test/api/coverage/CoverageCollector.java)
+(`io.camunda.process.test.api.coverage`, in `camunda-process-test-java` because it reads the test
+data through the `CamundaDataSource`). The JUnit extension and the Spring listener use it, as can any
+other integration (another test framework, a CLI): collect the coverage per test run, identified by a
+`CoverageTestIdentifier`, then generate the report once at the end. The report logic stays in the
+`impl` package of the coverage module (`CoverageSuiteCollector`), which takes plain suite ids
+instead of test classes.
+
 ---
 
 ## 3. Configuration

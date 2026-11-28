@@ -56,11 +56,12 @@ public final class CoverageReportCollector {
   private final String suiteName;
 
   public CoverageReportCollector(
-      final Class<?> testClass,
+      final String suiteId,
+      final String suiteName,
       final List<String> excludedProcessDefinitionIds,
       final List<String> excludedDecisionDefinitionIds) {
-    suiteId = extractCollectorClassName(testClass);
-    suiteName = extractSuiteName(testClass);
+    this.suiteId = suiteId;
+    this.suiteName = suiteName;
     this.excludedProcessDefinitionIds = excludedProcessDefinitionIds;
     this.excludedDecisionDefinitionIds = excludedDecisionDefinitionIds;
   }
@@ -171,21 +172,5 @@ public final class CoverageReportCollector {
             })
         .filter(dc -> dc != null)
         .collect(Collectors.toList());
-  }
-
-  private static String extractCollectorClassName(final Class<?> testClass) {
-    final Class<?> enclosingClass = testClass.getEnclosingClass();
-    if (enclosingClass != null) {
-      return enclosingClass.getName();
-    }
-    return testClass.getName();
-  }
-
-  private static String extractSuiteName(final Class<?> testClass) {
-    final Class<?> enclosingClass = testClass.getEnclosingClass();
-    if (enclosingClass != null) {
-      return enclosingClass.getSimpleName();
-    }
-    return testClass.getSimpleName();
   }
 }

@@ -47,6 +47,8 @@ import io.camunda.process.test.api.assertions.IncidentSelectors;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelectors;
 import io.camunda.process.test.api.assertions.UserTaskSelectors;
 import io.camunda.process.test.api.assertions.VariableSelectors;
+import io.camunda.process.test.api.coverage.CoverageCollector;
+import io.camunda.process.test.api.coverage.CoverageTestIdentifier;
 import io.camunda.process.test.api.coverage.model.CoverageReport;
 import io.camunda.process.test.api.coverage.model.CoverageRunReport;
 import io.camunda.process.test.api.coverage.model.ProcessCoverage;
@@ -58,10 +60,6 @@ import io.camunda.process.test.api.mock.VariablesTable;
 import io.camunda.process.test.api.testCases.TestCase;
 import io.camunda.process.test.api.testCases.TestCaseRunner;
 import io.camunda.process.test.api.testCases.TestCaseSource;
-import io.camunda.process.test.impl.assertions.CamundaDataSource;
-import io.camunda.process.test.impl.coverage.CoverageCollector;
-import io.camunda.process.test.impl.coverage.CoverageTestDataCollector;
-import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeDefaults;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
@@ -631,12 +629,7 @@ public class CamundaProcessTestExtensionIT {
         final Class<?> suite,
         final Instant suiteStartTime) {
       return coverageCollector.collectTestRunCoverage(
-          suite,
-          "run",
-          null,
-          CoverageTestDataCollector.collectData(
-              new CamundaDataSource(
-                  client, suiteStartTime, CamundaProcessTestRuntimeDefaults.QUERY_PAGE_LIMIT)));
+          CoverageTestIdentifier.of(suite, "run", null), client, suiteStartTime);
     }
 
     private BpmnModelInstance simpleGatewayProcess() {
@@ -662,10 +655,9 @@ public class CamundaProcessTestExtensionIT {
         final CoverageCollector coverageCollector, final String testName) {
       final CoverageReport coverageReport =
           coverageCollector.collectTestRunCoverage(
-              CamundaProcessTestExtensionIT.class,
-              testName,
-              null,
-              CoverageTestDataCollector.collectData(new CamundaDataSource(client)));
+              CoverageTestIdentifier.of(CamundaProcessTestExtensionIT.class, testName, null),
+              client,
+              null);
       return coverageReport.getSuites().stream()
           .flatMap(report -> report.getRuns().stream())
           .filter(run -> run.getName().equals(testName))

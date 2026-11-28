@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.lenient;
@@ -30,6 +31,8 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientConfiguration;
+import io.camunda.process.test.api.coverage.CoverageCollector;
+import io.camunda.process.test.api.coverage.CoverageCollectorBuilder;
 import io.camunda.process.test.api.judge.JudgeConfig;
 import io.camunda.process.test.api.runtime.CamundaProcessTestContainerProvider;
 import io.camunda.process.test.api.similarity.SemanticSimilarityConfig;
@@ -37,8 +40,6 @@ import io.camunda.process.test.api.testCases.TestCaseRunner;
 import io.camunda.process.test.impl.cleanup.CleanupStrategy;
 import io.camunda.process.test.impl.cleanup.CleanupStrategyFactory;
 import io.camunda.process.test.impl.client.CamundaClockClient;
-import io.camunda.process.test.impl.coverage.CoverageCollector;
-import io.camunda.process.test.impl.coverage.CoverageCollectorBuilder;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeBuilder;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultCollector;
@@ -54,6 +55,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -116,6 +118,14 @@ public class JunitExtensionTest {
     when(extensionContext.getRequiredTestInstances()).thenReturn(testInstances);
     when(testInstances.getAllInstances()).thenReturn(Collections.singletonList(this));
     when(extensionContext.getStore(any())).thenReturn(store);
+    lenient().when(extensionContext.getRoot()).thenReturn(extensionContext);
+    lenient()
+        .when(store.getOrComputeIfAbsent(any(), any(), eq(CoverageCollector.class)))
+        .thenAnswer(
+            invocation ->
+                invocation
+                    .<Function<Object, Object>>getArgument(1)
+                    .apply(invocation.getArgument(0)));
     when(processCoverageBuilder.build()).thenReturn(processCoverage);
   }
 
