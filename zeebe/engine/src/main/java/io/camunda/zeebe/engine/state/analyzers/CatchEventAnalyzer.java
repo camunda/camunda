@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCat
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
+import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
@@ -29,8 +30,8 @@ import org.agrona.DirectBuffer;
 
 /**
  * Helper class that analyzes a process instance at runtime. It provides information about the
- * existence of catch events. The information is derived from {@link ProcessState} and {@link
- * ElementInstanceState}.
+ * existence of catch events. The information is derived from {@link ProcessState}, {@link
+ * ElementInstanceState} and {@link EventScopeInstanceState}.
  */
 public final class CatchEventAnalyzer {
 
@@ -48,11 +49,15 @@ public final class CatchEventAnalyzer {
 
   private final ProcessState processState;
   private final ElementInstanceState elementInstanceState;
+  private final EventScopeInstanceState eventScopeInstanceState;
 
   public CatchEventAnalyzer(
-      final ProcessState processState, final ElementInstanceState elementInstanceState) {
+      final ProcessState processState,
+      final ElementInstanceState elementInstanceState,
+      final EventScopeInstanceState eventScopeInstanceState) {
     this.processState = processState;
     this.elementInstanceState = elementInstanceState;
+    this.eventScopeInstanceState = eventScopeInstanceState;
   }
 
   public Either<Failure, CatchEventTuple> findErrorCatchEvent(
@@ -121,7 +126,10 @@ public final class CatchEventAnalyzer {
 
     final Either<List<DirectBuffer>, CatchEventTuple> availableCatchEvents =
         Either.left(new ArrayList<>());
-    while (instance != null && instance.isActive() && !instance.isInterrupted()) {
+    // Walk active scopes, including scopes interrupted by an event subprocess. Only handlers the
+    // event scope can still trigger are selected, so a consumed start event is skipped while a
+    // boundary event on that scope stays eligible.
+    while (instance != null && instance.isActive()) {
       final var found = findErrorCatchEventInScope(errorCode, process, instance);
       if (found.isRight()) {
         return found;
@@ -186,6 +194,7 @@ public final class CatchEventAnalyzer {
             .filter(catchEvent -> catchEvent.getError().getErrorCode().isPresent())
             // Order by errorCode to prioritize code-specific error events within the same scope.
             .sorted(ERROR_CODE_COMPARATOR)
+            .filter(event -> canTriggerCatchEvent(instance, event))
             .filter(event -> matchesErrorCode(event, errorCode, availableCatchEvents))
             .findFirst();
 
@@ -238,9 +247,11 @@ public final class CatchEventAnalyzer {
               // find in parent scope if exists
               final ElementInstance parentElementInstance =
                   elementInstanceState.getInstance(instance.getParentKey());
+              // Keep walking an interrupted scope. Trigger eligibility is applied per handler, and
+              // inactive or terminating ancestors are not reactivated.
               if (parentElementInstance != null
                   && instance.isActive()
-                  && !instance.isInterrupted()) {
+                  && parentElementInstance.isActive()) {
                 return findEscalationCatchEventInProcess(
                     escalationCode, process, parentElementInstance);
               } else {
@@ -266,6 +277,7 @@ public final class CatchEventAnalyzer {
             // Order by escalationCode to prioritize code-specific escalation events within the same
             // scope.
             .sorted(ESCALATION_CODE_COMPARATOR)
+            .filter(event -> canTriggerCatchEvent(instance, event))
             .filter(event -> matchesEscalationCode(event, escalationCode))
             .findFirst();
 
@@ -277,6 +289,15 @@ public final class CatchEventAnalyzer {
 
     // no matching catch event found
     return Optional.empty();
+  }
+
+  /**
+   * A scope interrupted by an event subprocess can still trigger its boundary events. Handlers that
+   * fail this check, including the already consumed event-subprocess start event, are not selected.
+   */
+  private boolean canTriggerCatchEvent(
+      final ElementInstance instance, final ExecutableCatchEvent event) {
+    return eventScopeInstanceState.canTriggerEvent(instance.getKey(), event.getId());
   }
 
   public boolean matchesEscalationCode(
