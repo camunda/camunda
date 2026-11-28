@@ -54,6 +54,28 @@ public interface ArchiverRepository extends AutoCloseable {
       final Map<String, String> exclusionFilters,
       final Executor executor);
 
+  /**
+   * Same as {@link #moveDocumentsById}, but once the first document moved, the move is not stopped
+   * when exporting gets paused. Use this for the documents that the next run needs in the source
+   * index to find the batch again: if such a move stops halfway, the documents that remain can
+   * become unreachable for the archiver.
+   */
+  default CompletableFuture<Void> moveDocumentsByIdToCompletion(
+      final String sourceIndexName,
+      final String destinationIndexName,
+      final Map<String, List<String>> keysByField,
+      final Map<String, String> inclusionFilters,
+      final Map<String, String> exclusionFilters,
+      final Executor executor) {
+    return moveDocumentsById(
+        sourceIndexName,
+        destinationIndexName,
+        keysByField,
+        inclusionFilters,
+        exclusionFilters,
+        executor);
+  }
+
   CompletableFuture<Integer> getCountOfProcessInstancesAwaitingArchival();
 
   default String getRetentionPolicyName(

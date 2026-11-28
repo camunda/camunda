@@ -61,6 +61,7 @@ final class RdbmsBackgroundTaskManagerTest {
               historyCleanupService,
               historyDeletionService,
               LoggerFactory.getLogger(RdbmsBackgroundTaskManagerTest.class),
+              () -> false,
               CLOSE_TIMEOUT);
       manager.start();
 
@@ -80,6 +81,7 @@ final class RdbmsBackgroundTaskManagerTest {
               historyCleanupService,
               historyDeletionService,
               LoggerFactory.getLogger(RdbmsBackgroundTaskManagerTest.class),
+              () -> false,
               CLOSE_TIMEOUT);
 
       // when
@@ -89,6 +91,43 @@ final class RdbmsBackgroundTaskManagerTest {
       Awaitility.await("Background tasks should run")
           .untilAsserted(
               () -> Mockito.verify(historyCleanupService).cleanupHistory(anyInt(), any()));
+
+      manager.close();
+    }
+  }
+
+  @Nested
+  final class PauseTest {
+
+    @Test
+    void shouldNotRunTasksWhilePaused() {
+      // given
+      final var manager =
+          new RdbmsBackgroundTaskManager(
+              PARTITION_ID,
+              historyCleanupService,
+              historyDeletionService,
+              LoggerFactory.getLogger(RdbmsBackgroundTaskManagerTest.class),
+              () -> true,
+              CLOSE_TIMEOUT);
+
+      // when
+      manager.start();
+
+      // then
+      Awaitility.await("Paused tasks should not call the services")
+          .during(Duration.ofMillis(500))
+          .atMost(Duration.ofSeconds(5))
+          .untilAsserted(
+              () -> {
+                Mockito.verify(historyCleanupService, Mockito.never())
+                    .cleanupHistory(anyInt(), any());
+                Mockito.verify(historyCleanupService, Mockito.never())
+                    .cleanupUsageMetricsHistory(anyInt(), any());
+                Mockito.verify(historyCleanupService, Mockito.never())
+                    .cleanupJobBatchMetricsHistory(anyInt(), any());
+                Mockito.verify(historyDeletionService, Mockito.never()).deleteHistory(anyInt());
+              });
 
       manager.close();
     }
@@ -106,6 +145,7 @@ final class RdbmsBackgroundTaskManagerTest {
               historyCleanupService,
               historyDeletionService,
               LoggerFactory.getLogger(RdbmsBackgroundTaskManagerTest.class),
+              () -> false,
               CLOSE_TIMEOUT);
       manager.start();
 
@@ -129,6 +169,7 @@ final class RdbmsBackgroundTaskManagerTest {
               historyCleanupService,
               historyDeletionService,
               LoggerFactory.getLogger(RdbmsBackgroundTaskManagerTest.class),
+              () -> false,
               CLOSE_TIMEOUT);
       manager.start();
 
@@ -145,6 +186,7 @@ final class RdbmsBackgroundTaskManagerTest {
               historyCleanupService,
               historyDeletionService,
               LoggerFactory.getLogger(RdbmsBackgroundTaskManagerTest.class),
+              () -> false,
               CLOSE_TIMEOUT);
       manager.start();
       manager.close();
@@ -177,6 +219,7 @@ final class RdbmsBackgroundTaskManagerTest {
               historyCleanupService,
               historyDeletionService,
               LoggerFactory.getLogger(RdbmsBackgroundTaskManagerTest.class),
+              () -> false,
               CLOSE_TIMEOUT);
 
       // when
@@ -206,6 +249,7 @@ final class RdbmsBackgroundTaskManagerTest {
               historyCleanupService,
               historyDeletionService,
               LoggerFactory.getLogger(RdbmsBackgroundTaskManagerTest.class),
+              () -> false,
               CLOSE_TIMEOUT);
 
       // when

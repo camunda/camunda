@@ -8,6 +8,11 @@
 package io.camunda.exporter.tasks.archiver;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -22,9 +27,11 @@ import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.SequenceFlowTemplate;
 import io.camunda.webapps.schema.descriptors.template.WaitStateTemplate;
+import io.camunda.zeebe.exporter.common.tasks.TaskPausedException;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.stream.LongStream;
 import org.junit.jupiter.api.AfterEach;
@@ -260,6 +267,42 @@ final class ProcessInstanceArchiverJobTest extends ArchiverJobRecordingMetricsAb
         .contains(
             new DocumentMove(
                 "foo_", "foo_" + "2024-01-01", Map.of("bar", List.of("1", "2")), executor));
+  }
+
+  @Test
+  void shouldNotMoveProcessInstancesWhenPausedDuringDependants() {
+    // given
+    doReturn(CompletableFuture.failedFuture(new TaskPausedException("paused")))
+        .when(repository)
+        .moveDocumentsById(any(), any(), any(), any(), any(), any());
+
+    // when
+    final var result = job.execute().toCompletableFuture();
+
+    // then
+    assertThatThrownBy(result::join)
+        .satisfies(error -> assertThat(TaskPausedException.isCauseOf(error)).isTrue());
+    verify(repository, never())
+        .moveDocumentsByIdToCompletion(any(), any(), any(), any(), any(), any());
+  }
+
+  @Test
+  void shouldMoveProcessInstancesToCompletionAsLastStep() {
+    // when
+    job.execute().toCompletableFuture().join();
+
+    // then
+    verify(repository, times(1))
+        .moveDocumentsByIdToCompletion(
+            any(),
+            any(),
+            any(),
+            eq(
+                Map.of(
+                    ListViewTemplate.JOIN_RELATION,
+                    ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION)),
+            eq(Map.of()),
+            any());
   }
 
   @Test

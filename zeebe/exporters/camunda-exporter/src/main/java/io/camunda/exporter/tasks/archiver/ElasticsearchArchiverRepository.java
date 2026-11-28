@@ -56,6 +56,8 @@ import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
+import io.camunda.zeebe.exporter.common.tasks.PauseStateSupplier;
+import io.camunda.zeebe.exporter.common.tasks.TaskPausedException;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.Timer;
 import java.time.Duration;
@@ -86,6 +88,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   private final Collection<IndexTemplateDescriptor> allTemplatesDescriptors;
   private final CamundaExporterMetrics metrics;
   private final Cache<String, String> lifeCyclePolicyApplied;
+  private final PauseStateSupplier pauseState;
 
   public ElasticsearchArchiverRepository(
       final int partitionId,
@@ -94,8 +97,10 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
       @WillCloseWhenClosed final ElasticsearchAsyncClient client,
       final Executor executor,
       final CamundaExporterMetrics metrics,
-      final Logger logger) {
+      final Logger logger,
+      final PauseStateSupplier pauseState) {
     super(client, executor, logger);
+    this.pauseState = pauseState;
     this.partitionId = partitionId;
     this.config = config;
     allTemplatesDescriptors = resourceProvider.getIndexTemplateDescriptors();
@@ -291,6 +296,48 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
       final Map<String, String> inclusionFilters,
       final Map<String, String> exclusionFilters,
       final Executor executor) {
+    return moveDocumentsById(
+        sourceIndexName,
+        destinationIndexName,
+        keysByField,
+        inclusionFilters,
+        exclusionFilters,
+        executor,
+        pauseState);
+  }
+
+  @Override
+  public CompletableFuture<Void> moveDocumentsByIdToCompletion(
+      final String sourceIndexName,
+      final String destinationIndexName,
+      final Map<String, List<String>> keysByField,
+      final Map<String, String> inclusionFilters,
+      final Map<String, String> exclusionFilters,
+      final Executor executor) {
+    if (pauseState.paused()) {
+      return CompletableFuture.failedFuture(
+          new TaskPausedException(
+              "Exporting is paused, did not start archiving from '%s' to '%s'"
+                  .formatted(sourceIndexName, destinationIndexName)));
+    }
+    return moveDocumentsById(
+        sourceIndexName,
+        destinationIndexName,
+        keysByField,
+        inclusionFilters,
+        exclusionFilters,
+        executor,
+        PauseStateSupplier.NOT_PAUSED);
+  }
+
+  private CompletableFuture<Void> moveDocumentsById(
+      final String sourceIndexName,
+      final String destinationIndexName,
+      final Map<String, List<String>> keysByField,
+      final Map<String, String> inclusionFilters,
+      final Map<String, String> exclusionFilters,
+      final Executor executor,
+      final PauseStateSupplier pauseState) {
 
     final ArchiveByIdTaskSupplier<FieldValue> taskSupplier =
         new ArchiveByIdTaskSupplier<>(
@@ -309,7 +356,8 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
             this::deleteDocumentsById,
             executor,
             metrics,
-            logger);
+            logger,
+            pauseState);
 
     final var timer = Timer.start();
     return AsyncRepeatUntil.repeatUntil(
@@ -340,7 +388,17 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
             })
         .whenComplete(
             (val, err) -> {
-              if (err != null) {
+              if (err == null) {
+                return;
+              }
+              if (TaskPausedException.isCauseOf(err)) {
+                logger.debug(
+                    "Stopped archiving {} to the {} index because exporting is paused, moved {} docs so far in {}s",
+                    sourceIndexName,
+                    destinationIndexName,
+                    taskSupplier.getTotalArchived(),
+                    taskSupplier.getTotalTimeTakenMs() / 1000);
+              } else {
                 logger.warn(
                     "Failed archiving {} to the {} index, moved {} docs so far in {}s, error={}",
                     sourceIndexName,

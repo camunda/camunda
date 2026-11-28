@@ -11,6 +11,8 @@ import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import com.google.common.base.Stopwatch;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.zeebe.exporter.common.tasks.PauseStateSupplier;
+import io.camunda.zeebe.exporter.common.tasks.TaskPausedException;
 import io.camunda.zeebe.util.function.TriFunction;
 import java.net.SocketTimeoutException;
 import java.util.List;
@@ -48,6 +50,7 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
   private final Executor executor;
   private final CamundaExporterMetrics metrics;
   private final Logger logger;
+  private final PauseStateSupplier pauseState;
 
   private final AtomicReference<ArchiveDocIdsBatch<SortFieldType>> lastSearchResponse =
       new AtomicReference<>(null);
@@ -69,7 +72,8 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
       final BiFunction<String, List<IdWithRouting>, CompletableFuture<Long>> deleter,
       final Executor executor,
       final CamundaExporterMetrics metrics,
-      final Logger logger) {
+      final Logger logger,
+      final PauseStateSupplier pauseState) {
     this.config = config;
     this.sourceIdx = sourceIdx;
     this.destinationIdx = destinationIdx;
@@ -79,6 +83,7 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
     this.executor = executor;
     this.metrics = metrics;
     this.logger = logger;
+    this.pauseState = pauseState;
     batchSize = new AtomicInteger(config.getReindexBatchSize());
   }
 
@@ -95,6 +100,15 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
   }
 
   public CompletableFuture<Long> moveNextBatch() {
+    // a pending retry belongs to a sub-batch that can be reindexed but not deleted yet, so it must
+    // finish first, else its documents stay in the two indices for the time of the pause
+    if (retryCount.get() == 0 && pauseState.paused()) {
+      return CompletableFuture.failedFuture(
+          new TaskPausedException(
+              "Exporting is paused, stopped archiving from '%s' to '%s'"
+                  .formatted(sourceIdx, destinationIdx)));
+    }
+
     final Stopwatch stopwatch = Stopwatch.createStarted();
     final var batchSizeForBatch = batchSize.get();
     return idsSupplier

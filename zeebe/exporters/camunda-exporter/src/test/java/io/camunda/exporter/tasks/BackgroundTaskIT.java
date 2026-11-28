@@ -200,7 +200,8 @@ public abstract class BackgroundTaskIT<T extends BackgroundTask> {
               createAsyncESClient(config),
               executor,
               exporterMetrics,
-              LOGGER));
+              LOGGER,
+              () -> false));
     } else {
       final var asyncClient = createOSAsyncClient(config);
       final var genericClient =
@@ -215,7 +216,8 @@ public abstract class BackgroundTaskIT<T extends BackgroundTask> {
               genericClient,
               executor,
               exporterMetrics,
-              LOGGER));
+              LOGGER,
+              () -> false));
     }
   }
 

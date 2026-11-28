@@ -1431,7 +1431,7 @@ final class ElasticsearchArchiverRepositoryIT {
     final var metrics = new CamundaExporterMetrics(meterRegistry);
 
     return new ElasticsearchArchiverRepository(
-        partitionId, config, resourceProvider, client, Runnable::run, metrics, LOGGER);
+        partitionId, config, resourceProvider, client, Runnable::run, metrics, LOGGER, () -> false);
   }
 
   private Rest5ClientTransport createRestClient() {

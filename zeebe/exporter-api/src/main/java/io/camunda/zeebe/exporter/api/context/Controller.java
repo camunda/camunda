@@ -73,4 +73,18 @@ public interface Controller {
    *     position, {@code false} if the log segments for that position are no longer available
    */
   boolean requestReplay(final long lastExportedPosition);
+
+  /**
+   * Returns whether exporting is currently paused. Exporters that run work outside of {@link
+   * io.camunda.zeebe.exporter.api.Exporter#export}, for example background tasks that modify the
+   * exported data, can use this to suspend that work while exporting is paused.
+   *
+   * <p>The value can change at any time, so read it before each unit of work instead of caching it.
+   * This method is safe to call from any thread.
+   *
+   * @return the current pause state, {@link ExporterPauseState#EXPORTING} by default
+   */
+  default ExporterPauseState getPauseState() {
+    return ExporterPauseState.EXPORTING;
+  }
 }

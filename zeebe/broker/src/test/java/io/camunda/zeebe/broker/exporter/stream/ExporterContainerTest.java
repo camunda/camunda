@@ -20,6 +20,7 @@ import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
+import io.camunda.zeebe.exporter.api.context.ExporterPauseState;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -614,6 +615,64 @@ final class ExporterContainerTest {
               });
       assertThat(rawStoredPosition.get()).isEqualTo(-1L);
       assertThat(exporterContainer.getPosition()).isEqualTo(-1L);
+    }
+
+    @Test
+    void shouldReportExportingPauseStateByDefault() throws Exception {
+      // given
+      exporterContainer.configureExporter();
+      exporterContainer.initMetadata();
+      exporterContainer.openExporter();
+
+      // when
+      final var pauseState = exporterContainer.getPauseState();
+
+      // then
+      assertThat(pauseState).isEqualTo(ExporterPauseState.EXPORTING);
+    }
+
+    @Test
+    void shouldReportSoftPausedPauseState() throws Exception {
+      // given
+      exporterContainer.configureExporter();
+      exporterContainer.initMetadata();
+      exporterContainer.openExporter();
+
+      // when
+      exporterContainer.softPauseExporter();
+
+      // then
+      assertThat(exporterContainer.getPauseState()).isEqualTo(ExporterPauseState.SOFT_PAUSED);
+    }
+
+    @Test
+    void shouldReportPausedPauseState() throws Exception {
+      // given
+      exporterContainer.configureExporter();
+      exporterContainer.initMetadata();
+      exporterContainer.openExporter();
+
+      // when
+      exporterContainer.hardPauseExporter();
+
+      // then
+      assertThat(exporterContainer.getPauseState()).isEqualTo(ExporterPauseState.PAUSED);
+    }
+
+    @Test
+    void shouldReportExportingPauseStateAfterResume() throws Exception {
+      // given
+      exporterContainer.configureExporter();
+      exporterContainer.initMetadata();
+      exporterContainer.openExporter();
+      exporterContainer.hardPauseExporter();
+
+      // when
+      exporterContainer.resumeExporter();
+      awaitPreviousCall();
+
+      // then
+      assertThat(exporterContainer.getPauseState()).isEqualTo(ExporterPauseState.EXPORTING);
     }
 
     @Test

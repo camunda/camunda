@@ -8,10 +8,12 @@
 package io.camunda.exporter.tasks.archiver;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
@@ -21,6 +23,7 @@ import io.camunda.exporter.tasks.archiver.ArchiveByIdTaskSupplier.IdWithRouting;
 import io.camunda.exporter.tasks.utils.TestExporterResourceProvider;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
+import io.camunda.zeebe.exporter.common.tasks.TaskPausedException;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import jakarta.json.Json;
 import java.io.IOException;
@@ -110,7 +113,8 @@ final class OpenSearchArchiverRepositoryTest extends AbstractArchiverRepositoryT
         new OpenSearchGenericClient(client._transport(), client._transportOptions()),
         Runnable::run,
         metrics,
-        LOGGER);
+        LOGGER,
+        () -> false);
   }
 
   @Test
@@ -440,7 +444,37 @@ final class OpenSearchArchiverRepositoryTest extends AbstractArchiverRepositoryT
         mock(OpenSearchGenericClient.class),
         Runnable::run,
         new CamundaExporterMetrics(new SimpleMeterRegistry()),
-        LOGGER);
+        LOGGER,
+        () -> false);
+  }
+
+  @Test
+  void shouldNotStartMoveToCompletionWhenPaused() {
+    // given
+    final var pausedClient = mock(OpenSearchAsyncClient.class);
+    final var pausedGenericClient = mock(OpenSearchGenericClient.class);
+    final var config = new HistoryConfiguration();
+    config.setRetention(retention);
+    final var pausedRepository =
+        new OpenSearchArchiverRepository(
+            1,
+            config,
+            new TestExporterResourceProvider("testPrefix", false),
+            pausedClient,
+            pausedGenericClient,
+            Runnable::run,
+            new CamundaExporterMetrics(new SimpleMeterRegistry()),
+            LOGGER,
+            () -> true);
+
+    // when
+    final var future =
+        pausedRepository.moveDocumentsByIdToCompletion(
+            "source-idx", "destination-idx", Map.of(), Map.of(), Map.of(), Runnable::run);
+
+    // then
+    assertThatThrownBy(future::join).hasCauseInstanceOf(TaskPausedException.class);
+    verifyNoInteractions(pausedClient, pausedGenericClient);
   }
 
   private Hit<ProcessInstanceForListViewEntity> createHit(

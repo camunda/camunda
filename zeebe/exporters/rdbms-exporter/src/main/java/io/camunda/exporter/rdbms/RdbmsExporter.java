@@ -24,6 +24,7 @@ import io.camunda.exporter.rdbms.replication.ReplicationControllerFactory;
 import io.camunda.exporter.rdbms.tasks.RdbmsBackgroundTaskManager;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Controller;
+import io.camunda.zeebe.exporter.api.context.ExporterPauseState;
 import io.camunda.zeebe.exporter.api.context.ScheduledTask;
 import io.camunda.zeebe.exporter.common.utils.RecordSizes;
 import io.camunda.zeebe.protocol.Protocol;
@@ -210,7 +211,11 @@ public final class RdbmsExporter {
     // decoupled from the main export thread
     backgroundTaskManager =
         new RdbmsBackgroundTaskManager(
-            partitionId, historyCleanupService, historyDeletionService, LOG);
+            partitionId,
+            historyCleanupService,
+            historyDeletionService,
+            LOG,
+            this::isExportingPaused);
     backgroundTaskManager.start();
 
     log(INFO, "Exporter opened with last exported position {}", lastPosition);
@@ -443,6 +448,11 @@ public final class RdbmsExporter {
     } else {
       log(DEBUG, "Found position in rdbms for this exporter: {}", exporterRdbmsPosition);
     }
+  }
+
+  private boolean isExportingPaused() {
+    final var state = controller.getPauseState();
+    return state == ExporterPauseState.SOFT_PAUSED || state == ExporterPauseState.PAUSED;
   }
 
   private boolean flushAfterEachRecord() {
