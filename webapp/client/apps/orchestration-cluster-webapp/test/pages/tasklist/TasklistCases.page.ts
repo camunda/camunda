@@ -29,6 +29,26 @@ class TasklistCasesPage extends BasePage {
 	get noMatchingCasesHeading() {
 		return this.page.getByRole('heading', {name: 'No matching cases'});
 	}
+
+	get genericErrorHeading() {
+		return this.page.getByRole('heading', {name: 'Something went wrong'});
+	}
+
+	get searchInput() {
+		return this.page.getByRole('searchbox', {name: 'Search by business ID'});
+	}
+
+	get nextPageButton() {
+		return this.page.getByRole('button', {name: 'Next'});
+	}
+
+	caseLink(name: string) {
+		return this.page.getByRole('link', {name});
+	}
+
+	columnHeaderButton(name: string) {
+		return this.page.getByRole('button', {name});
+	}
 }
 
 export {TasklistCasesPage};
