@@ -66,6 +66,8 @@ test.describe.parallel('Update User Task Tests', () => {
       request,
       state['processInstanceKey'] as string,
       'CREATED',
+      undefined,
+      extendedAssertionOptions,
     );
     const res = await request.patch(
       buildUrl('/user-tasks/{userTaskKey}', {userTaskKey}),
@@ -93,6 +95,8 @@ test.describe.parallel('Update User Task Tests', () => {
       request,
       state['processInstanceKey'] as string,
       'CREATED',
+      undefined,
+      extendedAssertionOptions,
     );
     const res = await request.patch(
       buildUrl('/user-tasks/{userTaskKey}', {userTaskKey}),
@@ -115,6 +119,8 @@ test.describe.parallel('Update User Task Tests', () => {
       request,
       state['processInstanceKey'] as string,
       'CREATED',
+      undefined,
+      extendedAssertionOptions,
     );
     const res = await request.patch(
       buildUrl('/user-tasks/{userTaskKey}', {userTaskKey}),
@@ -137,6 +143,8 @@ test.describe.parallel('Update User Task Tests', () => {
       request,
       state['processInstanceKey'] as string,
       'CREATED',
+      undefined,
+      extendedAssertionOptions,
     );
     const res = await request.patch(
       buildUrl('/user-tasks/{userTaskKey}', {userTaskKey}),
@@ -159,6 +167,8 @@ test.describe.parallel('Update User Task Tests', () => {
       request,
       state['processInstanceKey'] as string,
       'CREATED',
+      undefined,
+      extendedAssertionOptions,
     );
     const res = await request.patch(
       buildUrl('/user-tasks/{userTaskKey}', {userTaskKey}),
@@ -181,6 +191,8 @@ test.describe.parallel('Update User Task Tests', () => {
       request,
       state['processInstanceKey'] as string,
       'CREATED',
+      undefined,
+      extendedAssertionOptions,
     );
     const res = await request.patch(
       buildUrl('/user-tasks/{userTaskKey}', {userTaskKey}),
@@ -203,6 +215,8 @@ test.describe.parallel('Update User Task Tests', () => {
       request,
       state['processInstanceKey'] as string,
       'CREATED',
+      undefined,
+      extendedAssertionOptions,
     );
     const res = await request.patch(
       buildUrl('/user-tasks/{userTaskKey}', {userTaskKey}),
@@ -226,6 +240,8 @@ test.describe.parallel('Update User Task Tests', () => {
       request,
       state['processInstanceKey'] as string,
       'CREATED',
+      undefined,
+      extendedAssertionOptions,
     );
     const res = await request.patch(
       buildUrl('/user-tasks/{userTaskKey}', {userTaskKey}),
@@ -249,6 +265,8 @@ test.describe.parallel('Update User Task Tests', () => {
       request,
       state['processInstanceKey'] as string,
       'CREATED',
+      undefined,
+      extendedAssertionOptions,
     );
     const res = await request.patch(
       buildUrl('/user-tasks/{userTaskKey}', {userTaskKey}),
@@ -267,6 +285,8 @@ test.describe.parallel('Update User Task Tests', () => {
       request,
       state['processInstanceKey'] as string,
       'CREATED',
+      undefined,
+      extendedAssertionOptions,
     );
     const res = await request.patch(
       buildUrl('/user-tasks/{userTaskKey}', {userTaskKey}),
@@ -290,6 +310,8 @@ test.describe.parallel('Update User Task Tests', () => {
       request,
       state['processInstanceKey'] as string,
       'CREATED',
+      undefined,
+      extendedAssertionOptions,
     );
 
     const dueDate = generateFutureDates().dueDate;
@@ -335,6 +357,8 @@ test.describe.parallel('Update User Task Tests', () => {
       request,
       state['processInstanceKey'] as string,
       'CREATED',
+      undefined,
+      extendedAssertionOptions,
     );
     const res = await request.patch(
       buildUrl('/user-tasks/{userTaskKey}', {userTaskKey}),
@@ -379,6 +403,8 @@ test.describe.parallel('Update User Task Tests', () => {
       request,
       state['processInstanceKey'] as string,
       'CREATED',
+      undefined,
+      extendedAssertionOptions,
     );
     const res = await request.patch(
       buildUrl('/user-tasks/{userTaskKey}', {userTaskKey}),
@@ -446,6 +472,8 @@ test.describe.parallel('Update User Task Tests', () => {
       request,
       state['processInstanceKey'] as string,
       'CREATED',
+      undefined,
+      extendedAssertionOptions,
     );
 
     await test.step('Complete the user task first', async () => {
