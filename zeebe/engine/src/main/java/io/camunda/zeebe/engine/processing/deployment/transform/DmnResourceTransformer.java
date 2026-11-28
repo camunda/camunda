@@ -22,8 +22,8 @@ import io.camunda.zeebe.engine.processing.common.DecisionBehavior;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.ChecksumGenerator;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.state.deployment.DeployedDrg;
 import io.camunda.zeebe.engine.state.deployment.PersistedDecision;
+import io.camunda.zeebe.engine.state.deployment.PersistedDecisionRequirements;
 import io.camunda.zeebe.engine.state.immutable.DecisionState;
 import io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants;
 import io.camunda.zeebe.model.bpmn.impl.ZeebeConstants;
@@ -424,7 +424,7 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
         .setTenantId(deploymentEvent.getTenantId());
 
     decisionState
-        .findLatestDecisionRequirementsByTenantAndId(
+        .findLatestPersistedDecisionRequirementsByTenantAndId(
             deploymentEvent.getTenantId(), wrapString(parsedDrg.getId()))
         .ifPresentOrElse(
             latestDrg -> {
@@ -496,16 +496,18 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
             });
   }
 
-  private boolean hasSameResourceNameAs(final DeploymentResource resource, final DeployedDrg drg) {
+  private boolean hasSameResourceNameAs(
+      final DeploymentResource resource, final PersistedDecisionRequirements drg) {
     return drg.getResourceName().equals(resource.getResourceNameBuffer());
   }
 
-  private boolean hasSameChecksumAs(final DirectBuffer checksum, final DeployedDrg drg) {
+  private boolean hasSameChecksumAs(
+      final DirectBuffer checksum, final PersistedDecisionRequirements drg) {
     return drg.getChecksum().equals(checksum);
   }
 
   private boolean hasSameDecisionRequirementsKeyAs(
-      final Collection<ParsedDecision> decisions, final DeployedDrg drg) {
+      final Collection<ParsedDecision> decisions, final PersistedDecisionRequirements drg) {
     return decisions.stream()
         .map(ParsedDecision::getId)
         .map(BufferUtil::wrapString)
