@@ -47,6 +47,7 @@ import static io.camunda.client.ClientProperties.STREAM_ENABLED;
 import static io.camunda.client.ClientProperties.USE_CLIENT_SIDE_LOAD_BALANCING;
 import static io.camunda.client.ClientProperties.USE_DEFAULT_RETRY_POLICY;
 import static io.camunda.client.impl.BuilderUtils.applyEnvironmentValueIfNotNull;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.BACKPRESSURE_PROFILE_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.BASIC_AUTH_ENV_PASSWORD;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.BASIC_AUTH_ENV_USERNAME;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.CAMUNDA_CLIENT_WORKER_STREAM_ENABLED;
@@ -87,6 +88,7 @@ import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.ClientProperties;
 import io.camunda.client.CredentialsProvider;
+import io.camunda.client.api.BackpressureProfile;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.CommandWithTenantStep;
 import io.camunda.client.api.command.enums.TenantFilter;
@@ -103,6 +105,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
@@ -135,6 +138,8 @@ public final class CamundaClientBuilderImpl
   public static final JobExceptionHandler DEFAULT_JOB_EXCEPTION_HANDLER =
       JobExceptionHandler.createDefault();
   public static final boolean DEFAULT_CLIENT_SIDE_LOAD_BALANCING = false;
+  public static final BackpressureProfile DEFAULT_BACKPRESSURE_PROFILE =
+      BackpressureProfile.DISABLED;
   private static final String TENANT_ID_LIST_SEPARATOR = ",";
   private boolean applyEnvironmentVariableOverrides = true;
 
@@ -184,6 +189,7 @@ public final class CamundaClientBuilderImpl
   private boolean useDefaultRetryPolicy;
   private boolean useClientSideLoadBalancing = DEFAULT_CLIENT_SIDE_LOAD_BALANCING;
   private int maxHttpConnections = DEFAULT_MAX_HTTP_CONNECTIONS;
+  private BackpressureProfile backpressureProfile = DEFAULT_BACKPRESSURE_PROFILE;
   private JobExceptionHandler jobExceptionHandler = DEFAULT_JOB_EXCEPTION_HANDLER;
 
   @Override
@@ -427,6 +433,11 @@ public final class CamundaClientBuilderImpl
   }
 
   @Override
+  public BackpressureProfile getBackpressureProfile() {
+    return backpressureProfile;
+  }
+
+  @Override
   public CamundaClientBuilder withProperties(final Properties properties) {
     BuilderUtils.applyPropertyValueIfNotNull(
         properties,
@@ -559,6 +570,11 @@ public final class CamundaClientBuilderImpl
         properties,
         value -> useClientSideLoadBalancing(Boolean.parseBoolean(value)),
         USE_CLIENT_SIDE_LOAD_BALANCING);
+
+    BuilderUtils.applyPropertyValueIfNotNull(
+        properties,
+        value -> backpressureProfile(parseBackpressureProfile(value)),
+        ClientProperties.BACKPRESSURE_PROFILE);
 
     return this;
   }
@@ -860,6 +876,12 @@ public final class CamundaClientBuilderImpl
   }
 
   @Override
+  public CamundaClientBuilder backpressureProfile(final BackpressureProfile backpressureProfile) {
+    this.backpressureProfile = backpressureProfile;
+    return this;
+  }
+
+  @Override
   public CamundaClientBuilder defaultJobWorkerExceptionHandler(
       final JobExceptionHandler jobExceptionHandler) {
     this.jobExceptionHandler = jobExceptionHandler;
@@ -932,6 +954,20 @@ public final class CamundaClientBuilderImpl
     applyEnvironmentValueIfNotNull(
         value -> useClientSideLoadBalancing(Boolean.parseBoolean(value)),
         USE_CLIENT_SIDE_LOAD_BALANCING_VAR);
+    applyEnvironmentValueIfNotNull(
+        value -> backpressureProfile(parseBackpressureProfile(value)), BACKPRESSURE_PROFILE_VAR);
+  }
+
+  private static BackpressureProfile parseBackpressureProfile(final String value) {
+    try {
+      return BackpressureProfile.valueOf(value.trim().toUpperCase(Locale.ROOT));
+    } catch (final IllegalArgumentException e) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Expected the backpressure profile to be one of %s, but was '%s'",
+              Arrays.toString(BackpressureProfile.values()), value),
+          e);
+    }
   }
 
   @Override
@@ -961,6 +997,7 @@ public final class CamundaClientBuilderImpl
     BuilderUtils.appendProperty(sb, "streamEnabled", streamEnabled);
     BuilderUtils.appendProperty(sb, "preferRestOverGrpc", preferRestOverGrpc);
     BuilderUtils.appendProperty(sb, "useClientSideLoadBalancing", useClientSideLoadBalancing);
+    BuilderUtils.appendProperty(sb, "backpressureProfile", backpressureProfile);
 
     return sb.toString();
   }
@@ -1056,6 +1093,8 @@ public final class CamundaClientBuilderImpl
         USE_DEFAULT_RETRY_POLICY, String.valueOf(configuration.useDefaultRetryPolicy()));
     properties.setProperty(
         USE_CLIENT_SIDE_LOAD_BALANCING, String.valueOf(configuration.useClientSideLoadBalancing()));
+    setIfNotNull(
+        properties, ClientProperties.BACKPRESSURE_PROFILE, configuration.getBackpressureProfile());
     return properties;
   }
 

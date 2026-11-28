@@ -17,6 +17,7 @@ package io.camunda.client.impl.http;
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.ClientException;
+import io.camunda.client.impl.backpressure.BackpressureScope;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -32,7 +33,24 @@ import java.util.concurrent.TimeoutException;
 public class HttpCamundaFuture<RespT> extends CompletableFuture<RespT>
     implements CamundaFuture<RespT> {
 
+  private final BackpressureScope backpressureScope;
   private volatile Future<?> transportFuture;
+
+  public HttpCamundaFuture() {
+    this(BackpressureScope.MANAGED);
+  }
+
+  /**
+   * @param backpressureScope how the request that this future stands for takes part in the
+   *     client-side backpressure handling
+   */
+  public HttpCamundaFuture(final BackpressureScope backpressureScope) {
+    this.backpressureScope = backpressureScope;
+  }
+
+  BackpressureScope backpressureScope() {
+    return backpressureScope;
+  }
 
   @Override
   public RespT join() {

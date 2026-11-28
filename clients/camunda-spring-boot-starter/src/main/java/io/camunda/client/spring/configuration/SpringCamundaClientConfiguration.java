@@ -17,6 +17,7 @@ package io.camunda.client.spring.configuration;
 
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.CredentialsProvider;
+import io.camunda.client.api.BackpressureProfile;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.enums.TenantFilter;
 import io.camunda.client.api.worker.JobExceptionHandler;
@@ -303,6 +304,11 @@ public class SpringCamundaClientConfiguration implements CamundaClientConfigurat
   @Override
   public boolean useClientSideLoadBalancing() {
     return camundaClientProperties.isUseClientSideLoadBalancing();
+  }
+
+  @Override
+  public BackpressureProfile getBackpressureProfile() {
+    return camundaClientProperties.getBackpressure().getProfile();
   }
 
   @Override

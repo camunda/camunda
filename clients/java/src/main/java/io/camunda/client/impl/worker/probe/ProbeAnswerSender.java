@@ -21,6 +21,7 @@ import io.camunda.client.api.worker.BackoffSupplier;
 import io.camunda.client.api.worker.probe.ActivatedProbe;
 import io.camunda.client.api.worker.probe.ProbeAnswer;
 import io.camunda.client.impl.Loggers;
+import io.camunda.client.impl.backpressure.BackpressureScope;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.worker.JobWorkerBuilderImpl;
@@ -103,7 +104,7 @@ final class ProbeAnswerSender {
       final ProbeAnswerRequest request,
       final long previousDelay,
       final boolean isFallback) {
-    final HttpCamundaFuture<Void> result = new HttpCamundaFuture<>();
+    final HttpCamundaFuture<Void> result = new HttpCamundaFuture<>(BackpressureScope.UNGATED);
     try {
       httpClient.post(
           "/probes/" + probe.getKey() + "/answer",

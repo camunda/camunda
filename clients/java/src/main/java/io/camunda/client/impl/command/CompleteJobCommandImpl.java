@@ -25,6 +25,7 @@ import io.camunda.client.api.command.CompleteJobResult;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.CompleteJobResponse;
 import io.camunda.client.impl.RetriableClientFutureImpl;
+import io.camunda.client.impl.backpressure.BackpressureScope;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.CompleteJobResponseImpl;
@@ -276,7 +277,8 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   }
 
   private CamundaFuture<CompleteJobResponse> sendRestRequest() {
-    final HttpCamundaFuture<CompleteJobResponse> result = new HttpCamundaFuture<>();
+    final HttpCamundaFuture<CompleteJobResponse> result =
+        new HttpCamundaFuture<>(BackpressureScope.UNGATED);
     httpClient.post(
         "/jobs/" + jobKey + "/completion",
         jsonMapper.toJson(httpRequestObject),

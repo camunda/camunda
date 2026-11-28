@@ -23,6 +23,9 @@ import io.camunda.client.api.command.MalformedResponseException;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.impl.HttpStatusCode;
 import io.camunda.client.impl.Loggers;
+import io.camunda.client.impl.backpressure.BackpressureCall;
+import io.camunda.client.impl.backpressure.BackpressureSignals;
+import io.camunda.client.impl.backpressure.BackpressureSignals.Failure;
 import io.camunda.client.impl.http.ApiResponseConsumer.ApiResponse;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -42,6 +45,7 @@ final class ApiCallback<HttpT, RespT> implements FutureCallback<ApiResponse<Http
   private final Runnable retryAction;
   private final AtomicInteger remainingRetries;
   private final boolean sensitiveResponseBody;
+  private final BackpressureCall backpressure;
 
   public ApiCallback(
       final CompletableFuture<RespT> response,
@@ -51,6 +55,31 @@ final class ApiCallback<HttpT, RespT> implements FutureCallback<ApiResponse<Http
       final Runnable retryAction,
       final int maxRetries,
       final boolean sensitiveResponseBody) {
+    this(
+        response,
+        transformer,
+        successPredicate,
+        retryPredicate,
+        retryAction,
+        maxRetries,
+        sensitiveResponseBody,
+        null);
+  }
+
+  /**
+   * @param backpressure the backpressure handling of the request, {@code null} if the request is
+   *     not subject to it
+   */
+  public ApiCallback(
+      final CompletableFuture<RespT> response,
+      final JsonResponseAndStatusCodeTransformer<HttpT, RespT> transformer,
+      final Predicate<Integer> successPredicate,
+      final Predicate<StatusCode> retryPredicate,
+      final Runnable retryAction,
+      final int maxRetries,
+      final boolean sensitiveResponseBody,
+      final BackpressureCall backpressure) {
+    this.backpressure = backpressure;
     this.response = response;
     this.transformer = transformer;
     if (successPredicate != null) {
@@ -64,6 +93,10 @@ final class ApiCallback<HttpT, RespT> implements FutureCallback<ApiResponse<Http
     this.sensitiveResponseBody = sensitiveResponseBody;
   }
 
+  BackpressureCall backpressure() {
+    return backpressure;
+  }
+
   @Override
   public void completed(final ApiResponse<HttpT> result) {
     final ApiEntity<HttpT> body = result.entity();
@@ -71,11 +104,73 @@ final class ApiCallback<HttpT, RespT> implements FutureCallback<ApiResponse<Http
     final String reason = result.getReasonPhrase();
 
     if (wasSuccessful(code)) {
+      if (backpressure != null) {
+        backpressure.onSuccess();
+      }
       handleSuccessResponse(body, code, reason);
       return;
     }
 
+    if (retryOnBackpressure(result)) {
+      return;
+    }
+
     handleErrorResponse(body, code, reason);
+  }
+
+  /**
+   * Schedules another attempt if the response is a rejection that is worth retrying and the retry
+   * policy allows it. Registers the rejection with the concurrency limit even if there is no retry
+   * left.
+   *
+   * @return true if another attempt is scheduled, in which case the request is not completed yet
+   */
+  private boolean retryOnBackpressure(final ApiResponse<HttpT> result) {
+    if (backpressure == null) {
+      return false;
+    }
+
+    final ApiEntity<HttpT> body = result.entity();
+    String title = null;
+    String detail = null;
+    if (body != null && body.isProblem() && body.problem() != null) {
+      title = body.problem().getTitle();
+      detail = body.problem().getDetail();
+    }
+    final Failure failure = BackpressureSignals.classifyHttp(result.getCode(), title, detail);
+    final long delay = backpressure.onFailure(failure, parseRetryAfterMillis(result.retryAfter()));
+    if (delay < 0) {
+      return false;
+    }
+
+    backpressure.schedule(
+        () -> {
+          if (response.isDone()) {
+            // the caller gave up in the meantime, e.g. cancelled or timed out the future
+            return;
+          }
+          try {
+            retryAction.run();
+          } catch (final RuntimeException e) {
+            // e.g. the client was closed in the meantime
+            response.completeExceptionally(new ClientException(e));
+          }
+        },
+        delay);
+    return true;
+  }
+
+  /** Understands the delay-seconds form of {@code Retry-After}; anything else counts as absent. */
+  private static long parseRetryAfterMillis(final String retryAfter) {
+    if (retryAfter == null) {
+      return 0;
+    }
+    try {
+      final long seconds = Long.parseLong(retryAfter.trim());
+      return seconds <= 0 ? 0 : Math.min(seconds, Long.MAX_VALUE / 1000) * 1000;
+    } catch (final NumberFormatException e) {
+      return 0;
+    }
   }
 
   @Override

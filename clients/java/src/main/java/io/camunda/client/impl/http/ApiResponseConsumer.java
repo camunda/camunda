@@ -17,6 +17,8 @@ package io.camunda.client.impl.http;
 
 import io.camunda.client.impl.http.ApiResponseConsumer.ApiResponse;
 import org.apache.hc.core5.http.ContentType;
+import org.apache.hc.core5.http.Header;
+import org.apache.hc.core5.http.HttpHeaders;
 import org.apache.hc.core5.http.HttpResponse;
 import org.apache.hc.core5.http.message.BasicHttpResponse;
 import org.apache.hc.core5.http.nio.AsyncEntityConsumer;
@@ -43,7 +45,9 @@ final class ApiResponseConsumer<T>
   @Override
   protected ApiResponse<T> buildResult(
       final HttpResponse response, final ApiEntity<T> entity, final ContentType contentType) {
-    return new ApiResponse<>(response.getCode(), entity);
+    final Header retryAfter = response.getFirstHeader(HttpHeaders.RETRY_AFTER);
+    return new ApiResponse<>(
+        response.getCode(), entity, retryAfter == null ? null : retryAfter.getValue());
   }
 
   @Override
@@ -52,10 +56,21 @@ final class ApiResponseConsumer<T>
   static final class ApiResponse<T> extends BasicHttpResponse {
 
     private final ApiEntity<T> entity;
+    private final String retryAfter;
 
     ApiResponse(final int code, final ApiEntity<T> entity) {
+      this(code, entity, null);
+    }
+
+    ApiResponse(final int code, final ApiEntity<T> entity, final String retryAfter) {
       super(code);
       this.entity = entity;
+      this.retryAfter = retryAfter;
+    }
+
+    /** The value of the {@code Retry-After} header, {@code null} if the response had none. */
+    public String retryAfter() {
+      return retryAfter;
     }
 
     public ApiEntity<T> entity() {

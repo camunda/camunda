@@ -32,12 +32,60 @@ import org.apache.hc.core5.http.HttpRequest;
 import org.apache.hc.core5.http.HttpStreamResetException;
 import org.apache.hc.core5.http.Method;
 import org.apache.hc.core5.http.message.BasicHttpRequest;
+import org.apache.hc.core5.http.message.BasicHttpResponse;
 import org.junit.jupiter.api.Test;
 
 class HttpRetryStrategyTest {
 
   private final HttpRetryStrategy retryStrategy = new HttpRetryStrategy();
   private final HttpRequest request = new BasicHttpRequest(Method.GET, "/v2/documents/document-id");
+
+  @Test
+  void shouldSendRequestAgainOnTooManyRequestsAndServiceUnavailableByDefault() {
+    // httpclient5 retries these two statuses once
+    for (final int status : new int[] {429, 503}) {
+      assertThat(
+              retryStrategy.retryRequest(
+                  new BasicHttpResponse(status), 1, HttpClientContext.create()))
+          .describedAs("status %d", status)
+          .isTrue();
+      assertThat(
+              retryStrategy.retryRequest(
+                  new BasicHttpResponse(status), 2, HttpClientContext.create()))
+          .describedAs("status %d, second time", status)
+          .isFalse();
+    }
+  }
+
+  @Test
+  void shouldNotSendRequestAgainBecauseOfTheStatusIfTheClientRetriesItself() {
+    // given
+    final HttpRetryStrategy strategy = new HttpRetryStrategy(false);
+
+    // when / then
+    for (final int status : new int[] {429, 503}) {
+      assertThat(
+              strategy.retryRequest(new BasicHttpResponse(status), 1, HttpClientContext.create()))
+          .describedAs("status %d", status)
+          .isFalse();
+    }
+  }
+
+  @Test
+  void shouldStillSendRequestAgainOnConnectionFailuresIfTheClientRetriesItself() {
+    // given
+    final HttpRetryStrategy strategy = new HttpRetryStrategy(false);
+
+    // when
+    final boolean retry =
+        strategy.retryRequest(request, new IOException("reset"), 1, HttpClientContext.create());
+
+    // then: same as the default strategy
+    assertThat(retry)
+        .isEqualTo(
+            new HttpRetryStrategy()
+                .retryRequest(request, new IOException("reset"), 1, HttpClientContext.create()));
+  }
 
   @Test
   void shouldNotSendRequestAgainWhenDocumentStreamWasClosed() {

@@ -25,6 +25,7 @@ import io.camunda.client.api.worker.probe.ProbeExceptionHandler.ProbeExceptionHa
 import io.camunda.client.api.worker.probe.ProbeHandler;
 import io.camunda.client.api.worker.probe.ProbeWorker;
 import io.camunda.client.impl.Loggers;
+import io.camunda.client.impl.backpressure.BackpressureScope;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.worker.JobWorkerBuilderImpl;
@@ -192,7 +193,8 @@ final class ProbeWorkerImpl implements ProbeWorker, Closeable {
                 tenantFilter == TenantFilter.PROVIDED
                     ? new ArrayList<>(tenantIds)
                     : new ArrayList<>());
-    final HttpCamundaFuture<ProbeActivationResult> result = new HttpCamundaFuture<>();
+    final HttpCamundaFuture<ProbeActivationResult> result =
+        new HttpCamundaFuture<>(BackpressureScope.UNMANAGED);
     // the response carries the injected secret values, so it must never reach an error message
     httpClient.postWithSensitiveResponse(
         "/probes/activation",

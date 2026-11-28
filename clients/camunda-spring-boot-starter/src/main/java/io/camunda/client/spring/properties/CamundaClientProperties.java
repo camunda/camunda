@@ -46,6 +46,10 @@ public class CamundaClientProperties {
   @NestedConfigurationProperty
   private CamundaClientMtlsProperties mtls = new CamundaClientMtlsProperties();
 
+  @NestedConfigurationProperty
+  private CamundaClientBackpressureProperties backpressure =
+      new CamundaClientBackpressureProperties();
+
   /** The number of threads for invocation of job workers. */
   private Integer executionThreads = DEFAULT_NUM_JOB_WORKER_EXECUTION_THREADS;
 
@@ -339,6 +343,14 @@ public class CamundaClientProperties {
     this.maxHttpConnections = maxHttpConnections;
   }
 
+  public CamundaClientBackpressureProperties getBackpressure() {
+    return backpressure;
+  }
+
+  public void setBackpressure(final CamundaClientBackpressureProperties backpressure) {
+    this.backpressure = backpressure;
+  }
+
   public boolean isUseClientSideLoadBalancing() {
     return useClientSideLoadBalancing;
   }
@@ -382,6 +394,8 @@ public class CamundaClientProperties {
         + maxHttpConnections
         + ", useClientSideLoadBalancing="
         + useClientSideLoadBalancing
+        + ", backpressure="
+        + backpressure
         + ", grpcAddress="
         + grpcAddress
         + ", restAddress="

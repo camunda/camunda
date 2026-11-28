@@ -239,5 +239,10 @@ public final class ClientProperties {
   public static final String USE_CLIENT_SIDE_LOAD_BALANCING =
       "camunda.client.useClientSideLoadBalancing";
 
+  /**
+   * @see CamundaClientBuilder#backpressureProfile(io.camunda.client.api.BackpressureProfile)
+   */
+  public static final String BACKPRESSURE_PROFILE = "camunda.client.backpressure.profile";
+
   private ClientProperties() {}
 }

@@ -19,7 +19,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 import io.camunda.client.CredentialsProvider.StatusCode;
+import io.camunda.client.impl.backpressure.BackpressureCall;
+import io.camunda.client.impl.backpressure.BackpressureController;
+import io.camunda.client.impl.backpressure.BackpressureScope;
+import io.camunda.client.impl.backpressure.BackpressureSettings;
 import io.camunda.client.impl.http.ApiResponseConsumer.ApiResponse;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Predicate;
 import org.junit.jupiter.api.BeforeEach;
@@ -252,5 +258,77 @@ class ApiCallbackTest {
     // then
     verifyNoInteractions(retryAction);
     assertThat(response.isCompletedExceptionally()).isTrue();
+  }
+
+  @Test
+  void shouldNotRetryOnBackpressureWhenTheCallerGaveUpInTheMeantime() {
+    // given: a scheduler that lets the test decide when the delay is over
+    final List<Runnable> scheduled = new ArrayList<>();
+    final BackpressureController controller =
+        new BackpressureController(
+            BackpressureSettings.builder().build(),
+            () -> 0L,
+            () -> 0.0,
+            (task, delay) -> {
+              scheduled.add(task);
+              return () -> {};
+            });
+    final BackpressureCall call = controller.newCall(BackpressureScope.MANAGED, 0);
+    final ApiCallback<String, String> callback =
+        new ApiCallback<>(
+            response,
+            transformer,
+            null,
+            retryPredicate,
+            retryAction,
+            DEFAULT_REMAINING_RETRIES,
+            false,
+            call);
+    final ApiResponse<String> apiResponse = mock(ApiResponse.class);
+    when(apiResponse.getCode()).thenReturn(429);
+
+    // when: the request is rejected, and the caller completes the future before the retry is due
+    callback.completed(apiResponse);
+    response.completeExceptionally(new RuntimeException("caller gave up"));
+    scheduled.forEach(Runnable::run);
+
+    // then
+    assertThat(scheduled).hasSize(1);
+    verifyNoInteractions(retryAction);
+  }
+
+  @Test
+  void shouldRetryOnBackpressureWhenTheRetryIsDue() {
+    // given
+    final List<Runnable> scheduled = new ArrayList<>();
+    final BackpressureController controller =
+        new BackpressureController(
+            BackpressureSettings.builder().build(),
+            () -> 0L,
+            () -> 0.0,
+            (task, delay) -> {
+              scheduled.add(task);
+              return () -> {};
+            });
+    final ApiCallback<String, String> callback =
+        new ApiCallback<>(
+            response,
+            transformer,
+            null,
+            retryPredicate,
+            retryAction,
+            DEFAULT_REMAINING_RETRIES,
+            false,
+            controller.newCall(BackpressureScope.MANAGED, 0));
+    final ApiResponse<String> apiResponse = mock(ApiResponse.class);
+    when(apiResponse.getCode()).thenReturn(429);
+
+    // when
+    callback.completed(apiResponse);
+    scheduled.forEach(Runnable::run);
+
+    // then
+    verify(retryAction, times(1)).run();
+    assertThat(response).isNotDone();
   }
 }

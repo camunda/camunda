@@ -15,6 +15,7 @@
  */
 package io.camunda.client;
 
+import io.camunda.client.api.BackpressureProfile;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.enums.TenantFilter;
 import io.camunda.client.api.worker.JobExceptionHandler;
@@ -296,4 +297,11 @@ public interface CamundaClientConfiguration {
    * @see CamundaClientBuilder#useClientSideLoadBalancing(boolean)
    */
   boolean useClientSideLoadBalancing();
+
+  /**
+   * @see CamundaClientBuilder#backpressureProfile(BackpressureProfile)
+   */
+  default BackpressureProfile getBackpressureProfile() {
+    return BackpressureProfile.DISABLED;
+  }
 }

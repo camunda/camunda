@@ -32,6 +32,7 @@ import io.camunda.client.CamundaClientCloudBuilderStep1.CamundaClientCloudBuilde
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.ClientProperties;
 import io.camunda.client.CredentialsProvider;
+import io.camunda.client.api.BackpressureProfile;
 import io.camunda.client.api.ExperimentalApi;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.enums.TenantFilter;
@@ -383,6 +384,12 @@ public class CamundaClientCloudBuilderImpl
   @Override
   public CamundaClientBuilder maxHttpConnections(final int maxConnections) {
     innerBuilder.maxHttpConnections(maxConnections);
+    return this;
+  }
+
+  @Override
+  public CamundaClientBuilder backpressureProfile(final BackpressureProfile backpressureProfile) {
+    innerBuilder.backpressureProfile(backpressureProfile);
     return this;
   }
 

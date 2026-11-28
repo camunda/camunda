@@ -18,6 +18,9 @@ package io.camunda.client.impl.http;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.api.command.ClientException;
+import io.camunda.client.impl.backpressure.BackpressureCall;
+import io.camunda.client.impl.backpressure.BackpressureController;
+import io.camunda.client.impl.backpressure.BackpressureScope;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -42,6 +45,7 @@ import org.apache.hc.core5.io.CloseMode;
 import org.apache.hc.core5.io.ModalCloseable;
 import org.apache.hc.core5.net.URIBuilder;
 import org.apache.hc.core5.util.TimeValue;
+import org.apache.hc.core5.util.Timeout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,6 +68,7 @@ public final class HttpClient implements AutoCloseable {
   private final int maxMessageSize;
   private final TimeValue shutdownTimeout;
   private final CredentialsProvider credentialsProvider;
+  private final BackpressureController backpressure;
 
   public HttpClient(
       final CloseableHttpAsyncClient client,
@@ -75,6 +80,31 @@ public final class HttpClient implements AutoCloseable {
       final int maxMessageSize,
       final TimeValue shutdownTimeout,
       final CredentialsProvider credentialsProvider) {
+    this(
+        client,
+        connectionManager,
+        jsonMapper,
+        address,
+        clusterApiAddress,
+        defaultRequestConfig,
+        maxMessageSize,
+        shutdownTimeout,
+        credentialsProvider,
+        BackpressureController.disabled());
+  }
+
+  public HttpClient(
+      final CloseableHttpAsyncClient client,
+      final ModalCloseable connectionManager,
+      final ObjectMapper jsonMapper,
+      final URI address,
+      final URI clusterApiAddress,
+      final RequestConfig defaultRequestConfig,
+      final int maxMessageSize,
+      final TimeValue shutdownTimeout,
+      final CredentialsProvider credentialsProvider,
+      final BackpressureController backpressure) {
+    this.backpressure = backpressure;
     this.client = client;
     this.connectionManager = connectionManager;
     this.jsonMapper = jsonMapper;
@@ -90,8 +120,17 @@ public final class HttpClient implements AutoCloseable {
     client.start();
   }
 
+  /**
+   * @return the backpressure handling that this client shares with the gRPC calls of the same
+   *     {@link io.camunda.client.CamundaClient}
+   */
+  public BackpressureController backpressure() {
+    return backpressure;
+  }
+
   @Override
   public void close() throws Exception {
+    backpressure.close();
     // Force-close the connection pool immediately to terminate all connections — both active
     // in-flight requests and idle keep-alive connections. Without this, close(GRACEFUL) waits
     // for idle connections to drain, causing several seconds of unnecessary delay and a
@@ -485,6 +524,19 @@ public final class HttpClient implements AutoCloseable {
       final HttpCamundaFuture<RespT> result,
       final ApiCallback<HttpT, RespT> callback,
       final boolean sensitiveResponseBody) {
+    // With backpressure handling, a request may be sent after the caller returned, if it waits for
+    // its turn, or be sent again. A multipart entity may stream its content from a source that can
+    // be read only once, and that the caller closes as soon as the request is sent, so its content
+    // is read once, now. Without backpressure handling the entity is read when each attempt is
+    // built, as it always was.
+    final Object requestBody =
+        backpressure.isEnabled() && body instanceof HttpEntity
+            ? renderEntity((HttpEntity) body, result)
+            : body;
+    if (requestBody == null && body != null) {
+      return;
+    }
+
     final AtomicReference<ApiCallback<HttpT, RespT>> apiCallback = new AtomicReference<>(callback);
     // Create retry action to re-execute the same request
     final Runnable retryAction =
@@ -497,7 +549,7 @@ public final class HttpClient implements AutoCloseable {
               baseAddress,
               path,
               queryParams,
-              body,
+              requestBody,
               requestConfig,
               maxRetries,
               responseType,
@@ -508,18 +560,10 @@ public final class HttpClient implements AutoCloseable {
               sensitiveResponseBody);
         };
 
-    final SimpleHttpRequest request =
-        buildRequest(httpMethod, queryParams, body, result, buildRequestURI(baseAddress, path));
-    if (request == null) {
-      return;
-    }
-    request.setConfig(requestConfig);
-
-    final HttpClientContext context = HttpClientContext.create();
-    final AsyncEntityConsumer<ApiEntity<HttpT>> entityConsumer =
-        createEntityConsumer(responseType, context);
-
-    if (apiCallback.get() == null) {
+    if (callback == null) {
+      // the first attempt of the request: the retries run through here with their callback
+      final BackpressureCall backpressureCall =
+          newBackpressureCall(httpMethod, path, requestConfig, result);
       apiCallback.set(
           new ApiCallback<>(
               result,
@@ -528,15 +572,136 @@ public final class HttpClient implements AutoCloseable {
               credentialsProvider::shouldRetryRequest,
               retryAction,
               maxRetries,
-              sensitiveResponseBody));
+              sensitiveResponseBody,
+              backpressureCall));
+
+      if (backpressureCall != null) {
+        // wait for the turn of the request without blocking a thread
+        backpressureCall
+            .acquire()
+            .whenComplete(
+                (ignored, error) -> {
+                  if (error != null) {
+                    result.completeExceptionally(error);
+                  } else if (!result.isDone()) {
+                    try {
+                      executeAttempt(
+                          httpMethod,
+                          baseAddress,
+                          path,
+                          queryParams,
+                          requestBody,
+                          requestConfig,
+                          responseType,
+                          result,
+                          apiCallback.get());
+                    } catch (final RuntimeException e) {
+                      // nobody would see an exception thrown in this callback, and the request
+                      // would hang
+                      result.completeExceptionally(e);
+                    }
+                  }
+                });
+        return;
+      }
     }
+
+    executeAttempt(
+        httpMethod,
+        baseAddress,
+        path,
+        queryParams,
+        requestBody,
+        requestConfig,
+        responseType,
+        result,
+        apiCallback.get());
+  }
+
+  private <HttpT, RespT> void executeAttempt(
+      final Method httpMethod,
+      final URI baseAddress,
+      final String path,
+      final Map<String, String> queryParams,
+      final Object body,
+      final RequestConfig requestConfig,
+      final Class<HttpT> responseType,
+      final HttpCamundaFuture<RespT> result,
+      final ApiCallback<HttpT, RespT> callback) {
+    final SimpleHttpRequest request =
+        buildRequest(httpMethod, queryParams, body, result, buildRequestURI(baseAddress, path));
+    if (request == null) {
+      return;
+    }
+    request.setConfig(attemptConfig(requestConfig, callback.backpressure()));
+
+    final HttpClientContext context = HttpClientContext.create();
+    final AsyncEntityConsumer<ApiEntity<HttpT>> entityConsumer =
+        createEntityConsumer(responseType, context);
 
     result.transportFuture(
         client.execute(
             SimpleRequestProducer.create(request),
             new ApiResponseConsumer<>(entityConsumer),
             context,
-            apiCallback.get()));
+            callback));
+  }
+
+  /**
+   * Starts the backpressure handling for a request, and ends it once the request is done.
+   *
+   * <p>Requests that only read, and are therefore not what the cluster signals backpressure for,
+   * never wait for the concurrency limit.
+   *
+   * @return the handling, or {@code null} if the request is not subject to it
+   */
+  private BackpressureCall newBackpressureCall(
+      final Method httpMethod,
+      final String path,
+      final RequestConfig requestConfig,
+      final HttpCamundaFuture<?> result) {
+    if (!backpressure.isEnabled()) {
+      return null;
+    }
+
+    BackpressureScope scope = result.backpressureScope();
+    if (scope == BackpressureScope.MANAGED && (httpMethod == Method.GET || isSearch(path))) {
+      scope = BackpressureScope.UNGATED;
+    }
+
+    final Timeout responseTimeout = requestConfig.getResponseTimeout();
+    final long timeoutMillis = responseTimeout == null ? 0 : responseTimeout.toMilliseconds();
+    final BackpressureCall call = backpressure.newCall(scope, timeoutMillis);
+    if (call != null) {
+      result.whenComplete((response, error) -> call.release());
+    }
+    return call;
+  }
+
+  private static boolean isSearch(final String path) {
+    return path.endsWith("/search");
+  }
+
+  /**
+   * Makes sure that the response timeout of an attempt does not reach beyond the time that is left
+   * of the timeout of the request, which also pays for waiting and for the earlier attempts.
+   */
+  private static RequestConfig attemptConfig(
+      final RequestConfig requestConfig, final BackpressureCall backpressureCall) {
+    if (backpressureCall == null) {
+      return requestConfig;
+    }
+    final long remaining = backpressureCall.remainingMillis();
+    final Timeout responseTimeout = requestConfig.getResponseTimeout();
+    if (remaining == Long.MAX_VALUE
+        || responseTimeout == null
+        || responseTimeout.toMilliseconds() <= 0
+        || remaining >= responseTimeout.toMilliseconds()) {
+      return requestConfig;
+    }
+    return RequestConfig.copy(requestConfig)
+        .setResponseTimeout(Timeout.ofMilliseconds(Math.max(1, remaining)))
+        .build();
   }
 
   private <HttpT> AsyncEntityConsumer<ApiEntity<HttpT>> createEntityConsumer(
@@ -590,8 +755,19 @@ public final class HttpClient implements AutoCloseable {
       return true;
     }
 
+    if (body instanceof RenderedEntity) {
+      final RenderedEntity entity = (RenderedEntity) body;
+      requestBuilder.setBody(entity.content, entity.contentType);
+      return true;
+    }
+
     if (body instanceof HttpEntity) {
-      return setHttpEntityBody(requestBuilder, (HttpEntity) body, result);
+      final RenderedEntity entity = renderEntity((HttpEntity) body, result);
+      if (entity == null) {
+        return false;
+      }
+      requestBuilder.setBody(entity.content, entity.contentType);
+      return true;
     }
 
     result.completeExceptionally(
@@ -599,24 +775,25 @@ public final class HttpClient implements AutoCloseable {
     return false;
   }
 
-  private <RespT> boolean setHttpEntityBody(
-      final SimpleRequestBuilder requestBuilder,
-      final HttpEntity entity,
-      final HttpCamundaFuture<RespT> result) {
-
-    final byte[] entityBytes;
+  /**
+   * Reads the content of the entity.
+   *
+   * @return the content, or {@code null} if it could not be read, in which case the result was
+   *     completed exceptionally
+   */
+  private <RespT> RenderedEntity renderEntity(
+      final HttpEntity entity, final HttpCamundaFuture<RespT> result) {
+    final byte[] content;
     try (final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
       entity.writeTo(byteArrayOutputStream);
-      entityBytes = byteArrayOutputStream.toByteArray();
+      content = byteArrayOutputStream.toByteArray();
     } catch (final IOException e) {
       result.completeExceptionally(
           new ClientException("Failed to convert multipart entity to bytes", e));
-      return false;
+      return null;
     }
 
-    final ContentType contentType = ContentType.parse(entity.getContentType());
-    requestBuilder.setBody(entityBytes, contentType);
-    return true;
+    return new RenderedEntity(content, ContentType.parse(entity.getContentType()));
   }
 
   private URI buildRequestURI(final URI baseAddress, final String path) {
@@ -627,5 +804,16 @@ public final class HttpClient implements AutoCloseable {
       throw new RuntimeException(e);
     }
     return target;
+  }
+
+  /** The content of an {@link HttpEntity}, which can be sent more than once. */
+  private static final class RenderedEntity {
+    private final byte[] content;
+    private final ContentType contentType;
+
+    private RenderedEntity(final byte[] content, final ContentType contentType) {
+      this.content = content;
+      this.contentType = contentType;
+    }
   }
 }
