@@ -7,6 +7,8 @@
  */
 package io.camunda.exporter.tasks.util;
 
+import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration.ProcessInstanceRetentionMode;
+import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -19,6 +21,7 @@ import java.util.concurrent.Executor;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.annotation.WillCloseWhenClosed;
+import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch._types.ErrorCause;
 import org.opensearch.client.opensearch._types.FieldValue;
@@ -124,6 +127,74 @@ public class OpensearchRepository implements AutoCloseable {
     }
 
     return boolBuilder.build().toQuery();
+  }
+
+  protected static Query finishedProcessInstancesQuery(
+      final String archivingTimePoint,
+      final int partitionId,
+      final ProcessInstanceRetentionMode retentionMode) {
+    final var endDateQ =
+        QueryBuilders.range()
+            .field(ListViewTemplate.END_DATE)
+            .lte(JsonData.of(archivingTimePoint))
+            .build();
+    final var isProcessInstanceQ =
+        QueryBuilders.term()
+            .field(ListViewTemplate.JOIN_RELATION)
+            .value(FieldValue.of(ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION))
+            .build();
+    final var partitionQ =
+        QueryBuilders.term()
+            .field(ListViewTemplate.PARTITION_ID)
+            .value(FieldValue.of(partitionId))
+            .build();
+
+    final Query hierarchyQ;
+
+    if (retentionMode == ProcessInstanceRetentionMode.PI_HIERARCHY
+        || retentionMode == ProcessInstanceRetentionMode.PI_HIERARCHY_IGNORE_LEGACY) {
+      final var rootExists =
+          QueryBuilders.exists()
+              .field(ListViewTemplate.ROOT_PROCESS_INSTANCE_KEY)
+              .build()
+              .toQuery();
+      final var parentExists =
+          QueryBuilders.exists()
+              .field(ListViewTemplate.PARENT_PROCESS_INSTANCE_KEY)
+              .build()
+              .toQuery();
+
+      // (parentPI IS NULL AND rootPI IS NOT NULL) (New hierarchy filter)
+      final var newHierarchy =
+          QueryBuilders.bool().mustNot(parentExists).must(rootExists).build().toQuery();
+
+      if (retentionMode == ProcessInstanceRetentionMode.PI_HIERARCHY) {
+        // (rootPI IS NULL) (Legacy)
+        final var legacy = QueryBuilders.bool().mustNot(rootExists).build().toQuery();
+        hierarchyQ =
+            QueryBuilders.bool()
+                .should(newHierarchy)
+                .should(legacy)
+                .minimumShouldMatch("1")
+                .build()
+                .toQuery();
+      } else {
+        // when IGNORE_LEGACY, only consider new hierarchy filter
+        hierarchyQ = newHierarchy;
+      }
+    } else {
+      hierarchyQ = null;
+    }
+
+    final var builder =
+        QueryBuilders.bool()
+            .filter(endDateQ.toQuery(), isProcessInstanceQ.toQuery(), partitionQ.toQuery());
+
+    if (hierarchyQ != null) {
+      builder.filter(hierarchyQ);
+    }
+
+    return builder.build().toQuery();
   }
 
   private static <T> TermsQuery buildIdTermsQuery(

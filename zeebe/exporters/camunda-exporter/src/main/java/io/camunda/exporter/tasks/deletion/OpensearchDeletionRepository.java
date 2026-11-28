@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.tasks.deletion;
 
+import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration.ProcessInstanceRetentionMode;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.util.AsyncDocumentPipeline.DocumentBatch;
 import io.camunda.exporter.tasks.util.FilterByKeysQuery;
@@ -14,12 +15,19 @@ import io.camunda.exporter.tasks.util.OpensearchRepository;
 import io.camunda.exporter.tasks.util.SearchAfter;
 import io.camunda.exporter.tasks.util.SearchAfterOS;
 import io.camunda.search.schema.config.DeleterConfiguration;
+import io.camunda.search.schema.config.RetentionConfiguration;
+import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
+import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
+import org.opensearch.client.opensearch._types.FieldValue;
+import org.opensearch.client.opensearch._types.SortOptions;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.BulkRequest;
@@ -33,15 +41,81 @@ import org.slf4j.Logger;
 public class OpensearchDeletionRepository extends OpensearchRepository
     implements DeletionRepository {
   private final DeleteByIdPipeline pipeline;
+  private final DeleterConfiguration config;
+  private final RetentionConfiguration retention;
+  private final ProcessInstanceRetentionMode retentionMode;
+  private final int partitionId;
+  private final IndexTemplateDescriptor listViewTemplate;
 
   public OpensearchDeletionRepository(
       final DeleterConfiguration config,
+      final RetentionConfiguration retention,
+      final ProcessInstanceRetentionMode retentionMode,
+      final int partitionId,
+      final IndexTemplateDescriptor listViewTemplate,
       final OpenSearchAsyncClient client,
       final Executor executor,
       final CamundaExporterMetrics metrics,
       final Logger logger) {
     super(client, executor, logger);
+    this.config = config;
+    this.retention = retention;
+    this.retentionMode = retentionMode;
+    this.partitionId = partitionId;
+    this.listViewTemplate = listViewTemplate;
     pipeline = new DeleteByIdPipeline(config, this, metrics, logger);
+  }
+
+  @Override
+  public CompletableFuture<ProcessInstanceDeletionBatch> getProcessInstancesNextBatch() {
+    final var request =
+        new Builder()
+            .trackTotalHits(t -> t.enabled(false))
+            .index(listViewTemplate.getOrdinalIndexPattern())
+            .requestCache(false)
+            .allowNoIndices(true)
+            .ignoreUnavailable(true)
+            .query(
+                finishedProcessInstancesQuery(
+                    "now-" + retention.getMinimumAge(), partitionId, retentionMode))
+            .size(config.getEntityBatchSize())
+            .source(
+                s ->
+                    s.filter(
+                        f ->
+                            f.includes(
+                                List.of(
+                                    ListViewTemplate.KEY,
+                                    ListViewTemplate.ROOT_PROCESS_INSTANCE_KEY,
+                                    ListViewTemplate.STORAGE_ORDINAL))))
+            .sort(
+                // a batch only covers one storage ordinal, so sort by it first to fill batches;
+                // documents without one are treated as being in the main index
+                SortOptions.of(
+                    sort ->
+                        sort.field(
+                            field ->
+                                field
+                                    .field(ListViewTemplate.STORAGE_ORDINAL)
+                                    .order(SortOrder.Asc)
+                                    .missing(FieldValue.of(StorageOrdinalRelated.MAIN_INDEX)))),
+                SortOptions.of(
+                    sort ->
+                        sort.field(
+                            field -> field.field(ListViewTemplate.END_DATE).order(SortOrder.Asc))))
+            .build();
+
+    try {
+      return client
+          .search(request, ProcessInstanceForListViewEntity.class)
+          .thenApplyAsync(
+              response ->
+                  ProcessInstanceDeletionBatch.from(
+                      response.hits().hits().stream().map(Hit::source).toList(), retentionMode),
+              executor);
+    } catch (final IOException e) {
+      return CompletableFuture.failedFuture(e);
+    }
   }
 
   @Override

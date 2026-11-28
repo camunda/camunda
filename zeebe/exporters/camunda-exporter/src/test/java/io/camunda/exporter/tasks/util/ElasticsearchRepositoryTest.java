@@ -14,6 +14,7 @@ import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration.ProcessInstanceRetentionMode;
 import java.util.Map;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -31,6 +32,24 @@ class ElasticsearchRepositoryTest extends AbstractRepositoryTest {
       throws JsonProcessingException {
     // given/when
     final var query = ElasticsearchRepository.toQuery(filter);
+
+    // then
+    final String json = toNormalisedJson(JsonpUtils.toJsonString(query, jacksonJsonpMapper));
+    assertThat(json).isEqualTo(expectedJsonQuery);
+  }
+
+  @ParameterizedTest
+  @MethodSource("completedProcessInstances")
+  void shouldCreateQueryToFindCompletedProcessInstances(
+      final String endDateTimePoint,
+      final int partitionId,
+      final ProcessInstanceRetentionMode retentionMode,
+      final String expectedJsonQuery)
+      throws JsonProcessingException {
+    // given/when
+    final var query =
+        ElasticsearchRepository.finishedProcessInstancesQuery(
+            endDateTimePoint, partitionId, retentionMode);
 
     // then
     final String json = toNormalisedJson(JsonpUtils.toJsonString(query, jacksonJsonpMapper));

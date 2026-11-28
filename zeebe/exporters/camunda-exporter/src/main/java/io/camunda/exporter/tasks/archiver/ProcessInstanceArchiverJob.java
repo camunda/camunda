@@ -17,7 +17,6 @@ import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.zeebe.util.FunctionUtil;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -140,33 +139,7 @@ public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchi
   @Override
   protected Map<String, List<String>> createIdsByFieldMap(
       final IndexTemplateDescriptor templateDescriptor, final ProcessInstanceArchiveBatch batch) {
-    final Map<String, List<String>> idsMap = new HashMap<>();
-    final String processInstanceKeyField;
-    final String rootProcessInstanceKeyField;
-    switch (templateDescriptor) {
-      case final ListViewTemplate ignored -> {
-        processInstanceKeyField = ListViewTemplate.PROCESS_INSTANCE_KEY;
-        rootProcessInstanceKeyField = ListViewTemplate.ROOT_PROCESS_INSTANCE_KEY;
-      }
-      case final ProcessInstanceDependant pid -> {
-        processInstanceKeyField = pid.getProcessInstanceDependantField();
-        rootProcessInstanceKeyField = pid.getRootProcessInstanceKeyField();
-      }
-      default ->
-          throw new IllegalArgumentException(
-              "Unsupported template descriptor: " + templateDescriptor.getClass().getName());
-    }
-    if (!batch.processInstanceKeys().isEmpty()) {
-      idsMap.put(
-          processInstanceKeyField,
-          batch.processInstanceKeys().stream().map(String::valueOf).toList());
-    }
-    if (!batch.rootProcessInstanceKeys().isEmpty()) {
-      idsMap.put(
-          rootProcessInstanceKeyField,
-          batch.rootProcessInstanceKeys().stream().map(String::valueOf).toList());
-    }
-    return idsMap;
+    return batch.createIdsByFieldMap(templateDescriptor);
   }
 
   protected CompletableFuture<Void> archiveProcessDependants(
