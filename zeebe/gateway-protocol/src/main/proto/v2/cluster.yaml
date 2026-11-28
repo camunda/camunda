@@ -498,6 +498,8 @@ components:
           ModeChangeOperation: '#/components/schemas/ClusterRestoreModeChangeOperation'
           AwaitModeChangeOperation: '#/components/schemas/ClusterRestoreAwaitModeChangeOperation'
           UpdateIncarnationNumberOperation: '#/components/schemas/ClusterRestoreBrokerOperation'
+          SchemaInitializationOperation: '#/components/schemas/ClusterRestoreBrokerOperation'
+          UpdateRoutingState: '#/components/schemas/ClusterRestoreBrokerOperation'
       oneOf:
         - $ref: '#/components/schemas/ClusterRestoreBrokerOperation'
         - $ref: '#/components/schemas/ClusterRestorePartitionOperation'
@@ -507,8 +509,8 @@ components:
 
     ClusterRestoreBrokerOperation:
       description: >-
-        A restore operation that applies to a broker as a whole, such as the one that updates its
-        incarnation number.
+        A restore operation that applies to a broker as a whole: updating its incarnation number,
+        initializing its schema, or updating its routing state.
       type: object
       required:
         - operation

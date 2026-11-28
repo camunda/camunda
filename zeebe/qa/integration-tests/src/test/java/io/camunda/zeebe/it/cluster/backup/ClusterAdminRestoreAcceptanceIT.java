@@ -139,6 +139,14 @@ final class ClusterAdminRestoreAcceptanceIT {
       // and — the default tenant is left untouched by the scoped mode change
       assertThat(createInstance(defaultClient, probeProcessId)).isPositive();
 
+      // and — a dry run plans the same restore without starting it, reporting the plan in full
+      final var dryRunResponse =
+          awaitRestoreAccepted(
+              () ->
+                  InProcessRestoreTestUtil.sendClusterRestoreRequest(
+                      defaultClient, TENANT_B, restoreBody(backupId), true));
+      assertPlanCovers(dryRunResponse, Set.of(TENANT_B));
+
       // and — the restore is forced onto tenant-b alone
       final var response =
           awaitRestoreAccepted(
@@ -291,7 +299,8 @@ final class ClusterAdminRestoreAcceptanceIT {
   /**
    * Asserts the accepted plan covers every parallel axis the restore has: one planned group per
    * expected physical tenant, and within each group the pre-restore and restore of every partition
-   * on every broker, plus a mode change and an await per broker.
+   * on every broker, a mode change and an await per broker, plus a single schema initialization,
+   * routing state update and incarnation number update, each reported under its own name.
    *
    * <p>This is coverage, not overlap — see the class javadoc. A plan that covered only one broker,
    * or only one partition per broker, or only one tenant of a cluster-wide request, would still
@@ -334,6 +343,15 @@ final class ClusterAdminRestoreAcceptanceIT {
           assertThat(brokerWork(group, "AwaitModeChangeOperation"))
               .describedAs("awaited mode changes per broker for tenant '%s'", tenant)
               .containsExactlyInAnyOrderElementsOf(expectedBrokers);
+          for (final var groupWideOperation :
+              List.of(
+                  "SchemaInitializationOperation",
+                  "UpdateRoutingState",
+                  "UpdateIncarnationNumberOperation")) {
+            assertThat(brokerWork(group, groupWideOperation))
+                .describedAs("%s planned for tenant '%s'", groupWideOperation, tenant)
+                .hasSize(1);
+          }
         });
   }
 
