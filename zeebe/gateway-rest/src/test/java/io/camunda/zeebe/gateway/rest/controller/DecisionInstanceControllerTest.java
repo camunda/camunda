@@ -348,6 +348,50 @@ public class DecisionInstanceControllerTest extends RestControllerTest {
         .json(expectedBody, JsonCompareMode.STRICT);
   }
 
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "{\"$in\": [null, \"1\"], \"$neq\": \"2\"}",
+        "{\"$in\": [null, \"1\"], \"$exists\": true}"
+      })
+  void shouldRejectDeleteDecisionInstanceBatchOperationWhenAKeyListHoldsNull(
+      final String keyFilter) {
+    // given - a null drops the whole list on mapping, so the sibling operator alone would delete
+    // every decision instance but one
+    final var request =
+        """
+        {
+          "filter": {
+            "decisionDefinitionKey": %s
+          }
+        }"""
+            .formatted(keyFilter);
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/decision-instances/deletion")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(
+            """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"The filter property 'decisionDefinitionKey' must not contain null values.",
+                "instance":"/v2/decision-instances/deletion"
+             }""",
+            JsonCompareMode.STRICT);
+  }
+
   @Test
   void shouldRejectDeleteDecisionInstanceBatchOperationWithEmptyFilter() {
     // given

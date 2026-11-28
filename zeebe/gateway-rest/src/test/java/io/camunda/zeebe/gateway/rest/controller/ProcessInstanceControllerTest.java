@@ -4033,6 +4033,78 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .json(expectedBody, JsonCompareMode.STRICT);
   }
 
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "{\"$in\": [null, \"1\"], \"$exists\": true}",
+        "{\"$in\": [\"1\", null], \"$neq\": \"2\"}",
+        "{\"$notIn\": [null], \"$eq\": \"2\"}"
+      })
+  void shouldRejectProcessInstanceBatchOperationWhenAKeyListHoldsNull(final String keyFilter) {
+    // given - a null drops the whole list on mapping, so the sibling operator alone would select
+    // every instance (an $exists: true matches all, a $neq all but one)
+    final var request =
+        """
+        {
+          "filter": {
+            "processInstanceKey": %s
+          }
+        }"""
+            .formatted(keyFilter);
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/cancellation")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(
+            """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"The filter property 'processInstanceKey' must not contain null values.",
+                "instance":"/v2/process-instances/cancellation"
+             }""",
+            JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldRejectProcessInstanceBatchOperationWhenAnOrBranchKeyListHoldsNull() {
+    // given
+    final var request =
+        """
+        {
+          "filter": {
+            "$or": [
+              { "processInstanceKey": { "$in": [null, "1"], "$exists": true } }
+            ]
+          }
+        }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/cancellation")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .jsonPath("$.detail")
+        .isEqualTo("The filter property 'processInstanceKey' must not contain null values.");
+  }
+
   @Test
   void shouldRejectCancelProcessInstanceBatchOperationWithNonCancellableState() {
     // given
