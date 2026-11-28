@@ -274,7 +274,7 @@ describe('<InstancesTable /> (shadcn)', () => {
 		});
 	});
 
-	it('should render "None" instead of a process instance link when the process instance key is missing', async ({
+	it('should render "--" instead of a process instance link when the process instance key is missing', async ({
 		worker,
 	}) => {
 		worker.use(
@@ -283,18 +283,16 @@ describe('<InstancesTable /> (shadcn)', () => {
 
 		const screen = await renderInstancesTable();
 
-		await expect.element(screen.getByText('None')).toBeVisible();
+		await expect.element(screen.getByText('--')).toBeVisible();
 		await expect.element(screen.getByRole('link', {name: /view process instance/i})).not.toBeInTheDocument();
 	});
 
-	it('should render "None" instead of a process instance link when the process instance key is -1', async ({
-		worker,
-	}) => {
+	it('should render "--" instead of a process instance link when the process instance key is -1', async ({worker}) => {
 		worker.use(mockInstances([createDecisionInstance({decisionEvaluationInstanceKey: '1', processInstanceKey: '-1'})]));
 
 		const screen = await renderInstancesTable();
 
-		await expect.element(screen.getByText('None')).toBeVisible();
+		await expect.element(screen.getByText('--')).toBeVisible();
 		await expect.element(screen.getByRole('link', {name: /view process instance/i})).not.toBeInTheDocument();
 	});
 });

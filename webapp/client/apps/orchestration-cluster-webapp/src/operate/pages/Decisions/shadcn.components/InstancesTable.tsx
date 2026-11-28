@@ -120,7 +120,7 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 						key: 'businessId',
 						sortKey: 'businessId',
 						label: t('operate.decisions.instancesTable.businessId'),
-						render: (row: DecisionInstance) => row.businessId ?? '--',
+						render: (row: DecisionInstance) => row.businessId ?? t('operate.decisions.ds.instancesTable.emptyValue'),
 					},
 				]
 			: []),
@@ -155,7 +155,7 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 						{row.processInstanceKey}
 					</ProcessInstanceLink>
 				) : (
-					t('operate.decisions.instancesTable.none')
+					t('operate.decisions.ds.instancesTable.emptyValue')
 				),
 		},
 	];
@@ -182,6 +182,7 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 				rows={decisionInstances}
 				rowKey={(row) => row.decisionEvaluationInstanceKey}
 				ariaLabel={t('operate.decisions.instancesTable.tableLabel')}
+				className="[&_[data-slot=table-container]]:overflow-x-auto [&_[data-slot=table]]:min-w-[48rem]"
 				isFetching={isRefreshing}
 				emptyState={emptyState}
 				selectionType={filter === undefined ? undefined : 'checkbox'}

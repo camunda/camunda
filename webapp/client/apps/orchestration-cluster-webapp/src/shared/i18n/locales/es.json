@@ -1686,6 +1686,7 @@
 					"instancesTable": {
 						"decisionInstanceKey": "Clave de instancia de decisión",
 						"emptyAdditionalInfo": "Para ver resultados, seleccione al menos un estado de instancia",
+						"emptyValue": "--",
 						"emptyMessage": "No hay instancias que coincidan con este conjunto de filtros",
 						"evaluationDate": "Fecha de evaluación",
 						"processInstanceKey": "Clave de instancia de proceso",

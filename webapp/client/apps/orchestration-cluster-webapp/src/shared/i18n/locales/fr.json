@@ -1689,6 +1689,7 @@
 					"instancesTable": {
 						"decisionInstanceKey": "Clé d'instance de décision",
 						"emptyAdditionalInfo": "Pour voir des résultats, sélectionnez au moins un état d'instance",
+						"emptyValue": "--",
 						"emptyMessage": "Aucune instance ne correspond à cet ensemble de filtres",
 						"evaluationDate": "Date d'évaluation",
 						"processInstanceKey": "Clé d'instance de processus",

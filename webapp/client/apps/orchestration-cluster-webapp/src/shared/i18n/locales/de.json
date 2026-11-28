@@ -1686,6 +1686,7 @@
 					"instancesTable": {
 						"decisionInstanceKey": "Entscheidungsinstanzschlüssel",
 						"emptyAdditionalInfo": "Um Ergebnisse zu sehen, wählen Sie mindestens einen Instanzstatus aus",
+						"emptyValue": "--",
 						"emptyMessage": "Es gibt keine Instanzen, die diesem Filter entsprechen",
 						"evaluationDate": "Auswertungsdatum",
 						"processInstanceKey": "Prozessinstanzschlüssel",

@@ -1695,6 +1695,7 @@
 						"decisionInstanceKey": "Decision instance key",
 						"evaluationDate": "Evaluation date",
 						"processInstanceKey": "Process instance key",
+						"emptyValue": "--",
 						"emptyMessage": "There are no instances matching this filter set",
 						"emptyAdditionalInfo": "To see some results, select at least one instance state"
 					},
