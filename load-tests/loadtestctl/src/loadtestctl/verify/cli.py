@@ -15,7 +15,6 @@ from .context import kubectl
 from .context import log
 from .k6 import verify_metrics
 from .k6 import wait_for_k6_statefulsets
-from .k6 import wait_for_testruns
 from .pods import wait_for_pods
 
 VERIFY_HELP = (
@@ -71,7 +70,6 @@ def run_verify(
     verify_connected(ctx, metrics_port, connectivity_timeout)
 
     try:
-        wait_for_testruns(ctx)
         wait_for_k6_statefulsets(ctx)
         verify_metrics(
             ctx,

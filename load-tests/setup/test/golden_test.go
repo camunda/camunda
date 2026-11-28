@@ -388,12 +388,12 @@ func TestShouldCollectOnlyPathFilterMatches(t *testing.T) {
 func TestShouldExcludeK6ManifestsUnlessPathFilterSelectsThem(t *testing.T) {
 	// given
 	root := t.TempDir()
-	writeTestManifest(t, root, "templates/k6/testrun.yaml", "kind: TestRun\n")
+	writeTestManifest(t, root, "templates/k6/statefulset.yaml", "kind: StatefulSet\n")
 	writeTestManifest(t, root, "templates/namespace.yaml", "kind: Namespace\n")
 
 	// when / then
 	require.Equal(t, []string{"templates/namespace.yaml"}, sortedKeys(collectManifests(t, root, nil)))
-	require.Equal(t, []string{"templates/k6/testrun.yaml"}, sortedKeys(collectManifests(t, root, []string{"templates/k6"})))
+	require.Equal(t, []string{"templates/k6/statefulset.yaml"}, sortedKeys(collectManifests(t, root, []string{"templates/k6"})))
 }
 
 func TestShouldReturnNoManifestsWhenPathFilterMatchesNothing(t *testing.T) {

@@ -36,6 +36,8 @@ export const options = {
   },
 };
 
+// `setup()` runs again on each pod restart, and concurrently in every replica:
+// it only reads, which keeps it safe.
 export function setup() {
   client.waitUntilReady();
 }

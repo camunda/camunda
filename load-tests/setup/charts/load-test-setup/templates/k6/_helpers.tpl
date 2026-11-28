@@ -1,14 +1,5 @@
 {{/*
-The run mode of a k6 test: "statefulset" when its `runner` has a `statefulset` key, "testrun" otherwise.
-
-The input is an entry of `k6.tests`.
-*/}}
-{{- define "load-test-setup.k6.mode" -}}
-{{- if hasKey (. | dig "runner" dict) "statefulset" }}statefulset{{ else }}testrun{{ end -}}
-{{- end }}
-
-{{/*
-The environment variables of the k6 runners, shared by the TestRun and the StatefulSet modes.
+The environment variables of the k6 runners.
 
 The input is the root context.
 */}}

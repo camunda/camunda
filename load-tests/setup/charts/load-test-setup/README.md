@@ -154,25 +154,19 @@ Use the [`load-tester` subchart](../../../load-tester/README.md) instead for:
   `/v2/process-definitions/search` endpoint (`k6_data_read_supported=false` in
   `stable-87/Makefile`).
 
-### Run modes
+### Run mode
 
-A k6 test runs in one of these modes:
-
-|                          |                  [`TestRun`](https://github.com/grafana/k6-operator/blob/main/docs/crd-generated.md#testrun) (default)                   |              `StatefulSet`               |
-|--------------------------|------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------|
-| Duration                 | The duration configured in the test script                                                                                               | Until the load test is deleted           |
-| When a pod stops         | The test stops and does not restart                                                                                                      | Kubernetes restarts the pod              |
-| Inspect it               | `kubectl get testrun k6-<test>`                                                                                                          | `kubectl get statefulset k6-<test>`      |
-| Update the deployed test | Not supported: the k6 operator does not restart a `TestRun` when it is updated. Delete the `TestRun` (or the namespace) and deploy again | The pods restart when the scripts change |
-| Use it for               | Experiments                                                                                                                              | Tests that must run for a long time      |
+Each k6 test runs as a StatefulSet named `k6-<test>` (`kubectl get statefulset k6-<test>`), which runs until the load test is deleted. Kubernetes restarts the pod when it stops, and restarts the pods when the scripts change.
 
 > [!IMPORTANT]
-> A test that runs as a StatefulSet has these constraints:
+> A k6 test has these constraints:
 >
 > 1. The `rate` and VUs of a scenario are split between the replicas.
-> 2. `setup()` and `teardown()` run in every pod each time k6 starts, so they must be idempotent.
+> 2. `setup()` and `teardown()` run in every pod each time k6 starts, which includes every restart during a
+>    long-running test, and run concurrently in all pods when there are several replicas. They must be
+>    idempotent and safe to run concurrently: prefer read-only calls, and make any write tolerate a duplicate.
 > 3. Metrics have no `pod` label: use `testrun_name` and `instance_id` to identify the instances.
-> 4. A change of `replicas` restarts all pods, because every pod gets a new execution segment.
+> 4. A change of `replicas` (set in `k6.tests.<name>`, default 1) restarts all pods, because every pod gets a new execution segment.
 >    Change it only in the values: a pod added with `kubectl scale` gets an invalid k6 execution
 >    segment and does not start.
 > 5. The `k6.resources` limits apply to each replica.
@@ -190,10 +184,7 @@ A k6 test runs in one of these modes:
          script: test.mytest.js
    ```
 
-   This creates a `TestRun` named `k6-my-test`.
-
-3. To run the test as a StatefulSet instead, add `runner.statefulset` (with `replicas`, default 1).
-   See [Run modes](#run-modes).
+   This creates a StatefulSet named `k6-my-test`.
 
 #### Use the shared Camunda client
 
@@ -257,18 +248,16 @@ keeps k6 from using more and more memory as the test runs. Thresholds are also
 
 Known issues and limitations of the k6 tests:
 
-1. The pods of a `TestRun` are not restarted when they fail, which can skew the test results. See
-   [Run modes](#run-modes).
-2. Not possible to use the Camunda node.js SDK: k6 is not node.js and the SDK
+1. Not possible to use the Camunda node.js SDK: k6 is not node.js and the SDK
    depends on [node.js APIs which are not available in k6](https://grafana.com/docs/k6/latest/using-k6/modules/#use-nodejs-modules).
-3. When calling HTTP methods, don't set tags with high cardinality values: high
+2. When calling HTTP methods, don't set tags with high cardinality values: high
    cardinality labels have a **severe** impact on Prometheus and can render it
    completely unusable.
-4. Use `console.xxx()` logging calls carefully: it's easy to create many
+3. Use `console.xxx()` logging calls carefully: it's easy to create many
    clients with k6, but a logger inside a tight loop can produce massive logs,
    costing a lot of money.
-5. `setup()` result is copied into each VU: this `context` is not shared between VUs.
-6. Don't build large multipart bodies with the [`FormData`
+4. `setup()` result is copied into each VU: this `context` is not shared between VUs.
+5. Don't build large multipart bodies with the [`FormData`
    jslib](https://jslib.k6.io/formdata/0.0.2/index.js): it's not memory efficient for large payload
    (see [k6#3888](https://github.com/grafana/k6/issues/3888),
    [k6#5760](https://github.com/grafana/k6/issues/5760)). Instead, pass an `http.file()` to

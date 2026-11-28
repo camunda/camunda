@@ -1,0 +1,33 @@
+---
+# Source: load-test-setup/templates/k6/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: "k6-data-read"
+  labels:
+    app.kubernetes.io/component: k6
+spec:
+  clusterIP: None
+  selector:
+    app.kubernetes.io/name: "k6-data-read"
+  ports:
+    - name: http-api
+      port: 6565
+      targetPort: http-api
+
+---
+# Source: load-test-setup/templates/k6/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: "k6-default"
+  labels:
+    app.kubernetes.io/component: k6
+spec:
+  clusterIP: None
+  selector:
+    app.kubernetes.io/name: "k6-default"
+  ports:
+    - name: http-api
+      port: 6565
+      targetPort: http-api

@@ -7,6 +7,7 @@ metadata:
   labels:
     app.kubernetes.io/component: k6
 spec:
+  serviceName: "k6-data-read"
   replicas: 1
   # The default `OrderedReady` starts the pods one after the other, which would delay the start of
   # the later execution segments. All the segments must run at the same time.
@@ -26,7 +27,7 @@ spec:
         app.kubernetes.io/name: "k6-data-read"
         app.kubernetes.io/component: k6
       annotations:
-        checksum/k6-files: 002f74168a7ec8dcbe6060be47c5b4716a70b6c0f2c9d21a285af5d2e10c3cd3
+        checksum/k6-files: 91f8d06d32b86ddf78ab9c65e23e45ca7db147160658cac08db71673f4663fd6
     spec:
       containers:
         - name: k6
@@ -36,16 +37,36 @@ spec:
             - sh
             - -ec
             # Each pod runs its own execution segment of the test, so that the load of the test is
-            # split between the replicas. The tags are the ones the k6 operator sets on the metrics
-            # of a TestRun.
+            # split between the replicas. The `testrun_name` and `instance_id` tags follow the
+            # convention of other k6 deployments, such as the k6 operator.
             - |
               instance_id=`expr "$K8S_POD_INDEX" + 1`
               exec k6 run --quiet /scripts/test.data-read.js \
+                --address "0.0.0.0:6565" \
                 --tag namespace="$K8S_NAMESPACE" \
                 --tag testrun_name=k6-data-read \
                 --tag instance_id="$instance_id" \
                 --execution-segment "$K8S_POD_INDEX/$STATEFULSET_REPLICAS:$instance_id/$STATEFULSET_REPLICAS" \
                 --execution-segment-sequence "0,1/1"
+          ports:
+            - name: http-api
+              containerPort: 6565
+          readinessProbe:
+            httpGet:
+              path: /v1/status
+              port: http-api
+            periodSeconds: 10
+            timeoutSeconds: 1
+            failureThreshold: 5
+            successThreshold: 1
+          livenessProbe:
+            httpGet:
+              path: /v1/status
+              port: http-api
+            periodSeconds: 10
+            timeoutSeconds: 1
+            failureThreshold: 5
+            successThreshold: 1
           env:
             - name: K6_LOG_FORMAT
               value: json
@@ -126,12 +147,6 @@ spec:
               mountPath: /data
       nodeSelector:
         topology.kubernetes.io/zone: "europe-west1-b"
-        component: benchmark-n2-standard-4-stable
-      tolerations:
-        - effect: NoSchedule
-          key: nodepool
-          operator: Equal
-          value: n2-standard-4-stable
       volumes:
         - name: k6-scripts
           configMap:
@@ -149,6 +164,7 @@ metadata:
   labels:
     app.kubernetes.io/component: k6
 spec:
+  serviceName: "k6-default"
   replicas: 1
   # The default `OrderedReady` starts the pods one after the other, which would delay the start of
   # the later execution segments. All the segments must run at the same time.
@@ -168,7 +184,7 @@ spec:
         app.kubernetes.io/name: "k6-default"
         app.kubernetes.io/component: k6
       annotations:
-        checksum/k6-files: 002f74168a7ec8dcbe6060be47c5b4716a70b6c0f2c9d21a285af5d2e10c3cd3
+        checksum/k6-files: 91f8d06d32b86ddf78ab9c65e23e45ca7db147160658cac08db71673f4663fd6
     spec:
       containers:
         - name: k6
@@ -178,16 +194,36 @@ spec:
             - sh
             - -ec
             # Each pod runs its own execution segment of the test, so that the load of the test is
-            # split between the replicas. The tags are the ones the k6 operator sets on the metrics
-            # of a TestRun.
+            # split between the replicas. The `testrun_name` and `instance_id` tags follow the
+            # convention of other k6 deployments, such as the k6 operator.
             - |
               instance_id=`expr "$K8S_POD_INDEX" + 1`
               exec k6 run --quiet /scripts/test.default.js \
+                --address "0.0.0.0:6565" \
                 --tag namespace="$K8S_NAMESPACE" \
                 --tag testrun_name=k6-default \
                 --tag instance_id="$instance_id" \
                 --execution-segment "$K8S_POD_INDEX/$STATEFULSET_REPLICAS:$instance_id/$STATEFULSET_REPLICAS" \
                 --execution-segment-sequence "0,1/1"
+          ports:
+            - name: http-api
+              containerPort: 6565
+          readinessProbe:
+            httpGet:
+              path: /v1/status
+              port: http-api
+            periodSeconds: 10
+            timeoutSeconds: 1
+            failureThreshold: 5
+            successThreshold: 1
+          livenessProbe:
+            httpGet:
+              path: /v1/status
+              port: http-api
+            periodSeconds: 10
+            timeoutSeconds: 1
+            failureThreshold: 5
+            successThreshold: 1
           env:
             - name: K6_LOG_FORMAT
               value: json
@@ -268,12 +304,6 @@ spec:
               mountPath: /data
       nodeSelector:
         topology.kubernetes.io/zone: "europe-west1-b"
-        component: benchmark-n2-standard-4-stable
-      tolerations:
-        - effect: NoSchedule
-          key: nodepool
-          operator: Equal
-          value: n2-standard-4-stable
       volumes:
         - name: k6-scripts
           configMap:
