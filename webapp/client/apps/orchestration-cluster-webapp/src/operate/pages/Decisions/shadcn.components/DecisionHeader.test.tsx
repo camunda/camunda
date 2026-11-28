@@ -34,6 +34,9 @@ describe('<DecisionHeader />', () => {
 
 		await expect.element(screen.getByText('Invoice Classification')).toBeVisible();
 		await expect.element(screen.getByText('invoice-classification')).toBeVisible();
+		await expect
+			.element(screen.getByRole('button', {name: 'Decision ID / click to copy: invoice-classification'}))
+			.toBeVisible();
 	});
 
 	it('should show the decision name and copiable ID for an all-versions selection', async () => {

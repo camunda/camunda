@@ -91,8 +91,8 @@ function useBulkDelete({selectedCount, includedIds, excludedIds, filter, onDelet
 
 	const selectionCountLabel =
 		selectedCount === 1
-			? t('operate.decisions.toolbar.itemSelected', {count: selectedCount})
-			: t('operate.decisions.toolbar.itemsSelected', {count: selectedCount});
+			? t('operate.decisions.ds.toolbar.instanceSelected', {count: selectedCount})
+			: t('operate.decisions.ds.toolbar.instancesSelected', {count: selectedCount});
 
 	const dialogProps: BulkDeleteDialogProps = {
 		open: showDeleteModal,

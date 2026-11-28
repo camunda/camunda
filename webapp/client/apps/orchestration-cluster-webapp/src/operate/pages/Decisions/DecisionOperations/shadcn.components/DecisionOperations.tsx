@@ -12,14 +12,14 @@ import {useIsMutating, useMutation, useQueryClient} from '@tanstack/react-query'
 import {useRouter} from '@tanstack/react-router';
 import {DataTable, Link} from '@camunda/design-system';
 import {LoaderCircle} from '@camunda/design-system/icons';
-import type {DecisionDefinition} from '@camunda/camunda-api-zod-schemas/8.11';
+import type {DecisionDefinition, DeleteResourceResponseBody} from '@camunda/camunda-api-zod-schemas/8.11';
 import {DangerButton} from '#/operate/shared/OperationItem/shadcn.components/DangerButton';
 import {OperationItems} from '#/operate/shared/OperationItems/shadcn.components/OperationItems';
 import {DeleteDefinitionModal} from '#/operate/shared/DeleteDefinitionModal/shadcn.components/DeleteDefinitionModal';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {request, type RequestError} from '#/shared/http/request';
 import {endpoints} from '#/shared/http/endpoints';
-import {getDecisionDefinitionName} from '../../getDecisionDefinitionName';
+import {OPERATE_BASE} from '#/shared/operateBase';
 import {handleOperationError} from '#/operate/shared/utils/handleOperationError';
 
 type Props = {
@@ -34,28 +34,48 @@ const DecisionOperations: React.FC<Props> = ({definition}) => {
 
 	const mutationKey = ['deleteDecisionRequirements', definition.decisionRequirementsKey];
 	const isOperationRunning = useIsMutating({mutationKey}) > 0;
+	const drdName = definition.decisionRequirementsName || definition.decisionRequirementsId;
 
 	const {mutate: deleteDefinition} = useMutation<
-		void,
+		string | undefined,
 		RequestError,
 		{decisionDefinitionId: string; version: number; tenantId: string | undefined}
 	>({
 		mutationKey,
 		mutationFn: async () => {
-			const {error} = await request(
+			const {response, error} = await request(
 				endpoints.deleteResource(definition.decisionRequirementsKey, {deleteHistory: true}),
 			);
 
 			if (error !== null) {
 				throw error;
 			}
+
+			const body = (await response.json().catch(() => null)) as DeleteResourceResponseBody | null;
+			return body?.batchOperation?.batchOperationKey;
 		},
-		onSuccess: (_, {decisionDefinitionId, version, tenantId}) => {
-			notificationsStore.displayNotification({
-				kind: 'success',
-				title: t('operate.decisions.definitionDeletion.successTitle'),
-				isDismissable: true,
-			});
+		onSuccess: (batchOperationKey, {decisionDefinitionId, version, tenantId}) => {
+			notificationsStore.displayNotification(
+				batchOperationKey === undefined
+					? {
+							kind: 'success',
+							title: t('operate.decisions.definitionDeletion.successTitle'),
+							isDismissable: true,
+						}
+					: {
+							kind: 'success',
+							title: t('operate.decisions.definitionDeletion.successTitle'),
+							isDismissable: true,
+							isActionable: true,
+							actionButtonLabel: t('operate.decisions.ds.toolbar.deleteSuccessActionLabel'),
+							onActionButtonClick: () => {
+								void router.navigate({
+									to: `${OPERATE_BASE}/batch-operations/$batchOperationKey` as const,
+									params: {batchOperationKey},
+								});
+							},
+						},
+			);
 			const {search} = router.state.location;
 			if (
 				search.decisionDefinitionId === decisionDefinitionId &&
@@ -96,9 +116,9 @@ const DecisionOperations: React.FC<Props> = ({definition}) => {
 				<OperationItems>
 					<DangerButton
 						type="DELETE"
+						label={t('operate.decisions.ds.definitionDeletion.buttonLabel')}
 						title={t('operate.decisions.ds.definitionDeletion.buttonTitle', {
-							name: getDecisionDefinitionName(definition),
-							version: definition.version,
+							name: drdName,
 						})}
 						disabled={isOperationRunning}
 						onClick={() => setIsDeleteModalVisible(true)}

@@ -91,6 +91,15 @@
 		color: var(--neutral-foreground-subtle);
 	}
 
+	.tjs-table-container tbody tr[data-highlighted] td {
+		border-top: 1px solid var(--neutral-border-strong);
+		border-bottom: 1px solid var(--neutral-border-strong);
+	}
+
+	.tjs-table-container tbody tr[data-highlighted] td:first-child {
+		border-left: 2px solid var(--info-border-default);
+	}
+
 	@media (forced-colors: active) {
 		.tjs-table-container tbody tr[data-highlighted] td {
 			border-top: 2px solid Highlight;

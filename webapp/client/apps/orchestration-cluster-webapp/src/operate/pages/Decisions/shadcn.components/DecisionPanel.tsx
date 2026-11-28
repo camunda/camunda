@@ -110,7 +110,7 @@ const DecisionPanel: React.FC<Props> = ({headerActions, ...bodyProps}) => {
 	const {t} = useTranslation();
 
 	return (
-		<section aria-label={t('operate.decisions.diagramPanel.ariaLabel')} className="flex h-full flex-col">
+		<section aria-label={t('operate.decisions.ds.diagramPanel.ariaLabel')} className="flex h-full flex-col">
 			<DecisionHeader decisionDefinitionSelection={bodyProps.decisionDefinitionSelection}>
 				{headerActions}
 			</DecisionHeader>

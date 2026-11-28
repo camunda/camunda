@@ -22,6 +22,21 @@ describe('<DangerButton />', () => {
 		await expect.element(screen.getByText('Delete', {exact: true})).toBeVisible();
 	});
 
+	it('should include a custom visible label in the accessible name when the title does not contain it', async () => {
+		const screen = await render(
+			<DangerButton
+				type="DELETE"
+				onClick={vi.fn()}
+				title='DRD "Orders" und alle Instanzen löschen'
+				label="DRD löschen"
+			/>,
+		);
+
+		await expect
+			.element(screen.getByRole('button', {name: 'DRD löschen. DRD "Orders" und alle Instanzen löschen', exact: true}))
+			.toBeVisible();
+	});
+
 	it('should execute the delete action when clicked', async () => {
 		const onClick = vi.fn();
 		const screen = await render(<DangerButton type="DELETE" onClick={onClick} title="Delete Instance 123" />);

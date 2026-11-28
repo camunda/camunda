@@ -497,12 +497,12 @@ describe('<Decisions />', () => {
 			initialEntry: '/operate/decisions?decisionDefinitionId=invoice&decisionDefinitionVersion=1',
 		});
 
-		await expect.element(screen.getByRole('button', {name: /Delete decision definition/})).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: /Delete DRD/})).toBeVisible();
 
 		await userEvent.click(screen.getByLabelText('Version'));
 		await userEvent.click(screen.getByRole('option', {name: 'All versions'}));
 
-		await expect.element(screen.getByRole('button', {name: /Delete decision definition/})).not.toBeInTheDocument();
+		await expect.element(screen.getByRole('button', {name: /Delete DRD/})).not.toBeInTheDocument();
 	});
 
 	it('should keep a newly selected version blocked while the previous deletion is pending', async ({worker}) => {
@@ -517,7 +517,7 @@ describe('<Decisions />', () => {
 			initialEntry: '/operate/decisions?decisionDefinitionId=invoice&decisionDefinitionVersion=1',
 		});
 
-		await userEvent.click(screen.getByRole('button', {name: /Delete decision definition/}));
+		await userEvent.click(screen.getByRole('button', {name: /Delete DRD/}));
 		await userEvent.click(screen.getByText(/Yes, I confirm I want to delete this DRD/));
 		await userEvent.click(screen.getByRole('button', {name: 'Delete', exact: true}));
 		await expect.element(screen.getByRole('dialog')).not.toBeInTheDocument();
@@ -525,7 +525,7 @@ describe('<Decisions />', () => {
 		await userEvent.click(screen.getByRole('option', {name: '2'}));
 
 		await expect.poll(() => screen.router.state.location.search).toMatchObject({decisionDefinitionVersion: 2});
-		await expect.element(screen.getByRole('button', {name: /Delete decision definition/})).toBeDisabled();
+		await expect.element(screen.getByRole('button', {name: /Delete DRD/})).toBeDisabled();
 	});
 
 	it('should keep the newly selected version and unblock it once the previous deletion finishes', async ({worker}) => {
@@ -540,7 +540,7 @@ describe('<Decisions />', () => {
 			initialEntry: '/operate/decisions?decisionDefinitionId=invoice&decisionDefinitionVersion=1',
 		});
 
-		await userEvent.click(screen.getByRole('button', {name: /Delete decision definition/}));
+		await userEvent.click(screen.getByRole('button', {name: /Delete DRD/}));
 		await userEvent.click(screen.getByText(/Yes, I confirm I want to delete this DRD/));
 		vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
 		await userEvent.click(screen.getByRole('button', {name: 'Delete', exact: true}));
@@ -550,7 +550,7 @@ describe('<Decisions />', () => {
 		await userEvent.keyboard('{Enter}');
 		await userEvent.click(screen.getByRole('option', {name: '2'}));
 		await expect.poll(() => screen.router.state.location.search).toMatchObject({decisionDefinitionVersion: 2});
-		await expect.element(screen.getByRole('button', {name: /Delete decision definition/})).toBeDisabled();
+		await expect.element(screen.getByRole('button', {name: /Delete DRD/})).toBeDisabled();
 
 		await expect
 			.poll(async () => {
@@ -560,7 +560,7 @@ describe('<Decisions />', () => {
 			.toBeTruthy();
 		vi.useRealTimers();
 
-		await expect.element(screen.getByRole('button', {name: /Delete decision definition/})).toBeEnabled();
+		await expect.element(screen.getByRole('button', {name: /Delete DRD/})).toBeEnabled();
 		expect(screen.router.state.location.search).toMatchObject({decisionDefinitionVersion: 2});
 	});
 });

@@ -14,6 +14,7 @@ type ItemProps = {
 	type: 'DELETE';
 	onClick: () => void;
 	title: string;
+	label?: string;
 	disabled?: boolean;
 	isIconOnly?: boolean;
 	hasResponsiveLabel?: boolean;
@@ -26,6 +27,7 @@ const TYPE_DETAILS: Readonly<Record<ItemProps['type'], {testId: string}>> = {
 
 const DangerButton: React.FC<ItemProps> = ({
 	title,
+	label: labelOverride,
 	onClick,
 	type,
 	disabled,
@@ -35,7 +37,7 @@ const DangerButton: React.FC<ItemProps> = ({
 }) => {
 	const {t} = useTranslation();
 	const {testId} = TYPE_DETAILS[type];
-	const label = t('operate.shared.operations.deleteButtonLabel');
+	const label = labelOverride ?? t('operate.shared.operations.deleteButtonLabel');
 	const accessibleName = title.includes(label) ? title : `${label}. ${title}`;
 
 	return (
@@ -73,9 +75,9 @@ const DangerButton: React.FC<ItemProps> = ({
 					onClick={onClick}
 					disabled={disabled}
 					data-testid={testId}
-					aria-label={title}
+					aria-label={accessibleName}
 				>
-					{t('operate.shared.operations.deleteButtonLabel')}
+					{label}
 				</Button>
 			)}
 		</li>

@@ -70,6 +70,7 @@ test.describe('Operate Decisions DS (/operate/decisions)', () => {
 		await expect(operateDecisionsPage.moreFiltersButton).toBeVisible();
 		await expect(operateDecisionsPage.decisionPanel).toBeVisible();
 		await expect(operateDecisionsPage.decisionPanel.getByRole('heading', {name: 'Select a decision'})).toBeVisible();
+		await expect(page.getByText('Select a decision first to choose a version', {exact: true})).toBeVisible();
 		await expect(operateDecisionsPage.instancesTable).toBeVisible();
 	});
 
@@ -111,9 +112,7 @@ test.describe('Operate Decisions DS (/operate/decisions)', () => {
 		);
 		await operateDecisionsPage.goto('?decisionDefinitionId=invoice&decisionDefinitionVersion=1');
 
-		await expect(
-			operateDecisionsPage.decisionPanel.getByRole('button', {name: /Delete decision definition/}),
-		).toBeVisible();
+		await expect(operateDecisionsPage.decisionPanel.getByRole('button', {name: /Delete DRD/})).toBeVisible();
 	});
 
 	test('should delete the selected decision instances in bulk', async ({network, operateDecisionsPage, page}) => {

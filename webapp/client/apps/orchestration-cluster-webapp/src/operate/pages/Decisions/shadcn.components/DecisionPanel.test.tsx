@@ -36,7 +36,7 @@ describe('<DecisionPanel />', () => {
 	it('should expose the panel as a labelled region', async () => {
 		const screen = await renderDecisionPanel({decisionDefinitionSelection: {kind: 'no-match'}});
 
-		await expect.element(screen.getByRole('region', {name: 'Decision Panel'})).toBeVisible();
+		await expect.element(screen.getByRole('region', {name: 'Decision panel'})).toBeVisible();
 	});
 
 	it('should show an empty message when no decision is selected', async () => {

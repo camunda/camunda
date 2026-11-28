@@ -79,13 +79,13 @@ describe('useBulkDelete (shadcn)', () => {
 	it('should label the selection count', async () => {
 		const {screen} = await renderHarness();
 
-		await expect.element(screen.getByText('2 items selected')).toBeVisible();
+		await expect.element(screen.getByText('2 instances selected')).toBeVisible();
 	});
 
 	it('should use the singular label for a single selection', async () => {
 		const {screen} = await renderHarness({selectedCount: 1, includedIds: ['1']});
 
-		await expect.element(screen.getByText('1 item selected')).toBeVisible();
+		await expect.element(screen.getByText('1 instance selected')).toBeVisible();
 	});
 
 	it('should start the batch delete after confirming and notify', async ({worker}) => {
@@ -194,7 +194,7 @@ describe('useBulkDelete (shadcn)', () => {
 		await userEvent.click(screen.getByRole('button', {name: 'Delete'}));
 		await userEvent.click(screen.getByRole('button', {name: 'Cancel'}));
 
-		await expect.element(screen.getByText('2 items selected')).toBeVisible();
+		await expect.element(screen.getByText('2 instances selected')).toBeVisible();
 		await expect.element(screen.getByRole('alertdialog')).not.toBeInTheDocument();
 		expect(onDeleted).not.toHaveBeenCalled();
 		expect(onDiscard).toHaveBeenCalledOnce();
