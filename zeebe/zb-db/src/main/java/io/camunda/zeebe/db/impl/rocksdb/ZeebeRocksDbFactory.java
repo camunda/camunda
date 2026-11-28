@@ -274,6 +274,10 @@ public final class ZeebeRocksDbFactory<
     props.setProperty("compaction_pri", "kOldestLargestSeqFirst");
     props.setProperty("compaction_style", "kCompactionStyleLevel");
 
+    // merge runs of point deletes into range tombstones; helps queue-like column families (e.g.
+    // jobs). 0 disables it
+    props.setProperty("min_tombstones_for_range_conversion", RocksDbOptionsFormatter.format(100));
+
     // L-0 means immediately flushed memtables
     props.setProperty(
         "level0_file_num_compaction_trigger", RocksDbOptionsFormatter.format(maxWriteBuffers));
