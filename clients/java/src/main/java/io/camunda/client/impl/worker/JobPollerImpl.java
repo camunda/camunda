@@ -133,17 +133,20 @@ public final class JobPollerImpl implements JobPoller {
         .send()
         .exceptionally(
             throwable -> {
-              if (openSupplier.getAsBoolean()) {
-                try {
+              try {
+                if (openSupplier.getAsBoolean()) {
                   logFailure(throwable);
-                } finally {
-                  errorCallback.accept(throwable);
                 }
+              } finally {
+                errorCallback.accept(throwable);
               }
               return null;
             })
         .thenApply(
             activateJobsResponse -> {
+              if (activateJobsResponse == null) {
+                return null;
+              }
               final List<ActivatedJob> jobs = activateJobsResponse.getJobs();
               activatedJobs += jobs.size();
               jobs.forEach(this::dispatch);
