@@ -24072,7 +24072,7 @@
               "transformations": []
             }
           },
-          "description": "Timeline of the status of each partitions' component",
+          "description": "Timeline of the status of each health tree component: the partitions' components, the broker's lifecycle and, when health detectors are enabled, one row per detector and partition",
           "id": 622,
           "links": [],
           "title": "Health status timeline ",
@@ -24124,6 +24124,26 @@
                           "color": "blue",
                           "index": 4,
                           "text": "RECOVERING"
+                        },
+                        "3": {
+                          "color": "light-blue",
+                          "index": 5,
+                          "text": "NOTICE"
+                        },
+                        "4": {
+                          "color": "orange",
+                          "index": 6,
+                          "text": "DEGRADED"
+                        },
+                        "5": {
+                          "color": "light-purple",
+                          "index": 7,
+                          "text": "STARTING"
+                        },
+                        "6": {
+                          "color": "purple",
+                          "index": 8,
+                          "text": "STOPPING"
                         }
                       },
                       "type": "value"
