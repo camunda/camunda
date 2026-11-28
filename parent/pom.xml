@@ -132,7 +132,7 @@
          Thus this version must stay less than or equal to the baseline above. -->
     <version.protoc>4.34.2</version.protoc>
     <version.protobuf-common>2.82.0</version.protobuf-common>
-    <version.micrometer>1.17.2</version.micrometer>
+    <version.micrometer>1.18.0</version.micrometer>
     <version.rocksdbjni>11.8.1</version.rocksdbjni>
     <version.sbe>1.42.1</version.sbe>
     <version.scala>3.10.1</version.scala>
@@ -151,9 +151,9 @@
     <version.feel-scala>1.22.1</version.feel-scala>
     <version.dmn-scala>1.12.7</version.dmn-scala>
     <version.rest-assured>6.3.0</version.rest-assured>
-    <version.spring>7.0.11</version.spring>
+    <version.spring>7.1.0</version.spring>
     <version.spring-security>7.2.0</version.spring-security>
-    <version.spring-boot>4.1.2</version.spring-boot>
+    <version.spring-boot>4.2.0</version.spring-boot>
     <version.spring-ai>2.0.3</version.spring-ai>
     <version.mcp-sdk>2.2.0</version.mcp-sdk>
     <version.jsonschema-generator>5.0.0</version.jsonschema-generator>

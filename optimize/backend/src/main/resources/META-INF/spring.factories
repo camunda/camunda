@@ -1,4 +1,4 @@
 # Environment Post Processor
-org.springframework.boot.env.EnvironmentPostProcessor=\
+org.springframework.boot.EnvironmentPostProcessor=\
 io.camunda.optimize.SpringPropertiesPostProcessor,\
 io.camunda.optimize.rest.security.csl.OptimizeSecurityConfigCompatibilityPostProcessor

@@ -30,7 +30,6 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureWebMvc;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
-import org.springframework.web.servlet.handler.HandlerMappingIntrospector;
 
 @TestInstance(Lifecycle.PER_CLASS)
 public class BasicAuthWebSecurityConfigParameterizedTest {
@@ -141,11 +140,6 @@ public class BasicAuthWebSecurityConfigParameterizedTest {
           null,
           new ApiServicesExecutorProvider(ForkJoinPool.commonPool()),
           null);
-    }
-
-    @Bean
-    public HandlerMappingIntrospector mvcHandlerMappingIntrospector() {
-      return new HandlerMappingIntrospector();
     }
 
     /**

@@ -47,8 +47,10 @@ public final class SnapshotMetrics {
     for (final var isBootstrap : List.of(true, false)) {
       final var index = encodeBoolean(isBootstrap);
       // init the AtomicLongs
-      snapshotChunkCountArray.put(new AtomicLong(), index);
-      snapshotSizeArray.put(new AtomicLong(), index);
+      final var snapshotChunkCount = new AtomicLong();
+      final var snapshotSize = new AtomicLong();
+      snapshotChunkCountArray.put(snapshotChunkCount, index);
+      snapshotSizeArray.put(snapshotSize, index);
 
       // INIT non gauges
       snapshotDuration.put(
@@ -80,12 +82,11 @@ public final class SnapshotMetrics {
           index);
 
       // init gauges
-      Gauge.builder(
-              SNAPSHOT_CHUNK_COUNT.getName(), snapshotChunkCountArray.get(index), Number::longValue)
+      Gauge.builder(SNAPSHOT_CHUNK_COUNT.getName(), snapshotChunkCount, Number::longValue)
           .description(SNAPSHOT_CHUNK_COUNT.getDescription())
           .tags(SnapshotMetricsDoc.BootstrapKeyNames.tags(isBootstrap))
           .register(registry);
-      Gauge.builder(SNAPSHOT_SIZE.getName(), snapshotSizeArray.get(index), Number::longValue)
+      Gauge.builder(SNAPSHOT_SIZE.getName(), snapshotSize, Number::longValue)
           .description(SNAPSHOT_SIZE.getDescription())
           .tags(SnapshotMetricsDoc.BootstrapKeyNames.tags(isBootstrap))
           .register(registry);
