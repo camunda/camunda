@@ -47,6 +47,7 @@ import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.FeatureFlags;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
+import io.opentelemetry.api.OpenTelemetry;
 import java.io.File;
 import java.security.cert.CertificateException;
 import java.time.Duration;
@@ -578,6 +579,7 @@ final class SystemContextTest {
             mock(AtomixCluster.class),
             mock(BrokerClient.class),
             new SimpleMeterRegistry(),
+            OpenTelemetry.noop(),
             Map.of(
                 tenantId,
                 new PhysicalTenantContext(
@@ -933,6 +935,7 @@ final class SystemContextTest {
         mock(AtomixCluster.class),
         mock(BrokerClient.class),
         new SimpleMeterRegistry(),
+        OpenTelemetry.noop(),
         contextsByTenant,
         tenantId -> mock(UserServices.class),
         mock(PasswordEncoder.class),

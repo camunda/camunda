@@ -44,6 +44,7 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
   private AuthInfo authorization = AuthInfo.EMPTY;
   private ChannelType channelType;
   private final DirectBuffer toolName = new UnsafeBuffer(0, 0);
+  private final DirectBuffer traceContext = new UnsafeBuffer(0, 0);
 
   public ExecuteCommandRequest() {
     reset();
@@ -59,6 +60,7 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
     authorization = AuthInfo.EMPTY;
     channelType = ChannelType.NULL_VAL;
     toolName.wrap(0, 0);
+    traceContext.wrap(0, 0);
 
     return this;
   }
@@ -168,6 +170,20 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
     return this;
   }
 
+  /** Returns the W3C {@code traceparent} of the request, or an empty string if not propagated. */
+  public String getTraceContext() {
+    return BufferUtil.bufferAsString(traceContext);
+  }
+
+  public ExecuteCommandRequest setTraceContext(final String traceparent) {
+    if (traceparent == null) {
+      traceContext.wrap(0, 0);
+    } else {
+      traceContext.wrap(traceparent.getBytes(StandardCharsets.UTF_8));
+    }
+    return this;
+  }
+
   @Override
   public void wrap(final DirectBuffer buffer, int offset, final int length) {
     reset();
@@ -191,27 +207,15 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
       channelType = decodedChannelType;
     }
 
-    offset += bodyDecoder.sbeBlockLength();
+    bodyDecoder.wrapValue(value);
 
-    final int valueLength = bodyDecoder.valueLength();
-    offset += ExecuteCommandRequestDecoder.valueHeaderLength();
+    final int authOffset =
+        bodyDecoder.limit() + ExecuteCommandRequestDecoder.authorizationHeaderLength();
+    authorization = AuthInfo.decode(buffer, authOffset, bodyDecoder.authorizationLength());
+    bodyDecoder.skipAuthorization();
 
-    value.wrap(buffer, offset, valueLength);
-    offset += valueLength;
-
-    final int authorizationLength = bodyDecoder.authorizationLength();
-    offset += ExecuteCommandRequestDecoder.authorizationHeaderLength();
-
-    authorization = AuthInfo.decode(buffer, offset, authorizationLength);
-    offset += authorizationLength;
-
-    final int toolNameLength = bodyDecoder.toolNameLength();
-    offset += ExecuteCommandRequestDecoder.toolNameHeaderLength();
-
-    toolName.wrap(buffer, offset, toolNameLength);
-    offset += toolNameLength;
-
-    bodyDecoder.limit(offset);
+    bodyDecoder.wrapToolName(toolName);
+    bodyDecoder.wrapTraceContext(traceContext);
 
     assert bodyDecoder.limit() == frameEnd
         : "Decoder read only to position "
@@ -230,7 +234,9 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
         + ExecuteCommandRequestEncoder.authorizationHeaderLength()
         + authorization.getLength()
         + ExecuteCommandRequestEncoder.toolNameHeaderLength()
-        + toolName.capacity();
+        + toolName.capacity()
+        + ExecuteCommandRequestEncoder.traceContextHeaderLength()
+        + traceContext.capacity();
   }
 
   @Override
@@ -249,7 +255,9 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
         bodyEncoder,
         ExecuteCommandRequestEncoder.authorizationHeaderLength(),
         ExecuteCommandRequestEncoder.BYTE_ORDER);
-    bodyEncoder.putToolName(toolName, 0, toolName.capacity());
+    bodyEncoder
+        .putToolName(toolName, 0, toolName.capacity())
+        .putTraceContext(traceContext, 0, traceContext.capacity());
 
     return headerEncoder.encodedLength() + bodyEncoder.encodedLength();
   }

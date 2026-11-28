@@ -36,6 +36,7 @@ import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.opentelemetry.api.OpenTelemetry;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -155,6 +156,10 @@ public interface BrokerStartupContext {
   void setRequestIdGenerator(SnowflakeIdGenerator requestIdGenerator);
 
   MeterRegistry getMeterRegistry();
+
+  default OpenTelemetry getOpenTelemetry() {
+    return OpenTelemetry.noop();
+  }
 
   /**
    * Returns the context for the given physical tenant.

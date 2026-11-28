@@ -32,6 +32,7 @@ import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.FileUtil;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.opentelemetry.api.OpenTelemetry;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
@@ -73,6 +74,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
   private final BrokerClient brokerClient;
   private final BrokerShutdownHelper shutdownHelper;
   private final MeterRegistry meterRegistry;
+  private final OpenTelemetry openTelemetry;
   private final UnifiedConfiguration unifiedConfiguration;
   private final PhysicalTenantResolver physicalTenantResolver;
   private final ServiceRegistry serviceRegistry;
@@ -113,7 +115,10 @@ public class BrokerModuleConfiguration implements CloseableSilently {
       final WorkingDirectory workingDirectory,
       final SecretStoreRegistries secretStoreRegistries,
       final ResolvedDataDirectory resolvedDataDirectory,
-      final ObjectProvider<SchemaInitializer> schemaInitializer) {
+      final ObjectProvider<SchemaInitializer> schemaInitializer,
+      // Spring Boot provides a bean also when the SDK is disabled; none exists only without its
+      // autoconfiguration
+      final ObjectProvider<OpenTelemetry> openTelemetry) {
     this.configuration = configuration;
     this.springBrokerBridge = springBrokerBridge;
     this.actorScheduler = actorScheduler;
@@ -122,6 +127,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     this.brokerClient = brokerClient;
     this.shutdownHelper = shutdownHelper;
     this.meterRegistry = meterRegistry;
+    this.openTelemetry = openTelemetry.getIfAvailable(OpenTelemetry::noop);
     this.unifiedConfiguration = unifiedConfiguration;
     this.physicalTenantResolver = physicalTenantResolver;
     this.serviceRegistry = serviceRegistry;
@@ -157,6 +163,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
             .withCluster(cluster)
             .withBrokerClient(brokerClient)
             .withMeterRegistry(meterRegistry)
+            .withOpenTelemetry(openTelemetry)
             .withPhysicalTenantResolver(physicalTenantResolver)
             .withUserServicesForTenant(userServicesForTenant)
             .withPasswordEncoder(passwordEncoder)

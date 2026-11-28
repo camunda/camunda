@@ -53,6 +53,7 @@ import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.FeatureFlags;
 import io.camunda.zeebe.util.TlsConfigUtil;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.opentelemetry.api.OpenTelemetry;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -118,6 +119,7 @@ public final class SystemContext {
   private final AtomixCluster cluster;
   private final BrokerClient brokerClient;
   private final MeterRegistry meterRegistry;
+  private final OpenTelemetry openTelemetry;
   private final Map<String, PhysicalTenantContext> physicalTenantContexts;
   private final Function<String, UserServices> userServicesForTenant;
   private final PasswordEncoder passwordEncoder;
@@ -140,6 +142,7 @@ public final class SystemContext {
       final AtomixCluster cluster,
       final BrokerClient brokerClient,
       final MeterRegistry meterRegistry,
+      final OpenTelemetry openTelemetry,
       final Map<String, PhysicalTenantContext> physicalTenantContexts,
       final Function<String, UserServices> userServicesForTenant,
       final PasswordEncoder passwordEncoder,
@@ -156,6 +159,7 @@ public final class SystemContext {
     this.cluster = cluster;
     this.brokerClient = brokerClient;
     this.meterRegistry = meterRegistry;
+    this.openTelemetry = Objects.requireNonNull(openTelemetry, "openTelemetry must not be null");
 
     this.physicalTenantContexts = Map.copyOf(physicalTenantContexts);
     this.userServicesForTenant = userServicesForTenant;
@@ -792,6 +796,10 @@ public final class SystemContext {
 
   public MeterRegistry getMeterRegistry() {
     return meterRegistry;
+  }
+
+  public OpenTelemetry getOpenTelemetry() {
+    return openTelemetry;
   }
 
   /** Returns the per-physical-tenant engine context map (unmodifiable). */

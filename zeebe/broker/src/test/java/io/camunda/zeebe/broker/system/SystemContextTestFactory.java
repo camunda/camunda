@@ -25,6 +25,7 @@ import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.FeatureFlags;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.opentelemetry.api.OpenTelemetry;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
@@ -121,6 +122,7 @@ public final class SystemContextTestFactory {
         cluster,
         brokerClient,
         meterRegistry,
+        OpenTelemetry.noop(),
         singleValueMap(
             physicalTenantIds,
             new PhysicalTenantContext(
@@ -207,6 +209,7 @@ public final class SystemContextTestFactory {
         cluster,
         brokerClient,
         meterRegistry,
+        OpenTelemetry.noop(),
         contextsByTenant,
         tenantId -> userServices,
         passwordEncoder,

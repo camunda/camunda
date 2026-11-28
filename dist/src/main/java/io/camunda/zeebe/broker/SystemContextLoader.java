@@ -32,6 +32,7 @@ import io.camunda.zeebe.engine.DefaultEngineFactory;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.jar.ExternalJarLoadException;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.opentelemetry.api.OpenTelemetry;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Collections;
@@ -69,6 +70,7 @@ public final class SystemContextLoader {
   private AtomixCluster cluster;
   private BrokerClient brokerClient;
   private MeterRegistry meterRegistry;
+  private OpenTelemetry openTelemetry = OpenTelemetry.noop();
   private PhysicalTenantResolver physicalTenantResolver;
   private Function<String, UserServices> userServicesForTenant;
   private PasswordEncoder passwordEncoder;
@@ -125,6 +127,11 @@ public final class SystemContextLoader {
 
   public SystemContextLoader withBrokerClient(final BrokerClient brokerClient) {
     this.brokerClient = brokerClient;
+    return this;
+  }
+
+  public SystemContextLoader withOpenTelemetry(final OpenTelemetry openTelemetry) {
+    this.openTelemetry = openTelemetry;
     return this;
   }
 
@@ -234,6 +241,7 @@ public final class SystemContextLoader {
         cluster,
         brokerClient,
         meterRegistry,
+        openTelemetry,
         Collections.unmodifiableMap(physicalTenantContexts),
         userServicesForTenant,
         passwordEncoder,

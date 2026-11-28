@@ -58,6 +58,7 @@ dependencies {
   testImplementation(libs.io.camunda.identity.sdk)
   implementation(libs.io.micrometer.micrometer.core)
   implementation(libs.io.micrometer.micrometer.commons)
+  api(libs.io.opentelemetry.opentelemetry.api)
   implementation(libs.org.slf4j.slf4j.api)
   implementation(libs.org.springframework.boot.spring.boot.actuator)
   implementation(libs.org.springframework.spring.beans)

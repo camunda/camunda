@@ -21,6 +21,7 @@ import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.scheduling.ScheduledCommandCache.NoopScheduledCommandCache;
 import io.camunda.zeebe.stream.api.scheduling.ScheduledCommandCache.StageableScheduledCommandCache;
+import io.opentelemetry.api.OpenTelemetry;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -186,6 +187,15 @@ public final class StreamProcessorBuilder {
   public StreamProcessorBuilder meterRegistry(
       final io.micrometer.core.instrument.MeterRegistry meterRegistry) {
     streamProcessorContext.meterRegistry(meterRegistry);
+    return this;
+  }
+
+  /**
+   * Enables continuing traces carried in {@code RecordMetadata}; without it the stream processor
+   * creates no spans.
+   */
+  public StreamProcessorBuilder openTelemetry(final OpenTelemetry openTelemetry) {
+    streamProcessorContext.openTelemetry(openTelemetry);
     return this;
   }
 

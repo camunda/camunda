@@ -163,7 +163,7 @@ public final class BrokerClientTest {
   }
 
   @Test
-  void shouldStartClientSpanForSampledParent() {
+  void shouldStartClientSpanAndPropagateItsContext() {
     // given
     registerSuccessResponse(broker);
     final var request = new TestCommand();
@@ -177,6 +177,8 @@ public final class BrokerClientTest {
         .isEqualTo("zeebe.broker_client " + request.getType().replace('#', ' '));
     assertThat(clientSpan.getTraceId()).isEqualTo(parent.getSpanContext().getTraceId());
     assertThat(clientSpan.getParentSpanId()).isEqualTo(parent.getSpanContext().getSpanId());
+    assertThat(clientSpan.getAttributes().get(AttributeKey.stringKey("zeebe.physical_tenant.id")))
+        .isEqualTo("default");
     assertThat(clientSpan.getAttributes().get(AttributeKey.longKey("zeebe.partition.id")))
         .isEqualTo(1L);
     assertThat(clientSpan.getAttributes().get(AttributeKey.stringKey("zeebe.broker.id")))
@@ -185,10 +187,15 @@ public final class BrokerClientTest {
         .isEqualTo(TestCommand.VALUE_TYPE.name());
     assertThat(clientSpan.getAttributes().get(AttributeKey.stringKey("zeebe.intent")))
         .isEqualTo(TestCommand.INTENT.name());
+    assertThat(broker.getReceivedCommandRequests())
+        .singleElement()
+        .extracting(ExecuteCommandRequest::traceContext)
+        .asString()
+        .startsWith("00-%s-%s-".formatted(clientSpan.getTraceId(), clientSpan.getSpanId()));
   }
 
   @Test
-  void shouldNotCreateClientSpanWhenUnsampled() {
+  void shouldNotPropagateTraceContextWhenUnsampledOrReusedUntraced() {
     // given
     registerSuccessResponse(broker);
     final var request = new TestCommand();
@@ -200,13 +207,19 @@ public final class BrokerClientTest {
                 TraceFlags.getDefault(),
                 TraceState.getDefault()));
 
-    // when - unsampled parent, then no parent
+    // when - unsampled parent, then sampled, then reused without any parent
     try (final var ignored = unsampled.makeCurrent()) {
       client.sendRequestWithRetry(request).join();
     }
+    assertThat(broker.getReceivedCommandRequests().getLast().traceContext()).isEmpty();
+    assertThat(otel.getSpans()).isEmpty();
+
+    withSampledParent(() -> client.sendRequestWithRetry(request).join());
+    otel.clearSpans();
     client.sendRequestWithRetry(request).join();
 
-    // then
+    // then - stale traceparent was cleared on the untraced reuse
+    assertThat(broker.getReceivedCommandRequests().getLast().traceContext()).isEmpty();
     assertThat(otel.getSpans()).isEmpty();
   }
 
@@ -220,6 +233,7 @@ public final class BrokerClientTest {
             throw new IllegalStateException("serialization boom");
           }
         };
+    failingRequest.setPartitionGroup("tenant-a");
 
     // when
     withSampledParent(
@@ -228,7 +242,10 @@ public final class BrokerClientTest {
                 .isInstanceOf(IllegalStateException.class));
 
     // then
-    assertThat(singleClientSpan().getStatus().getStatusCode()).isEqualTo(StatusCode.ERROR);
+    final var clientSpan = singleClientSpan();
+    assertThat(clientSpan.getStatus().getStatusCode()).isEqualTo(StatusCode.ERROR);
+    assertThat(clientSpan.getAttributes().get(AttributeKey.stringKey("zeebe.physical_tenant.id")))
+        .isEqualTo("tenant-a");
   }
 
   @Test

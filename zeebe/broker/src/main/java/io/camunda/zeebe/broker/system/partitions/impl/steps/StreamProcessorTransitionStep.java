@@ -174,6 +174,7 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
 
     return StreamProcessor.builder()
         .meterRegistry(context.getPartitionTransitionMeterRegistry())
+        .openTelemetry(context.getOpenTelemetry())
         .logStream(context.getLogStream())
         .partitionId(context.partitionId())
         .actorSchedulingService(context.getActorSchedulingService())

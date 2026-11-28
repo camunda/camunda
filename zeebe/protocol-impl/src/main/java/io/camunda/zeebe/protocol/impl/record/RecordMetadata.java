@@ -63,6 +63,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
   private AgentInfo agent;
   private ChannelType requestChannelType = ChannelType.NULL_VAL;
   private final DirectBuffer requestToolName = new UnsafeBuffer(0, 0);
+  private final DirectBuffer traceContext = new UnsafeBuffer(0, 0);
 
   // always the current version by default
   private int protocolVersion = Protocol.PROTOCOL_VERSION;
@@ -155,6 +156,13 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     } else {
       decoder.skipRequestToolName();
     }
+
+    final int traceContextLength = decoder.traceContextLength();
+    if (traceContextLength > 0) {
+      decoder.wrapTraceContext(traceContext);
+    } else {
+      decoder.skipTraceContext();
+    }
   }
 
   @Override
@@ -167,7 +175,9 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         + RecordMetadataEncoder.agentHeaderLength()
         + (agent != null ? agent.getLength() : 0)
         + RecordMetadataEncoder.requestToolNameHeaderLength()
-        + requestToolName.capacity();
+        + requestToolName.capacity()
+        + RecordMetadataEncoder.traceContextHeaderLength()
+        + traceContext.capacity();
   }
 
   @Override
@@ -219,6 +229,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     }
 
     encoder.putRequestToolName(requestToolName, 0, requestToolName.capacity());
+    encoder.putTraceContext(traceContext, 0, traceContext.capacity());
 
     return headerEncoder.encodedLength() + encoder.encodedLength();
   }
@@ -352,6 +363,32 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     return this;
   }
 
+  public boolean hasTraceContext() {
+    return traceContext.capacity() > 0;
+  }
+
+  public String getTraceContext() {
+    return BufferUtil.bufferAsString(traceContext);
+  }
+
+  public RecordMetadata traceContext(final @Nullable String traceContext) {
+    if (traceContext == null || traceContext.isEmpty()) {
+      this.traceContext.wrap(0, 0);
+    } else {
+      this.traceContext.wrap(traceContext.getBytes(StandardCharsets.UTF_8));
+    }
+    return this;
+  }
+
+  public RecordMetadata traceContext(final DirectBuffer buffer) {
+    if (buffer.capacity() == 0) {
+      traceContext.wrap(0, 0);
+    } else {
+      traceContext.wrap(BufferUtil.cloneBuffer(buffer));
+    }
+    return this;
+  }
+
   public RecordMetadata brokerVersion(final VersionInfo brokerVersion) {
     this.brokerVersion = brokerVersion;
     return this;
@@ -427,6 +464,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     agent = null;
     requestChannelType = ChannelType.NULL_VAL;
     requestToolName.wrap(0, 0);
+    traceContext.wrap(0, 0);
     brokerVersion = CURRENT_BROKER_VERSION;
     recordVersion = DEFAULT_RECORD_VERSION;
     operationReference = RecordMetadataEncoder.operationReferenceNullValue();
@@ -456,7 +494,8 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         internalOperationTypeCode,
         agent,
         requestChannelType,
-        requestToolName);
+        requestToolName,
+        traceContext);
   }
 
   @Override
@@ -480,6 +519,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         && Objects.equals(agent, that.agent)
         && requestChannelType == that.requestChannelType
         && requestToolName.equals(that.requestToolName)
+        && traceContext.equals(that.traceContext)
         && brokerVersion.equals(that.brokerVersion)
         && recordVersion == that.recordVersion
         && operationReference == that.operationReference
@@ -531,6 +571,9 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     }
     if (requestToolName.capacity() > 0) {
       builder.append(", requestToolName=").append(BufferUtil.bufferAsString(requestToolName));
+    }
+    if (traceContext.capacity() > 0) {
+      builder.append(", traceContext=").append(BufferUtil.bufferAsString(traceContext));
     }
 
     builder.append('}');

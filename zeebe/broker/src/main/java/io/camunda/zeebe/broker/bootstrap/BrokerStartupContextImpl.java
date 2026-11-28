@@ -39,6 +39,7 @@ import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.opentelemetry.api.OpenTelemetry;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -68,6 +69,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private final List<PartitionRaftListener> partitionRaftListeners = new ArrayList<>();
   private final Duration shutdownTimeout;
   private final MeterRegistry meterRegistry;
+  private final OpenTelemetry openTelemetry;
   private final Map<String, PhysicalTenantContext> physicalTenantContexts;
   private final Function<String, UserServices> userServicesForTenant;
   private final PasswordEncoder passwordEncoder;
@@ -103,6 +105,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
       final List<PartitionListener> additionalPartitionListeners,
       final Duration shutdownTimeout,
       final MeterRegistry meterRegistry,
+      final OpenTelemetry openTelemetry,
       final Map<String, PhysicalTenantContext> physicalTenantContexts,
       final Function<String, UserServices> userServicesForTenant,
       final PasswordEncoder passwordEncoder,
@@ -123,6 +126,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
     this.brokerClient = brokerClient;
     this.shutdownTimeout = shutdownTimeout;
     this.meterRegistry = requireNonNull(meterRegistry);
+    this.openTelemetry = requireNonNull(openTelemetry);
     this.physicalTenantContexts = Map.copyOf(physicalTenantContexts);
     this.userServicesForTenant = userServicesForTenant;
     this.passwordEncoder = passwordEncoder;
@@ -355,6 +359,11 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   @Override
   public MeterRegistry getMeterRegistry() {
     return meterRegistry;
+  }
+
+  @Override
+  public OpenTelemetry getOpenTelemetry() {
+    return openTelemetry;
   }
 
   @Override

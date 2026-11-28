@@ -26,6 +26,7 @@ public class CommandApiRequestReader implements RequestReader {
   private UnifiedRecordValue value;
   private final RecordMetadata metadata = new RecordMetadata();
   private final DirectBuffer toolName = new UnsafeBuffer(0, 0);
+  private final DirectBuffer traceContext = new UnsafeBuffer(0, 0);
   private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
   private final ExecuteCommandRequestDecoder commandRequestDecoder =
       new ExecuteCommandRequestDecoder();
@@ -36,6 +37,7 @@ public class CommandApiRequestReader implements RequestReader {
       value.reset();
     }
     metadata.reset();
+    traceContext.wrap(0, 0);
   }
 
   @Override
@@ -84,6 +86,12 @@ public class CommandApiRequestReader implements RequestReader {
     if (commandRequestDecoder.limit() < buffer.capacity()) {
       commandRequestDecoder.wrapToolName(toolName);
       metadata.requestToolName(toolName);
+    }
+
+    traceContext.wrap(0, 0);
+    if (commandRequestDecoder.limit() < offset + length) {
+      commandRequestDecoder.wrapTraceContext(traceContext);
+      metadata.traceContext(traceContext);
     }
   }
 

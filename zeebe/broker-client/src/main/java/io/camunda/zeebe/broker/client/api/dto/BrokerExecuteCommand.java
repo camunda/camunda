@@ -21,6 +21,7 @@ import io.camunda.zeebe.transport.RequestType;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.jspecify.annotations.Nullable;
 
 public abstract class BrokerExecuteCommand<T> extends BrokerRequest<T> {
 
@@ -69,6 +70,11 @@ public abstract class BrokerExecuteCommand<T> extends BrokerRequest<T> {
   @Override
   public void setAuthorization(final Map<String, Object> claims) {
     request.setClaims(claims);
+  }
+
+  @Override
+  public void setTraceContext(final @Nullable String traceparent) {
+    request.setTraceContext(traceparent);
   }
 
   @Override

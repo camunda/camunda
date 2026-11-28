@@ -189,6 +189,11 @@ public final class RecordToWrite implements LogAppendEntry {
     return this;
   }
 
+  public RecordToWrite traceContext(final String traceparent) {
+    recordMetadata.traceContext(traceparent);
+    return this;
+  }
+
   @Override
   public long key() {
     return key;
