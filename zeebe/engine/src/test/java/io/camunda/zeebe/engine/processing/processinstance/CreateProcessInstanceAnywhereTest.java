@@ -1110,6 +1110,68 @@ public class CreateProcessInstanceAnywhereTest {
   }
 
   @Test
+  public void shouldInitializeOutputCollectionOfJobBasedAdHocSubProcess() {
+    // given
+    final String jobType = "task";
+    final String subProcessTaskId = "subprocessTask";
+    final String adhocProcessId = "adhoc";
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .adHocSubProcess(
+                adhocProcessId,
+                adHocSubProcess -> {
+                  adHocSubProcess.task(subProcessTaskId);
+                  adHocSubProcess.zeebeOutputCollection("results");
+                  adHocSubProcess.zeebeOutputElementExpression("=1");
+                })
+            .zeebeJobType(jobType)
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withStartInstruction(subProcessTaskId)
+            .create();
+
+    completeJob(jobType, true, false);
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted()
+                .onlyEvents())
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .describedAs("Expected the process to complete instead of failing on the output collection")
+        .contains(
+            tuple(adhocProcessId, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
+
+    Assertions.assertThat(
+            RecordingExporter.variableRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withName("results")
+                .withValue("[]")
+                .exists())
+        .describedAs("Expected the output collection to be initialized when activating")
+        .isTrue();
+    Assertions.assertThat(
+            RecordingExporter.variableRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withName("results")
+                .withValue("[1]")
+                .exists())
+        .describedAs("Expected the output element to be appended to the output collection")
+        .isTrue();
+  }
+
+  @Test
   public void shouldActivateMulitpleElementsWithinJobBasedAdHocSubProcess() {
     // given
     final String jobType = "task";

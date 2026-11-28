@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.common;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -17,6 +18,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWr
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -389,11 +391,37 @@ public final class ElementActivationBehavior {
 
     stateWriter.appendFollowUpEvent(
         elementInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATING, elementRecord);
+    if (element instanceof final ExecutableAdHocSubProcess adHocSubProcess) {
+      initializeOutputCollection(adHocSubProcess, elementRecord, elementInstanceKey);
+    }
     createVariablesCallback.accept(element.getId(), elementInstanceKey);
     stateWriter.appendFollowUpEvent(
         elementInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATED, elementRecord);
 
     createEventSubscriptions(element, elementRecord, elementInstanceKey);
+  }
+
+  /**
+   * Initializes the output collection of an ad-hoc sub-process that is activated by events. The
+   * regular activation initializes it in the ad-hoc sub-process processor, which is bypassed here.
+   * Without it, completing an inner element fails because the collection to append to is missing.
+   */
+  private void initializeOutputCollection(
+      final ExecutableAdHocSubProcess adHocSubProcess,
+      final ProcessInstanceRecord elementRecord,
+      final long elementInstanceKey) {
+    adHocSubProcess
+        .getOutputCollection()
+        .ifPresent(
+            outputCollectionVariableName -> {
+              final var context = new BpmnElementContextImpl();
+              context.init(
+                  elementInstanceKey, elementRecord, ProcessInstanceIntent.ELEMENT_ACTIVATING);
+              stateBehavior.setLocalVariable(
+                  context,
+                  outputCollectionVariableName,
+                  BufferUtil.wrapArray(MsgPackHelper.EMPTY_ARRAY));
+            });
   }
 
   private long activateElementByCommand(
