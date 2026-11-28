@@ -34,77 +34,10 @@ public class CamundaRdbmsInvocationContextProviderExtension
   private static final Map<String, CamundaRdbmsTestApplication> SUPPORTED_TEST_APPLICATIONS;
 
   static {
-    final Map<String, CamundaRdbmsTestApplication> applications = new java.util.HashMap<>();
-    applications.put("camundaWithH2", createCamundaRdbmsTestApplication().withH2());
-    applications.put(
-        "camundaWithPostgresSQL",
-        createCamundaRdbmsTestApplication()
-            .withDatabaseContainer(createDefaultPostgresContainer()));
-    applications.put(
-        "camundaWithPostgresReplicationCluster",
-        createCamundaRdbmsTestApplication()
-            .withUnifiedConfig(
-                c -> {
-                  final var rdbms = c.getData().getSecondaryStorage().getRdbms();
-                  rdbms.getAsyncReplication().setEnabled(true);
-                  rdbms.getAsyncReplication().setMinSyncReplicas(1);
-                })
-            .withDatabaseContainer(new PostgresReplicationClusterContainer()));
-    applications.put(
-        "camundaWithManualPostgresSQL",
-        createCamundaRdbmsTestApplication()
-            .withUnifiedConfig(c -> c.getData().getSecondaryStorage().getRdbms().setAutoDdl(false))
-            .withDatabaseContainer(createManualPostgresContainer()));
-    applications.put(
-        "camundaWithMariaDB",
-        createCamundaRdbmsTestApplication().withDatabaseContainer(createDefaultMariaDBContainer()));
-    applications.put(
-        "camundaWithManualMariaDB",
-        createCamundaRdbmsTestApplication()
-            .withUnifiedConfig(c -> c.getData().getSecondaryStorage().getRdbms().setAutoDdl(false))
-            .withDatabaseContainer(createManualMariaDBContainer()));
-    applications.put(
-        "camundaWithMySQL",
-        createCamundaRdbmsTestApplication().withDatabaseContainer(createDefaultMySQLContainer()));
-    applications.put(
-        "camundaWithManualMySQL",
-        createCamundaRdbmsTestApplication()
-            .withUnifiedConfig(c -> c.getData().getSecondaryStorage().getRdbms().setAutoDdl(false))
-            .withDatabaseContainer(createManualMySQLContainer()));
-    applications.put(
-        "camundaWithOracleDB",
-        createCamundaRdbmsTestApplication().withDatabaseContainer(createDefaultOracleContainer()));
-    applications.put(
-        "camundaWithManualOracleDB",
-        createCamundaRdbmsTestApplication()
-            .withUnifiedConfig(c -> c.getData().getSecondaryStorage().getRdbms().setAutoDdl(false))
-            .withDatabaseContainer(createManualOracleContainer()));
-    applications.put(
-        "camundaWithMssqlDB",
-        createCamundaRdbmsTestApplication()
-            .withUnifiedConfig(
-                c -> {
-                  c.getData().getSecondaryStorage().getRdbms().setUsername("sa");
-                })
-            .withDatabaseContainer(createDefaultMSSQLServerContainer()));
-    applications.put(
-        "camundaWithMssqlReplicationCluster",
-        new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class)
-            .withRdbms()
-            .withUnifiedConfig(
-                c -> {
-                  c.getData().getSecondaryStorage().getRdbms().setUsername("sa");
-                  final var rdbms = c.getData().getSecondaryStorage().getRdbms();
-                  rdbms.getAsyncReplication().setEnabled(true);
-                  rdbms.getAsyncReplication().setMinSyncReplicas(1);
-                })
-            .withDatabaseContainer(new MSSQLReplicationClusterContainer()));
-    applications.put(
-        "camundaWithManualMssqlDB",
-        createCamundaRdbmsTestApplication()
-            .withUnifiedConfig(c -> c.getData().getSecondaryStorage().getRdbms().setAutoDdl(false))
-            .withDatabaseContainer(createManualMSSQLServerContainer()));
-    SUPPORTED_TEST_APPLICATIONS = Map.copyOf(applications);
+    SUPPORTED_TEST_APPLICATIONS =
+        allTestApplications().stream()
+            .collect(
+                Collectors.toUnmodifiableMap(key -> key, key -> createTestApplication(key, false)));
   }
 
   private final Set<String> useTestApplications;
@@ -153,9 +86,7 @@ public class CamundaRdbmsInvocationContextProviderExtension
         keys,
         keys.stream()
             .collect(
-                Collectors.toUnmodifiableMap(
-                    key -> key,
-                    CamundaRdbmsInvocationContextProviderExtension::createTestApplication)),
+                Collectors.toUnmodifiableMap(key -> key, key -> createTestApplication(key, true))),
         false);
   }
 
@@ -241,25 +172,89 @@ public class CamundaRdbmsInvocationContextProviderExtension
         "camundaWithMssqlDB");
   }
 
-  private static CamundaRdbmsTestApplication createTestApplication(final String key) {
+  private static Set<String> allTestApplications() {
+    return Set.of(
+        "camundaWithH2",
+        "camundaWithPostgresSQL",
+        "camundaWithPostgresReplicationCluster",
+        "camundaWithManualPostgresSQL",
+        "camundaWithMariaDB",
+        "camundaWithManualMariaDB",
+        "camundaWithMySQL",
+        "camundaWithManualMySQL",
+        "camundaWithOracleDB",
+        "camundaWithManualOracleDB",
+        "camundaWithMssqlDB",
+        "camundaWithMssqlReplicationCluster",
+        "camundaWithManualMssqlDB");
+  }
+
+  private static CamundaRdbmsTestApplication createTestApplication(
+      final String key, final boolean isolated) {
     return switch (key) {
       case "camundaWithH2" ->
-          createCamundaRdbmsTestApplication().withH2("isolated-" + UUID.randomUUID());
+          isolated
+              ? createCamundaRdbmsTestApplication().withIsolatedH2("isolated-" + UUID.randomUUID())
+              : createCamundaRdbmsTestApplication().withH2();
       case "camundaWithPostgresSQL" ->
           createCamundaRdbmsTestApplication()
               .withDatabaseContainer(createDefaultPostgresContainer());
+      case "camundaWithPostgresReplicationCluster" ->
+          createCamundaRdbmsTestApplication()
+              .withUnifiedConfig(
+                  c -> {
+                    final var rdbms = c.getData().getSecondaryStorage().getRdbms();
+                    rdbms.getAsyncReplication().setEnabled(true);
+                    rdbms.getAsyncReplication().setMinSyncReplicas(1);
+                  })
+              .withDatabaseContainer(new PostgresReplicationClusterContainer());
+      case "camundaWithManualPostgresSQL" ->
+          createCamundaRdbmsTestApplication()
+              .withUnifiedConfig(
+                  c -> c.getData().getSecondaryStorage().getRdbms().setAutoDdl(false))
+              .withDatabaseContainer(createManualPostgresContainer());
       case "camundaWithMariaDB" ->
           createCamundaRdbmsTestApplication()
               .withDatabaseContainer(createDefaultMariaDBContainer());
+      case "camundaWithManualMariaDB" ->
+          createCamundaRdbmsTestApplication()
+              .withUnifiedConfig(
+                  c -> c.getData().getSecondaryStorage().getRdbms().setAutoDdl(false))
+              .withDatabaseContainer(createManualMariaDBContainer());
       case "camundaWithMySQL" ->
           createCamundaRdbmsTestApplication().withDatabaseContainer(createDefaultMySQLContainer());
+      case "camundaWithManualMySQL" ->
+          createCamundaRdbmsTestApplication()
+              .withUnifiedConfig(
+                  c -> c.getData().getSecondaryStorage().getRdbms().setAutoDdl(false))
+              .withDatabaseContainer(createManualMySQLContainer());
       case "camundaWithOracleDB" ->
           createCamundaRdbmsTestApplication().withDatabaseContainer(createDefaultOracleContainer());
+      case "camundaWithManualOracleDB" ->
+          createCamundaRdbmsTestApplication()
+              .withUnifiedConfig(
+                  c -> c.getData().getSecondaryStorage().getRdbms().setAutoDdl(false))
+              .withDatabaseContainer(createManualOracleContainer());
       case "camundaWithMssqlDB" ->
           createCamundaRdbmsTestApplication()
               .withUnifiedConfig(
                   c -> c.getData().getSecondaryStorage().getRdbms().setUsername("sa"))
               .withDatabaseContainer(createDefaultMSSQLServerContainer());
+      case "camundaWithMssqlReplicationCluster" ->
+          createCamundaRdbmsTestApplication()
+              .withUnifiedConfig(
+                  c -> {
+                    final var rdbms = c.getData().getSecondaryStorage().getRdbms();
+                    rdbms.setUsername("sa");
+                    rdbms.getAsyncReplication().setEnabled(true);
+                    rdbms.getAsyncReplication().setMinSyncReplicas(1);
+                  })
+              .withDatabaseContainer(new MSSQLReplicationClusterContainer());
+      case "camundaWithManualMssqlDB" ->
+          createCamundaRdbmsTestApplication()
+              .withUnifiedConfig(
+                  c -> c.getData().getSecondaryStorage().getRdbms().setAutoDdl(false))
+              .withDatabaseContainer(createManualMSSQLServerContainer());
       default -> throw new IllegalArgumentException("Unknown RDBMS test application: " + key);
     };
   }
