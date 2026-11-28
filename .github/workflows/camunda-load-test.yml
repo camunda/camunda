@@ -292,6 +292,10 @@ jobs:
     runs-on: ubuntu-latest
     permissions: {}
     steps:
+      # Workflow expressions cannot lowercase, so match the normalization in load-tests/setup/utils.sh here
+      - name: Normalize namespace
+        run: echo "NAMESPACE=$(printf '%s' "${NAMESPACE}" | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_ENV"
+
       - name: Show summary
         run: |-
           cat >> "$GITHUB_STEP_SUMMARY" <<EOF
@@ -584,6 +588,9 @@ jobs:
         with:
           ref: ${{ inputs.ref }}
           persist-credentials: false
+
+      - name: Normalize namespace
+        run: echo "NAMESPACE=$(printf '%s' "${NAMESPACE}" | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_ENV"
 
       - name: Set up Helm
         uses: jdx/mise-action@924e7c586e33d7d4bae9c14e26c5d22e2beb6e78 # v5.3.0
