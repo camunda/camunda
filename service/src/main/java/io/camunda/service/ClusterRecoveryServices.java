@@ -7,6 +7,7 @@
  */
 package io.camunda.service;
 
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterRestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
@@ -50,8 +51,9 @@ public final class ClusterRecoveryServices {
    */
   public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>> changeMode(
       final @Nullable String physicalTenantId, final Mode mode, final boolean dryRun) {
-    return clusterConfigurationRequestSender.modeChange(
-        new ModeChangeRequest(Optional.ofNullable(physicalTenantId), mode, dryRun));
+    return ErrorMapper.mapCoordinatorUnavailable(
+        clusterConfigurationRequestSender.modeChange(
+            new ModeChangeRequest(Optional.ofNullable(physicalTenantId), mode, dryRun)));
   }
 
   /**
@@ -80,7 +82,8 @@ public final class ClusterRecoveryServices {
       return CompletableFuture.completedFuture(
           Either.left(new ErrorResponse(ErrorCode.NOT_FOUND, e.getMessage())));
     }
-    return clusterConfigurationRequestSender.clusterRestore(restoreRequest);
+    return ErrorMapper.mapCoordinatorUnavailable(
+        clusterConfigurationRequestSender.clusterRestore(restoreRequest));
   }
 
   private ClusterRestoreRequest tenantRestoreRequest(
