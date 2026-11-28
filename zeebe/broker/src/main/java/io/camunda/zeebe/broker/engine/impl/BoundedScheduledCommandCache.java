@@ -21,7 +21,7 @@ import org.agrona.collections.LongHashSet;
  * A thread safe bounded command cache. It will only cache intent and key pairs for the intents it
  * was originally built with. The underlying cache map is pre-populated with a {@link
  * BoundedCommandCache} per intent. Thus, the bound of the complete cache is sum of the bounds of
- * the mapped caches, i.e. the number of intents times the cache capacity (fixed at 100,000).
+ * the mapped caches, i.e. the number of intents times the cache capacity.
  *
  * <p>NOTE: the staged cache return via {@link #stage()} is not thread-safe!
  */
@@ -40,19 +40,37 @@ public final class BoundedScheduledCommandCache implements StageableScheduledCom
   }
 
   /**
-   * Returns a bounded cache which will only cache commands for the given intents.
+   * Returns a bounded cache which will only cache commands for the given intents, using the default
+   * capacity.
    *
+   * @param metrics the metrics to report cache size changes
    * @param intents the intents to cache
    * @return a thread-safe command cache
    */
   public static BoundedScheduledCommandCache ofIntent(
       final ScheduledCommandCacheMetrics metrics, final Intent... intents) {
+    return ofIntent(metrics, BoundedCommandCache.defaultCapacity(), intents);
+  }
+
+  /**
+   * Returns a bounded cache which will only cache commands for the given intents, with a custom
+   * capacity per intent cache.
+   *
+   * @param metrics the metrics to report cache size changes
+   * @param capacity the capacity per intent cache
+   * @param intents the intents to cache
+   * @return a thread-safe command cache
+   */
+  public static BoundedScheduledCommandCache ofIntent(
+      final ScheduledCommandCacheMetrics metrics,
+      final int capacity,
+      final Intent... intents) {
     final Map<Intent, BoundedCommandCache> caches =
         Arrays.stream(intents)
             .collect(
                 Collectors.toMap(
                     Function.identity(),
-                    intent -> new BoundedCommandCache(metrics.forIntent(intent))));
+                    intent -> new BoundedCommandCache(capacity, metrics.forIntent(intent))));
     return new BoundedScheduledCommandCache(caches);
   }
 
