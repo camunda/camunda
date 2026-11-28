@@ -93,7 +93,8 @@ public class MultiCamundaClientBeanDefinitionRegistryPostProcessor
 
     final String primaryClientName = properties.getPrimaryClientName().orElse(null);
     // the sole (default) client reuses the shared context executor bean (so a VirtualThreads
-    // override applies); with several clients each gets its own owned executor (see the factory)
+    // override applies); with several clients each gets its own owned executor that preserves the
+    // shared bean's execution mode (see the factory)
     final boolean singleClient = properties.getClients().size() == 1;
 
     properties
