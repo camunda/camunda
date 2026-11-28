@@ -23,6 +23,91 @@ Standard `OTEL_*` variables supported by Spring Boot (such as `OTEL_SDK_DISABLED
 `OTEL_PROPAGATORS`, `OTEL_TRACES_SAMPLER`, and `OTEL_TRACES_SAMPLER_ARG`) map onto `management.*`
 properties. OTLP log export is disabled by default (`management.logging.export.otlp.enabled=false`).
 
+## Collecting traces without an OTel collector
+
+When no external OpenTelemetry collector is available, any broker or gateway can coordinate an
+on-demand, time-boxed trace capture across the entire cluster via the `traces` management endpoint
+on the internal management port (`9600`, reachable in Kubernetes via `kubectl port-forward
+pod/<pod> 9600:9600`). When idle, the capture processor performs a single volatile read and
+allocates nothing.
+
+Defaults: `duration="60s"` (allowed `1s..15m`), `samplingProbability=0.0` (allowed `0.0..1.0`),
+`maxTracesPerSecond=20` **per node** (allowed `1..500`), and `maxSpansPerNode=10000` (allowed
+`100..50000`). Capture stops automatically when `duration` elapses, and buffered spans remain
+downloadable for **15 minutes** after expiry before being freed automatically from heap.
+
+1. Start a capture window across all cluster members (brokers and gateways). Pass
+   `-H 'Content-Type: application/json'` on every `POST`; starting while another capture is active
+   returns `409 Conflict`:
+   - **Header-only mode** (default `samplingProbability=0.0` — captures only requests sent with a
+     sampled W3C `traceparent` header; use a longer duration such as `5m` when manually reproducing
+     a slow or timing-out request so in-flight spans finish inside the window):
+
+     ```bash
+     curl -X POST http://localhost:9600/actuator/traces \
+       -H 'Content-Type: application/json' \
+       -d '{"duration":"5m"}'
+
+     # Send a sampled request (the trailing -01 flag marks the trace as sampled):
+     TRACE_ID=$(openssl rand -hex 16)
+     curl -X POST http://localhost:8080/v2/process-instances \
+       -H 'Content-Type: application/json' \
+       -H "traceparent: 00-${TRACE_ID}-0000000000000001-01" \
+       -d '{"processDefinitionId":"my-process"}'
+     ```
+   - **Active sampling mode** (samples untraced requests at each gateway without client changes; if
+     an external OTLP exporter is also configured, it receives these sampled spans as well):
+
+     ```bash
+     curl -X POST http://localhost:9600/actuator/traces \
+       -H 'Content-Type: application/json' \
+       -d '{"duration":"60s","samplingProbability":0.1,"maxTracesPerSecond":20,"maxSpansPerNode":10000}'
+     ```
+2. Inspect capture progress across all members (wait for `active: false` or `totalCapturedSpans > 0`
+   and empty `errors` before downloading so in-flight traces are complete):
+
+   ```bash
+   curl http://localhost:9600/actuator/traces
+   ```
+3. Download the cluster-wide support ZIP from any node (`traces.otlp.json` + `metadata.json` with
+   Camunda version, capture settings, per-node counts, truncation flags, and any unreachable-node
+   errors):
+
+   ```bash
+   curl -fSL -o camunda-traces.zip http://localhost:9600/actuator/traces/export
+   # Optionally filter to one trace across the entire cluster:
+   curl -fSL -o camunda-traces.zip "http://localhost:9600/actuator/traces/export?traceId=${TRACE_ID}"
+   ```
+4. Stop capture and free buffers immediately across all nodes:
+
+   ```bash
+   curl -X DELETE http://localhost:9600/actuator/traces
+   ```
+
+### Viewing a support ZIP locally
+
+Extract the archive and POST `traces.otlp.json` to a local OTLP/HTTP receiver such as Jaeger v2
+(do **not** use Jaeger UI's "Upload JSON" tab, which expects Jaeger JSON rather than OTLP/JSON):
+
+```bash
+unzip camunda-traces.zip
+docker run --rm -p 16686:16686 -p 4318:4318 jaegertracing/jaeger:2
+curl -X POST http://localhost:4318/v1/traces \
+  -H 'Content-Type: application/json' \
+  --data-binary @traces.otlp.json
+```
+
+Open `http://localhost:16686` and select service `camunda`; individual brokers and gateways are
+distinguished by the `service.instance.id` resource attribute (set to the node's Atomix member ID
+when not configured).
+
+Exported spans omit free-form `status.message` strings and strip sensitive attributes
+case-insensitively (`url.query`, `url.full`, `url.path`, `url.fragment`, `http.url`, `http.target`,
+`http.request.header.*`, `http.response.header.*`, `rpc.grpc.request.metadata.*`,
+`rpc.grpc.response.metadata.*`, `db.statement`, `db.query.text`, `db.query.parameter.*`,
+`exception.message`, `exception.stacktrace`, `user.*`, `enduser.id`, `enduser.role`,
+`enduser.scope`).
+
 ## Spans
 
 |                         Span                         |   Kind   |                                                                                                                                 Created by                                                                                                                                  |
