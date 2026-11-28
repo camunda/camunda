@@ -32,7 +32,11 @@ import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
 import io.camunda.process.test.impl.extension.ConditionalBehaviorEngine;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
 import io.camunda.process.test.utils.DevAwaitBehavior;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -171,6 +175,36 @@ public class MockDmnDecisionTest {
   }
 
   @Test
+  void shouldDeployNonAsciiDecisionOutputAsUtf8() throws Exception {
+    // given
+    final String decisionId = "mock-dmn-decision-non-ascii";
+    when(camundaClient.getConfiguration().getJsonMapper().toJson("Müller"))
+        .thenReturn("\"Müller\"");
+
+    // when
+    processTestContext.mockDmnDecision(decisionId, "Müller");
+
+    // then
+    verify(camundaClient.newDeployResourceCommand())
+        .addResourceStream(dmnStreamCaptor.capture(), eq(decisionId + ".dmn"));
+
+    // the XML declares UTF-8, so the bytes must be UTF-8 whatever the JVM's default charset is
+    final byte[] deployed = readAll(dmnStreamCaptor.getValue());
+    assertThat(new String(deployed, StandardCharsets.UTF_8))
+        .contains("encoding=\"UTF-8\"")
+        .contains("\"Müller\"");
+
+    final DmnModelInstance deployedModel =
+        Dmn.readModelFromStream(new ByteArrayInputStream(deployed));
+    assertThat(deployedModel.getModelElementsByType(LiteralExpression.class))
+        .hasSize(1)
+        .first()
+        .satisfies(
+            expression ->
+                assertThat(expression.getText().getTextContent()).isEqualTo("\"Müller\""));
+  }
+
+  @Test
   void shouldRejectMockDmnDecisionWithoutDecisionId() {
     // when/then
     assertThatThrownBy(() -> processTestContext.mockDmnDecision().thenReturn("approved"))
@@ -185,6 +219,16 @@ public class MockDmnDecisionTest {
             () -> processTestContext.mockDmnDecision().withDecisionId("  ").thenReturn("approved"))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("withDecisionId");
+  }
+
+  private static byte[] readAll(final InputStream stream) throws IOException {
+    final ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+    final byte[] buffer = new byte[4096];
+    int read;
+    while ((read = stream.read(buffer)) != -1) {
+      bytes.write(buffer, 0, read);
+    }
+    return bytes.toByteArray();
   }
 
   private static Optional<String> zeebeVersionTag(final Decision decision) {
