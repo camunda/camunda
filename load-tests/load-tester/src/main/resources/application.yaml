@@ -80,6 +80,10 @@ camunda:
 load-tester:
   monitor-data-availability: ${LOAD_TESTER_MONITOR_DATA_AVAILABILITY:true}
   monitor-data-availability-interval: 250ms
+  # Share (0 to 100) of the started instances whose availability is tracked, derived from the
+  # starter rate as every n-th instance of each partition. At the configured rate at least one
+  # instance per second is tracked, so a low load stays fully covered.
+  monitor-data-availability-sampling-percentage: 10
   perform-read-benchmarks: ${LOAD_TESTER_PERFORM_READ_BENCHMARKS:false}
   disabled-queries: ${ZEEBE_DISABLED_QUERIES:}
   starter:

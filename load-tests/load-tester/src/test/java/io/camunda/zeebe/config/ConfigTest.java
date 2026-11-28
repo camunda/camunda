@@ -30,6 +30,7 @@ class ConfigTest {
     // then
     assertThat(properties.isMonitorDataAvailability()).isTrue();
     assertThat(properties.getMonitorDataAvailabilityInterval()).hasMillis(250);
+    assertThat(properties.getMonitorDataAvailabilitySamplingPercentage()).isEqualTo(10);
     assertThat(properties.isPerformReadBenchmarks()).isFalse();
     assertThat(properties.getDisabledQueries()).isEmpty();
     assertThat(properties.getDisabledQueriesList()).isEmpty();

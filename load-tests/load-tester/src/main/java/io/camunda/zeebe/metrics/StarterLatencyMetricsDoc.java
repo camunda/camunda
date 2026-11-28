@@ -201,12 +201,30 @@ public enum StarterLatencyMetricsDoc implements ExtendedMeterDocumentation {
 
     @Override
     public String getDescription() {
-      return "The number of process instances that have been started by the starter, but are not yet available for querying.";
+      return "The number of tracked process instances that have been started by the starter, but are not yet available for querying. Only a sample of the started instances is tracked, see starter.data.availability.sampling.percentage.";
     }
 
     @Override
     public String getName() {
       return "starter.data.availability.pending.process.instances";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.GAUGE;
+    }
+  },
+
+  SAMPLING_PERCENTAGE {
+
+    @Override
+    public String getDescription() {
+      return "The percentage of started process instances whose data availability is tracked: every n-th instance of each partition, derived from the starter rate and the configured sampling percentage, so at least one instance per second at the configured rate.";
+    }
+
+    @Override
+    public String getName() {
+      return "starter.data.availability.sampling.percentage";
     }
 
     @Override
