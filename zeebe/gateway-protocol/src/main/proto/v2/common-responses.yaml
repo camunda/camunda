@@ -1,9 +1,26 @@
 # Common HTTP response definitions
 components:
+  headers:
+    CamundaVersion:
+      description: >
+        The product version of the Orchestration Cluster this gateway belongs
+        to (the same string as `gatewayVersion` on `GET /v2/topology`, e.g.
+        `8.9.3`). Present on every Orchestration Cluster REST (`/v2/**`)
+        response, including errors and unauthenticated responses. Clients that
+        ship this specification use it with `x-added-in-version` to decide
+        which operations the cluster supports. A missing header means the
+        cluster predates this header.
+      schema:
+        type: string
+        example: 8.9.3
+      x-added-in-version: "8.8"
+
   responses:
     Unauthorized:
       description: The request lacks valid authentication credentials.
       headers:
+        Camunda-Version:
+          $ref: '#/components/headers/CamundaVersion'
         WWW-Authenticate:
           schema:
             type: string
@@ -14,6 +31,9 @@ components:
 
     Forbidden:
       description: Forbidden. The request is not allowed.
+      headers:
+        Camunda-Version:
+          $ref: '#/components/headers/CamundaVersion'
       content:
         application/problem+json:
           schema:
@@ -21,6 +41,9 @@ components:
 
     InvalidData:
       description: The provided data is not valid.
+      headers:
+        Camunda-Version:
+          $ref: '#/components/headers/CamundaVersion'
       content:
         application/problem+json:
           schema:
@@ -28,6 +51,9 @@ components:
 
     InternalServerError:
       description: An internal error occurred while processing the request.
+      headers:
+        Camunda-Version:
+          $ref: '#/components/headers/CamundaVersion'
       content:
         application/problem+json:
           schema:
@@ -40,6 +66,9 @@ components:
         In this case, the title of the error object contains `RESOURCE_EXHAUSTED`.
         Clients are recommended to eventually retry those requests after a backoff period.
         You can learn more about the backpressure mechanism here: https://docs.camunda.io/docs/components/zeebe/technical-concepts/internal-processing/#handling-backpressure .
+      headers:
+        Camunda-Version:
+          $ref: '#/components/headers/CamundaVersion'
       content:
         application/problem+json:
           schema:
@@ -60,6 +89,9 @@ components:
         - check network connectivity between workers, gateway, and broker
         - retry with backoff after transient failures
         - fail without retries if a problem persists
+      headers:
+        Camunda-Version:
+          $ref: '#/components/headers/CamundaVersion'
       content:
         application/problem+json:
           schema:
@@ -77,6 +109,9 @@ components:
       description: |
         The server cannot process the request because the media type (Content-Type) of the request payload is not supported
         by the server for the requested resource and method.
+      headers:
+        Camunda-Version:
+          $ref: '#/components/headers/CamundaVersion'
       content:
         application/problem+json:
           schema:
