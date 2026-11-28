@@ -23,6 +23,8 @@ import {
 	mockQueryVariablesEndpoint,
 	mockGetVariableEndpoint,
 	mockGetElementInstanceEndpoint,
+	mockQueryAgentInstancesEndpoint,
+	mockQueryAgentInstanceHistoryEndpoint,
 	mockQueryUserTasksEndpoint,
 	mockSystemConfigurationEndpoint,
 } from '#/shared-test-modules/mock-handlers';
@@ -41,6 +43,13 @@ import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
 import {createQueryUserTasksResponse, createUserTask} from '#/shared-test-modules/api-mocks/user-tasks';
 import {createQueryVariablesByUserTaskResponse, createVariable} from '#/shared-test-modules/api-mocks/variables';
 import {createCallHierarchy} from '#/shared-test-modules/api-mocks/call-hierarchy';
+import {
+	createAgentInstance,
+	createAgentInstanceHistoryItem,
+	createQueryAgentInstanceHistoryResponse,
+	createQueryAgentInstancesResponse,
+} from '#/shared-test-modules/api-mocks/agent-instances';
+import {createDocumentReference} from '#/shared-test-modules/api-mocks/documents';
 import {processInstanceHeaderHandlers} from '#/shared-test-modules/process-instance-header-handlers';
 import {processInstanceDiagramHandlers} from '#/shared-test-modules/process-instance-diagram-handlers';
 
@@ -290,6 +299,66 @@ test.describe('Details tab', () => {
 		await expect(operatePreviewProcessInstancePage.elementInstanceDetailsList).toBeVisible();
 		await expect(operatePreviewProcessInstancePage.elementInstanceDetailsList).toContainText('email-worker');
 		await expect(page.getByRole('link', {name: 'Open Tasklist'})).toBeVisible();
+
+		const results = await makeAxeBuilder().analyze();
+		expect(results.violations).toEqual([]);
+	});
+
+	test('should have no accessibility violations with AI agent details', async ({
+		network,
+		page,
+		operatePreviewProcessInstancePage,
+		makeAxeBuilder,
+	}) => {
+		const elementInstanceKey = '2251799813685281';
+		network.use(
+			...processInstanceDiagramHandlers(),
+			...processInstanceHeaderHandlers(createProcessInstance({processInstanceKey: PROCESS_INSTANCE_ID})),
+		);
+		network.use(
+			mockGetElementInstanceEndpoint({
+				successResponse: HttpResponse.json(
+					createElementInstance({elementInstanceKey, elementId: 'task-1', type: 'USER_TASK'}),
+				),
+			}),
+			mockQueryAgentInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryAgentInstancesResponse([
+						createAgentInstance({
+							elementId: 'task-1',
+							processInstanceKey: PROCESS_INSTANCE_ID,
+							elementInstanceKeys: [elementInstanceKey],
+						}),
+					]),
+				),
+			}),
+			mockQueryAgentInstanceHistoryEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryAgentInstanceHistoryResponse([
+						createAgentInstanceHistoryItem({
+							role: 'ASSISTANT',
+							content: [
+								{contentType: 'TEXT', text: 'Latest AI assistant update'},
+								{
+									contentType: 'DOCUMENT',
+									documentReference: createDocumentReference({metadata: {fileName: 'invoice.pdf'}}),
+								},
+							],
+							toolCalls: [{toolCallId: 'call-1', toolName: 'searchFlights', elementId: null, arguments: {}}],
+						}),
+					]),
+				),
+			}),
+		);
+
+		await page.goto(
+			`/operate-preview/processes/${PROCESS_INSTANCE_ID}/details?elementId=task-1&elementInstanceKey=${elementInstanceKey}`,
+		);
+		await expect(operatePreviewProcessInstancePage.tabPanel).toBeVisible();
+		await expect(page.getByRole('heading', {name: 'Agent Instance'})).toBeVisible();
+		await expect(page.getByText('Latest AI assistant update')).toBeVisible();
+		await expect(page.getByRole('heading', {name: 'Documents'})).toBeVisible();
+		await expect(page.getByRole('heading', {name: 'Tool calls'})).toBeVisible();
 
 		const results = await makeAxeBuilder().analyze();
 		expect(results.violations).toEqual([]);

@@ -29,8 +29,10 @@ import {
 	calledDecisionInstanceQuery,
 	calledProcessInstancesQuery,
 	elementJobQuery,
+	elementAgentInstancesQuery,
 	elementMessageSubscriptionQuery,
 	elementUserTaskQuery,
+	POLLING_INTERVAL_MS,
 	waitStatesQuery,
 } from '../details.queries';
 import {getExecutionDuration} from '../getExecutionDuration';
@@ -38,6 +40,7 @@ import {useProcessInstanceElementSelection} from '../useProcessInstanceElementSe
 import {useProcessInstancePage} from '../useProcessInstancePage';
 import {DataLoadErrorAlert} from '#/operate/shared/DataLoadErrorAlert/shadcn.components/DataLoadErrorAlert';
 import {ProcessInstanceWaitingStatus} from './ProcessInstanceWaitingStatus';
+import {AgentDetails} from '../AgentDetails/shadcn.components/AgentDetails';
 
 type Row = {key: string; label: string; value: React.ReactNode};
 
@@ -137,7 +140,9 @@ const ProcessInstanceDetails: React.FC = () => {
 		hasSelection,
 		resolvedElementInstance,
 		selectedElementId,
+		selectedElementInstanceKey,
 		selectedElementInstanceCount,
+		isSelectedInstanceMultiInstanceBody,
 		anchorElementId,
 		isFetchingElement,
 		isFetchingElementError,
@@ -172,6 +177,7 @@ const ProcessInstanceDetails: React.FC = () => {
 	const isMultiTenancyEnabled = deployment.isMultiTenancyEnabled;
 	const isMessageElement = isMessageEventElement(businessObject);
 	const key = elementInstanceKey ?? '';
+	const agentElementId = effectiveElementId ?? resolvedElementInstance?.elementId;
 
 	const {data: calledProcessInstances} = useQuery({
 		...calledProcessInstancesQuery(key),
@@ -187,6 +193,26 @@ const ProcessInstanceDetails: React.FC = () => {
 		...elementMessageSubscriptionQuery(key),
 		enabled: key !== '' && isMessageElement,
 	});
+	const agentElementInstanceKey =
+		isSelectedInstanceMultiInstanceBody || resolvedElementType === 'MULTI_INSTANCE_BODY'
+			? null
+			: selectedElementInstanceKey;
+	const {
+		data: agentInstances,
+		isLoading: isAgentInstancesLoading,
+		isError: isAgentInstancesError,
+	} = useQuery({
+		...elementAgentInstancesQuery({
+			processInstanceKey: processInstance.processInstanceKey,
+			elementId: agentElementId ?? '',
+			elementInstanceKey: agentElementInstanceKey,
+		}),
+		enabled: Boolean(agentElementId),
+		refetchInterval: isRunning ? POLLING_INTERVAL_MS : false,
+	});
+	const showAgentError = isAgentInstancesError && agentInstances === undefined;
+	const showAgentInstance = (agentInstances !== undefined && agentInstances.items.length > 0) || showAgentError;
+	const showWaitingStatus = !showAgentInstance || showAgentError;
 
 	if (isProcessScope) {
 		return (
@@ -210,7 +236,7 @@ const ProcessInstanceDetails: React.FC = () => {
 		);
 	}
 
-	if (resolvedElementInstance === null && !isFetchingElement) {
+	if (resolvedElementInstance === null && !isFetchingElement && !isAgentInstancesLoading && !showAgentInstance) {
 		return (
 			<div role="region" aria-label={t('operate.processInstance.details.title')} className="flex h-full min-h-0">
 				<CenteredContent className="flex-1">
@@ -275,7 +301,7 @@ const ProcessInstanceDetails: React.FC = () => {
 							{
 								key: 'retries-left',
 								label: t('operate.processInstance.details.retriesLeft'),
-								value: <span data-testid="retries-left-count">{job.retries}</span>,
+								value: job.retries,
 							},
 						]),
 				...(job?.priority === undefined
@@ -284,7 +310,7 @@ const ProcessInstanceDetails: React.FC = () => {
 							{
 								key: 'job-priority',
 								label: t('operate.processInstance.details.jobPriority'),
-								value: <span data-testid="job-priority">{job.priority}</span>,
+								value: job.priority,
 							},
 						]),
 				...(job?.type === undefined
@@ -366,9 +392,33 @@ const ProcessInstanceDetails: React.FC = () => {
 			]
 		: [];
 
+	const noElementHeading = t(
+		hasMultipleInstances
+			? 'operate.processInstance.ds.operationsLog.multiInstanceHeading'
+			: 'operate.processInstance.ds.details.noElementHeading',
+	);
+	const noElementDescription = t(
+		hasMultipleInstances
+			? 'operate.processInstance.ds.details.multiInstanceDescription'
+			: 'operate.processInstance.ds.details.noElementDescription',
+	);
+
 	const renderElementInstance = () => {
 		if (isFetchingElement) {
 			return <ElementInstanceSkeleton />;
+		}
+		if (resolvedElementInstance === null) {
+			return (
+				<CenteredContent className="min-h-40 flex-1">
+					<EmptyState
+						size="sm"
+						headingLevel={3}
+						icon={<MousePointerClick aria-hidden />}
+						heading={noElementHeading}
+						description={noElementDescription}
+					/>
+				</CenteredContent>
+			);
 		}
 		return (
 			<StructuredList
@@ -396,7 +446,16 @@ const ProcessInstanceDetails: React.FC = () => {
 					description={t('operate.processInstance.details.deprecatedUserTaskHint')}
 				/>
 			)}
-			<ProcessInstanceWaitingStatus waitStates={waitStates} />
+			{showAgentInstance && (
+				<AgentDetails
+					selectedElementInstanceKey={agentElementInstanceKey}
+					agentInstances={agentInstances?.items ?? []}
+					totalAgentsCount={agentInstances?.page.totalItems ?? 0}
+					hasMoreTotalItems={agentInstances?.page.hasMoreTotalItems ?? false}
+					isError={showAgentError}
+				/>
+			)}
+			{showWaitingStatus && <ProcessInstanceWaitingStatus waitStates={waitStates} />}
 			<section className="flex flex-col gap-2" aria-busy={isFetchingElement}>
 				<Heading as="h2" variant="heading-sm" className="m-0">
 					{t('operate.processInstance.details.elementInstance')}

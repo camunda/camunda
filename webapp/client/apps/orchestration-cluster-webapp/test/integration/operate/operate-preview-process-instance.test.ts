@@ -22,6 +22,8 @@ import {
 	mockQueryElementInstanceIncidentsEndpoint,
 	mockQueryElementInstanceInspectionEndpoint,
 	mockQueryVariablesEndpoint,
+	mockQueryAgentInstancesEndpoint,
+	mockQueryAgentInstanceHistoryEndpoint,
 	mockSystemConfigurationEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
@@ -39,6 +41,12 @@ import {
 	createQueryElementInstanceInspectionResponse,
 } from '#/shared-test-modules/api-mocks/element-instance-inspection';
 import {createPaginatedResponse, createProblemDetails} from '#/shared-test-modules/api-mocks/shared';
+import {
+	createAgentInstance,
+	createAgentInstanceHistoryItem,
+	createQueryAgentInstanceHistoryResponse,
+	createQueryAgentInstancesResponse,
+} from '#/shared-test-modules/api-mocks/agent-instances';
 import {createQueryVariablesByUserTaskResponse, createVariable} from '#/shared-test-modules/api-mocks/variables';
 import {processInstanceHeaderHandlers} from '#/shared-test-modules/process-instance-header-handlers';
 import {processInstanceDiagramHandlers} from '#/shared-test-modules/process-instance-diagram-handlers';
@@ -341,6 +349,62 @@ test.describe('Operate Process Instance DS preview (/operate-preview/processes/:
 		).toBeVisible();
 	});
 
+	test('should render AI agent details on the details tab for an element instance', async ({network, page}) => {
+		const elementInstanceKey = '2251799813685290';
+		network.use(
+			mockGetElementInstanceEndpoint({
+				successResponse: HttpResponse.json(
+					createElementInstance({
+						elementId: 'task-1',
+						elementInstanceKey,
+						type: 'USER_TASK',
+						state: 'ACTIVE',
+					}),
+				),
+			}),
+			mockQueryAgentInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryAgentInstancesResponse([
+						createAgentInstance({
+							elementId: 'task-1',
+							processInstanceKey: PROCESS_INSTANCE_ID,
+							elementInstanceKeys: [elementInstanceKey],
+							metrics: {
+								inputTokens: 100,
+								outputTokens: 50,
+								reasoningTokenCount: 0,
+								cacheCreationTokenCount: 0,
+								cacheReadTokenCount: 0,
+								modelCalls: 2,
+								toolCalls: 1,
+							},
+							limits: {maxModelCalls: 4, maxToolCalls: 2, maxTokens: 400},
+						}),
+					]),
+				),
+			}),
+			mockQueryAgentInstanceHistoryEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryAgentInstanceHistoryResponse([
+						createAgentInstanceHistoryItem({
+							role: 'ASSISTANT',
+							content: [{contentType: 'TEXT', text: 'Checking available options'}],
+						}),
+					]),
+				),
+			}),
+		);
+
+		await page.goto(
+			`/operate-preview/processes/${PROCESS_INSTANCE_ID}/details?elementId=task-1&elementInstanceKey=${elementInstanceKey}`,
+		);
+
+		await expect(page.getByRole('heading', {name: 'Agent Instance'})).toBeVisible();
+		await expect(page.getByRole('button', {name: 'Status: Thinking'})).toBeVisible();
+		await expect(page.getByText('Checking available options')).toBeVisible();
+		await expect(page.getByRole('button', {name: 'Usage'})).toContainText('2 model calls');
+	});
+
 	test('should not request wait states and should redirect to variables when the flag is off', async ({
 		network,
 		operatePreviewProcessInstancePage,
@@ -363,9 +427,7 @@ test.describe('Operate Process Instance DS preview (/operate-preview/processes/:
 		);
 		const statisticsRequests: string[] = [];
 		page.on('request', (request) => {
-			if (request.url().endsWith('/statistics/wait-states')) {
-				statisticsRequests.push(request.url());
-			}
+			statisticsRequests.push(request.url());
 		});
 		network.use(
 			mockGetProcessInstanceWaitStateStatisticsEndpoint({
@@ -378,7 +440,7 @@ test.describe('Operate Process Instance DS preview (/operate-preview/processes/:
 		await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
 
 		await expect(page).toHaveURL(`/operate-preview/processes/${PROCESS_INSTANCE_ID}/variables`);
-		expect(statisticsRequests).toHaveLength(0);
+		expect(statisticsRequests.filter((url) => url.endsWith('/statistics/wait-states'))).toHaveLength(0);
 	});
 
 	test('should leave the mapping tab when the selection is cleared and the flag is off', async ({

@@ -8,10 +8,16 @@
 
 import {afterEach, describe, expect} from 'vitest';
 import {cleanup} from 'vitest-browser-react';
-import {HttpResponse} from 'msw';
+import {http, HttpResponse} from 'msw';
+import {z} from 'zod';
 import {useRouterState} from '@tanstack/react-router';
-import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.11';
+import {endpoints, type ElementInstance} from '@camunda/camunda-api-zod-schemas/8.11';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
+import {
+	createAgentInstance,
+	createQueryAgentInstanceHistoryResponse,
+	createQueryAgentInstancesResponse,
+} from '#/shared-test-modules/api-mocks/agent-instances';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {
@@ -20,6 +26,8 @@ import {
 	mockQueryElementInstanceInspectionEndpoint,
 	mockQueryElementInstancesEndpoint,
 	mockQueryDecisionInstancesEndpoint,
+	mockQueryAgentInstancesEndpoint,
+	mockQueryAgentInstanceHistoryEndpoint,
 	mockQueryJobsEndpoint,
 	mockQueryMessageSubscriptionsEndpoint,
 	mockQueryProcessInstancesEndpoint,
@@ -41,7 +49,7 @@ import {
 	createDecisionInstance,
 	createQueryDecisionInstancesResponse,
 } from '#/shared-test-modules/api-mocks/decision-instances';
-import {createProblemDetails} from '#/shared-test-modules/api-mocks/shared';
+import {createPaginatedResponse, createProblemDetails} from '#/shared-test-modules/api-mocks/shared';
 import {createJob, createQueryJobsResponse} from '#/shared-test-modules/api-mocks/jobs';
 import {createQueryUserTasksResponse, createUserTask} from '#/shared-test-modules/api-mocks/user-tasks';
 import {
@@ -107,6 +115,9 @@ function handlers(elementInstance: ElementInstance = instanceOf('service-task', 
 		mockQueryElementInstanceInspectionEndpoint({
 			successResponse: HttpResponse.json(createQueryElementInstanceInspectionResponse()),
 		}),
+		mockQueryAgentInstancesEndpoint({
+			successResponse: HttpResponse.json(createPaginatedResponse()),
+		}),
 	];
 }
 
@@ -115,6 +126,21 @@ function instanceOf(elementId: string, type: ElementInstance['type']) {
 }
 
 const selected = (elementId: string) => `?elementId=${elementId}&elementInstanceKey=${ELEMENT_INSTANCE_KEY}`;
+const emptyAgentResponse = () => HttpResponse.json(createQueryAgentInstancesResponse());
+const agentsResponse = () =>
+	HttpResponse.json(createQueryAgentInstancesResponse([createAgentInstance({status: 'TOOL_CALLING'})]));
+const agentRequestSchema = (elementInstanceKeyFilter: z.ZodRawShape = {}) =>
+	z.object({
+		sort: z.tuple([z.object({field: z.literal('creationDate'), order: z.literal('ASC')})]),
+		page: z.object({limit: z.literal(50)}).strict(),
+		filter: z
+			.object({
+				processInstanceKey: z.literal(PROCESS_INSTANCE_ID),
+				elementId: z.literal('service-task'),
+				...elementInstanceKeyFilter,
+			})
+			.strict(),
+	});
 
 describe('<ProcessInstanceDetails /> (design system)', () => {
 	it('should show the wait state of the process instance', async ({worker}) => {
@@ -222,6 +248,122 @@ describe('<ProcessInstanceDetails /> (design system)', () => {
 
 		await expect.element(screen.getByText("Couldn't fetch data")).toBeVisible();
 		await expect.element(screen.getByText('No element selected')).not.toBeInTheDocument();
+	});
+
+	it('should render the agent error state when loading agent instances fails', async ({worker}) => {
+		worker.use(
+			mockQueryElementInstanceInspectionEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryElementInstanceInspectionResponse([
+						createElementInstanceInspection({elementInstanceKey: ELEMENT_INSTANCE_KEY}),
+					]),
+				),
+			}),
+			mockQueryAgentInstancesEndpoint({
+				successResponse: HttpResponse.json(createProblemDetails({status: 500}), {status: 500}),
+			}),
+			...handlers(),
+		);
+		const screen = await renderDetails(selected('service-task'));
+
+		await expect.element(screen.getByRole('heading', {name: 'Status'})).toBeVisible();
+		await expect.element(screen.getByText('Waiting for message: payment-received')).toBeVisible();
+		await expect.element(screen.getByRole('heading', {name: 'Agent Instance'})).toBeVisible();
+		await expect.element(screen.getByText('Unable to load agent information.')).toBeVisible();
+		await expect.element(screen.getByText('No element selected')).not.toBeInTheDocument();
+	});
+
+	it('should keep waiting status visible when agent polling fails after an empty result', async ({worker}) => {
+		let failedAgentRequests = 0;
+		worker.use(
+			mockQueryElementInstanceInspectionEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryElementInstanceInspectionResponse([
+						createElementInstanceInspection({elementInstanceKey: ELEMENT_INSTANCE_KEY}),
+					]),
+				),
+			}),
+			mockQueryAgentInstancesEndpoint({
+				successResponse: emptyAgentResponse(),
+				once: true,
+			}),
+			http.post(endpoints.queryAgentInstances.getUrl(), () => {
+				failedAgentRequests += 1;
+				return HttpResponse.json(createProblemDetails({status: 500}), {status: 500});
+			}),
+			...handlers(),
+		);
+		const screen = await renderDetails(selected('service-task'));
+
+		await expect.element(screen.getByRole('heading', {name: 'Status'})).toBeVisible();
+		await expect.element(screen.getByText('Waiting for message: payment-received')).toBeVisible();
+		await expect.element(screen.getByText('Unable to load agent information.')).not.toBeInTheDocument();
+		await expect.poll(() => failedAgentRequests, {timeout: 7000}).toBeGreaterThan(0);
+		await expect.element(screen.getByRole('heading', {name: 'Status'})).toBeVisible();
+		await expect.element(screen.getByText('Waiting for message: payment-received')).toBeVisible();
+		await expect.element(screen.getByText('Unable to load agent information.')).not.toBeInTheDocument();
+	});
+
+	it('should filter on the element id only for a multi-instance body', async ({worker}) => {
+		worker.use(
+			mockQueryAgentInstancesEndpoint({
+				schema: agentRequestSchema(),
+				successResponse: agentsResponse(),
+				failureResponse: HttpResponse.json(createProblemDetails({status: 500}), {status: 500}),
+				once: true,
+			}),
+			mockGetElementInstanceEndpoint({
+				successResponse: HttpResponse.json(instanceOf('service-task', 'MULTI_INSTANCE_BODY')),
+				delay: 250,
+			}),
+			mockQueryAgentInstanceHistoryEndpoint({
+				successResponse: HttpResponse.json(createQueryAgentInstanceHistoryResponse()),
+			}),
+			...handlers(),
+		);
+		const screen = await renderDetails(`${selected('service-task')}&isMultiInstanceBody=true`);
+
+		await expect.element(screen.getByRole('heading', {name: 'Agent Instance'})).toBeVisible();
+		await expect.element(screen.getByText('Status: Calling tools')).toBeVisible();
+	});
+
+	it('should filter on the element id only for a multi-instance body selected by its key', async ({worker}) => {
+		worker.use(
+			mockQueryAgentInstancesEndpoint({
+				schema: agentRequestSchema(),
+				successResponse: agentsResponse(),
+				failureResponse: emptyAgentResponse(),
+			}),
+			mockQueryAgentInstanceHistoryEndpoint({
+				successResponse: HttpResponse.json(createQueryAgentInstanceHistoryResponse()),
+			}),
+			...handlers(instanceOf('service-task', 'MULTI_INSTANCE_BODY')),
+		);
+		const screen = await renderDetails(`?elementInstanceKey=${ELEMENT_INSTANCE_KEY}`);
+
+		await expect.element(screen.getByRole('heading', {name: 'Agent Instance'})).toBeVisible();
+		await expect.element(screen.getByText('Status: Calling tools')).toBeVisible();
+	});
+
+	it('should show the single-instance selection hint with agent details for multiple element matches', async ({
+		worker,
+	}) => {
+		worker.use(
+			mockQueryElementInstancesEndpoint({
+				successResponse: HttpResponse.json(createQueryElementInstancesResponse([], 3)),
+			}),
+			mockQueryAgentInstancesEndpoint({
+				successResponse: agentsResponse(),
+			}),
+			mockQueryAgentInstanceHistoryEndpoint({
+				successResponse: HttpResponse.json(createQueryAgentInstanceHistoryResponse()),
+			}),
+			...handlers(),
+		);
+		const screen = await renderDetails('?elementId=service-task');
+
+		await expect.element(screen.getByRole('heading', {name: 'Agent Instance'})).toBeVisible();
+		await expect.element(screen.getByText('Select a single element instance')).toBeVisible();
 	});
 
 	it('should show the user task properties and a Tasklist link for a Camunda user task', async ({worker}) => {
