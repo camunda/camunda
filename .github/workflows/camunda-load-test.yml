@@ -226,6 +226,11 @@ on:
         type: string
         default: "main"
         required: false
+      deploy-versioned:
+        description: 'Deploy the platform images (Camunda, Optimize, Identity, Connectors) committed in load-tests/setup/<target-version>/versions.yaml. Only the load test client is built. Cannot be used together with orchestration-tag, reuse-tag, optimize-tag, identity-tag or connectors-tag.'
+        type: boolean
+        default: false
+        required: false
       orchestration-tag:
         description: 'Orchestration Tag: Docker image tag for official Camunda images from Docker Hub (docker.io/camunda/camunda). When set, official Docker Hub images are used instead of building from source. Cannot be used together with reuse-tag.'
         type: string
@@ -337,6 +342,11 @@ jobs:
         run: |
           echo "::error::Invalid input combination: 'orchestration-tag' and 'reuse-tag' cannot both be provided. Use 'orchestration-tag' for official Docker Hub images or 'reuse-tag' for reusing pre-built images from the internal registry."
           exit 1
+      - name: Validate deploy-versioned
+        if: ${{ inputs.deploy-versioned && (inputs.orchestration-tag != '' || inputs.reuse-tag != '' || inputs.optimize-tag != '' || inputs.identity-tag != '' || inputs.connectors-tag != '') }}
+        run: |
+          echo "::error::Invalid input combination: 'deploy-versioned' cannot be used with 'orchestration-tag', 'reuse-tag', 'optimize-tag', 'identity-tag' or 'connectors-tag'. The platform images come from the versions.yaml of the setup folder."
+          exit 1
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.ref }}
@@ -365,7 +375,7 @@ jobs:
   build-camunda-image:
     name: Build Camunda
     needs: calculate-image-tag
-    if: ${{ inputs.reuse-tag == '' && inputs.orchestration-tag == '' }}
+    if: ${{ inputs.reuse-tag == '' && inputs.orchestration-tag == '' && !inputs.deploy-versioned }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -518,7 +528,7 @@ jobs:
 
   build-metrics-exporter-image:
     name: Build Metrics Exporter
-    if: ${{ inputs.reuse-tag == '' || inputs.orchestration-tag != '' }}
+    if: ${{ (inputs.reuse-tag == '' || inputs.orchestration-tag != '') && !inputs.deploy-versioned }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: calculate-image-tag
@@ -582,7 +592,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ inputs.ref }}
+          ref: ${{ inputs.deploy-versioned && github.sha || inputs.ref }}
           persist-credentials: false
 
       - name: Set up Helm
@@ -624,13 +634,15 @@ jobs:
         env:
           INSTALL_TARGET: ${{ inputs.stable-vms && 'install-stable' || 'install' }}
           CALCULATED_IMAGE_TAG: ${{ needs.calculate-image-tag.outputs.image-tag }}
-          ORCHESTRATION_REGISTRY: ${{ inputs.orchestration-tag != '' && 'docker.io' || 'registry.camunda.cloud' }}
-          ORCHESTRATION_REPOSITORY: ${{ inputs.orchestration-tag != '' && 'camunda/camunda' || 'team-zeebe/camunda' }}
+          # The platform image values are empty with deploy-versioned, so the values of the setup folder apply.
+          ORCHESTRATION_REGISTRY: ${{ !inputs.deploy-versioned && (inputs.orchestration-tag != '' && 'docker.io' || 'registry.camunda.cloud') || '' }}
+          ORCHESTRATION_REPOSITORY: ${{ !inputs.deploy-versioned && (inputs.orchestration-tag != '' && 'camunda/camunda' || 'team-zeebe/camunda') || '' }}
+          ORCHESTRATION_IMAGE_TAG: ${{ !inputs.deploy-versioned && needs.calculate-image-tag.outputs.image-tag || '' }}
           # An explicit Optimize tag is used alone. Without it, Optimize is built from source
           # unless the orchestration image comes from Docker Hub.
-          OPTIMIZE_REGISTRY: ${{ inputs.optimize-tag == '' && inputs.orchestration-tag == '' && 'registry.camunda.cloud' || '' }}
-          OPTIMIZE_REPOSITORY: ${{ inputs.optimize-tag == '' && inputs.orchestration-tag == '' && 'team-zeebe/optimize' || '' }}
-          OPTIMIZE_IMAGE_TAG: ${{ inputs.optimize-tag != '' && inputs.optimize-tag || (inputs.orchestration-tag == '' && needs.calculate-image-tag.outputs.image-tag || '') }}
+          OPTIMIZE_REGISTRY: ${{ !inputs.deploy-versioned && inputs.optimize-tag == '' && inputs.orchestration-tag == '' && 'registry.camunda.cloud' || '' }}
+          OPTIMIZE_REPOSITORY: ${{ !inputs.deploy-versioned && inputs.optimize-tag == '' && inputs.orchestration-tag == '' && 'team-zeebe/optimize' || '' }}
+          OPTIMIZE_IMAGE_TAG: ${{ inputs.optimize-tag != '' && inputs.optimize-tag || (!inputs.deploy-versioned && inputs.orchestration-tag == '' && needs.calculate-image-tag.outputs.image-tag || '') }}
           METRICS_EXPORTER_BUILT: ${{ needs.build-metrics-exporter-image.result == 'success' }}
         run: |-
           .github/scripts/load-test-install-camunda-platform.sh \
@@ -646,7 +658,7 @@ jobs:
             "${PHYSICAL_TENANT_COUNT}" \
             --orchestration-registry "${ORCHESTRATION_REGISTRY}" \
             --orchestration-repository "${ORCHESTRATION_REPOSITORY}" \
-            --orchestration-tag "${CALCULATED_IMAGE_TAG}" \
+            --orchestration-tag "${ORCHESTRATION_IMAGE_TAG}" \
             --optimize-registry "${OPTIMIZE_REGISTRY}" \
             --optimize-repository "${OPTIMIZE_REPOSITORY}" \
             --optimize-tag "${OPTIMIZE_IMAGE_TAG}" \
