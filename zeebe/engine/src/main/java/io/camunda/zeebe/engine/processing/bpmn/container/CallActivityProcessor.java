@@ -99,7 +99,7 @@ public final class CallActivityProcessor
             processId ->
                 getCalledProcess(
                     processId, element.getBindingType(), element.getVersionTag(), context))
-        .flatMap(this::rejectIfDraining)
+        .flatMap(this::rejectIfCannotCreateNewInstances)
         .flatMap(this::checkProcessHasNoneStartEvent)
         .flatMap(p -> eventSubscriptionBehavior.subscribeToEvents(element, context).map(ok -> p))
         .flatMap(
@@ -476,18 +476,29 @@ public final class CallActivityProcessor
                         ErrorType.CALLED_ELEMENT_ERROR)));
   }
 
-  private Either<Failure, DeployedProcess> rejectIfDraining(final DeployedProcess process) {
+  /**
+   * Draining and suspended versions keep running their instances but take no new ones. Resolving
+   * the incident retries this check, so the call goes through once the version is resumed.
+   */
+  private Either<Failure, DeployedProcess> rejectIfCannotCreateNewInstances(
+      final DeployedProcess process) {
+    final String reason;
     if (process.isDraining()) {
-      return Either.left(
-          new Failure(
-              String.format(
-                  "Expected to call process with BPMN process id '%s' and version %d (key %d), but it is being deleted.",
-                  BufferUtil.bufferAsString(process.getBpmnProcessId()),
-                  process.getVersion(),
-                  process.getKey()),
-              ErrorType.CALLED_ELEMENT_ERROR));
+      reason = "it is being deleted";
+    } else if (stateBehavior.isSuspended(process.getKey())) {
+      reason = "it is suspended";
+    } else {
+      return Either.right(process);
     }
-    return Either.right(process);
+    return Either.left(
+        new Failure(
+            String.format(
+                "Expected to call process with BPMN process id '%s' and version %d (key %d), but %s.",
+                BufferUtil.bufferAsString(process.getBpmnProcessId()),
+                process.getVersion(),
+                process.getKey(),
+                reason),
+            ErrorType.CALLED_ELEMENT_ERROR));
   }
 
   private Either<Failure, DeployedProcess> checkProcessHasNoneStartEvent(
