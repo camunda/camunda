@@ -54,6 +54,24 @@ public interface ProcessingResultBuilder extends ProcessingSession {
       final long key, final RecordValue value, final RecordMetadata metadata);
 
   /**
+   * Appends a command as if it came from outside the current processing batch: unlike other
+   * follow-up records, it inherits no metadata from the batch's initial command (e.g. operation or
+   * batch operation reference, authorization), and it is written to the log unprocessed, so it is
+   * processed later in a batch of its own. Records it produces in turn inherit only its metadata.
+   *
+   * <p>Use it to write back a command that was produced earlier and kept aside, so that it is
+   * processed exactly as it would have been without the detour.
+   *
+   * @return returns itself for method chaining
+   * @throws ExceededBatchRecordSizeException if the appended record doesn't fit into the
+   *     RecordBatch
+   */
+  default ProcessingResultBuilder appendIsolatedCommand(
+      final long key, final RecordValue value, final RecordMetadata metadata) {
+    return appendRecord(key, value, metadata);
+  }
+
+  /**
    * Sets the response for the result; will be overwritten if called more than once
    *
    * @return returns itself for method chaining

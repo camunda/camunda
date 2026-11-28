@@ -70,4 +70,14 @@ public interface ProcessingResult {
   default boolean shouldProcessInASeparateBatch() {
     return false;
   }
+
+  /**
+   * @param entryIndex the index of the entry in {@link #getRecordBatch()}
+   * @return true if the entry was appended via {@link
+   *     ProcessingResultBuilder#appendIsolatedCommand}, so it must not be processed within the
+   *     current batch
+   */
+  default boolean isIsolatedCommand(final int entryIndex) {
+    return false;
+  }
 }

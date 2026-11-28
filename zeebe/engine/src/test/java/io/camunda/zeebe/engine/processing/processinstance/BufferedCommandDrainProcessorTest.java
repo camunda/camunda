@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.mock;
@@ -36,6 +37,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BufferedCommandIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.stream.api.FollowUpCommandMetadata;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -85,6 +87,7 @@ public final class BufferedCommandDrainProcessorTest {
     assertThat(result).isEqualTo(ProcessingError.UNEXPECTED_ERROR);
     verify(stateWriter, never()).appendFollowUpEvent(anyLong(), any(), any());
     verify(commandWriter, never()).appendFollowUpCommand(anyLong(), any(), any());
+    verify(commandWriter, never()).appendFollowUpCommand(anyLong(), any(), any(), any());
   }
 
   @Test
@@ -142,20 +145,25 @@ public final class BufferedCommandDrainProcessorTest {
     // when
     processor.processRecord(drainCommand());
 
-    // then - the buffered command is replayed and marked drained, and another DRAIN is scheduled
+    // then - the buffered command is written back isolated and marked drained, and another DRAIN is
+    // scheduled
     // unconditionally rather than checking whether the buffer is now empty
     verify(commandWriter)
         .appendFollowUpCommand(
             eq(BUFFERED_COMMAND_KEY),
             eq(ProcessInstanceIntent.COMPLETE_ELEMENT),
-            any(ProcessInstanceRecord.class));
+            any(ProcessInstanceRecord.class),
+            argThat(FollowUpCommandMetadata::isolated));
     verify(stateWriter)
         .appendFollowUpEvent(eq(BUFFERED_COMMAND_KEY), eq(BufferedCommandIntent.DRAINED), any());
 
     final var nextDrainValue = ArgumentCaptor.forClass(BufferedCommandRecord.class);
     verify(commandWriter)
         .appendFollowUpCommand(
-            eq(PROCESS_INSTANCE_KEY), eq(BufferedCommandIntent.DRAIN), nextDrainValue.capture());
+            eq(PROCESS_INSTANCE_KEY),
+            eq(BufferedCommandIntent.DRAIN),
+            nextDrainValue.capture(),
+            argThat(FollowUpCommandMetadata::isolated));
     assertThat(nextDrainValue.getValue().getCommandKey()).isEqualTo(BUFFERED_COMMAND_KEY);
 
     verify(commandWriter, never())
@@ -188,7 +196,10 @@ public final class BufferedCommandDrainProcessorTest {
     final var nextDrainValue = ArgumentCaptor.forClass(BufferedCommandRecord.class);
     verify(commandWriter)
         .appendFollowUpCommand(
-            eq(PROCESS_INSTANCE_KEY), eq(BufferedCommandIntent.DRAIN), nextDrainValue.capture());
+            eq(PROCESS_INSTANCE_KEY),
+            eq(BufferedCommandIntent.DRAIN),
+            nextDrainValue.capture(),
+            argThat(FollowUpCommandMetadata::isolated));
     assertThat(nextDrainValue.getValue().getStorageOrdinal()).isEqualTo(STORAGE_ORDINAL);
   }
 

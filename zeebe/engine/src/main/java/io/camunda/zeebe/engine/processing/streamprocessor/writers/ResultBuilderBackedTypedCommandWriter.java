@@ -68,6 +68,10 @@ final class ResultBuilderBackedTypedCommandWriter extends AbstractResultBuilderB
             .authorization(commandMetadata.authInfo())
             .internalOperation(commandMetadata.internalOperationReference());
 
-    resultBuilder().appendRecord(key, value, metadata);
+    if (commandMetadata.isolated()) {
+      resultBuilder().appendIsolatedCommand(key, value, metadata);
+    } else {
+      resultBuilder().appendRecord(key, value, metadata);
+    }
   }
 }

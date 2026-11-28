@@ -15,6 +15,7 @@ import io.camunda.zeebe.protocol.impl.encoding.InternalOperationReference;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.record.InternalOperationType;
+import io.camunda.zeebe.protocol.record.RecordMetadataEncoder;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -53,6 +54,38 @@ class BufferedProcessingResultBuilderTest {
     assertThat(entries).hasSize(1);
     final var entry = (RecordBatchEntry) entries.get(0);
     assertThat(entry.recordMetadata().getBatchOperationReference()).isEqualTo(12345L);
+  }
+
+  @Test
+  void shouldNotEnhanceMetadataOfIsolatedCommand() {
+    // given
+    final var builder =
+        new BufferedProcessingResultBuilder(
+            LARGE_BATCH_PREDICATE, metadata -> metadata.batchOperationReference(12345L));
+
+    // when
+    builder.appendRecordReturnEither(
+        1L,
+        new ProcessInstanceCreationRecord(),
+        new RecordMetadata()
+            .recordType(RecordType.COMMAND)
+            .intent(ProcessInstanceCreationIntent.CREATE));
+    builder.appendIsolatedCommand(
+        2L,
+        new ProcessInstanceCreationRecord(),
+        new RecordMetadata()
+            .recordType(RecordType.COMMAND)
+            .intent(ProcessInstanceCreationIntent.CREATE));
+
+    // then
+    final var result = builder.build();
+    final var entries = result.getRecordBatch().entries();
+    assertThat(entries)
+        .extracting(
+            entry -> ((RecordBatchEntry) entry).recordMetadata().getBatchOperationReference())
+        .containsExactly(12345L, RecordMetadataEncoder.batchOperationReferenceNullValue());
+    assertThat(result.isIsolatedCommand(0)).isFalse();
+    assertThat(result.isIsolatedCommand(1)).isTrue();
   }
 
   @Test

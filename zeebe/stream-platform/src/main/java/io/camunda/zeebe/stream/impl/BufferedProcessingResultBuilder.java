@@ -27,6 +27,7 @@ import io.camunda.zeebe.stream.impl.records.RecordBatchEntry;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.StringUtil;
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.List;
 import java.util.function.Consumer;
 import org.jspecify.annotations.Nullable;
@@ -43,6 +44,7 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
   private final RecordBatch mutableRecordBatch;
   private @Nullable ProcessingResponseImpl processingResponse;
   private boolean processInASeparateBatch = false;
+  private final BitSet isolatedCommands = new BitSet();
 
   private final List<Consumer<RecordMetadata>> metadataDecorators = new ArrayList<>();
 
@@ -55,9 +57,23 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
   @Override
   public Either<RuntimeException, ProcessingResultBuilder> appendRecordReturnEither(
       final long key, final RecordValue value, final RecordMetadata metadata) {
-
     metadataDecorators.forEach(m -> m.accept(metadata));
+    return append(key, value, metadata);
+  }
 
+  @Override
+  public ProcessingResultBuilder appendIsolatedCommand(
+      final long key, final RecordValue value, final RecordMetadata metadata) {
+    final var either = append(key, value, metadata);
+    if (either.isLeft()) {
+      throw either.getLeft();
+    }
+    isolatedCommands.set(mutableRecordBatch.entries().size() - 1);
+    return this;
+  }
+
+  private Either<RuntimeException, ProcessingResultBuilder> append(
+      final long key, final RecordValue value, final RecordMetadata metadata) {
     if (value instanceof final UnifiedRecordValue unifiedRecordValue) {
       final var valueType = unifiedRecordValue.valueType();
       if (valueType == null) {
@@ -132,7 +148,11 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
   @Override
   public ProcessingResult build() {
     return new BufferedResult(
-        mutableRecordBatch, processingResponse, postCommitTasks, processInASeparateBatch);
+        mutableRecordBatch,
+        processingResponse,
+        postCommitTasks,
+        processInASeparateBatch,
+        isolatedCommands);
   }
 
   @Override

@@ -37,6 +37,7 @@ import io.camunda.zeebe.logstreams.util.ListLogStorage;
 import io.camunda.zeebe.protocol.impl.encoding.InternalOperationReference;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.InternalOperationType;
+import io.camunda.zeebe.protocol.record.RecordMetadataEncoder;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -73,6 +74,7 @@ import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -688,6 +690,51 @@ public final class StreamProcessorTest {
           .isEqualTo(InternalOperationType.POLICY_UPDATE);
       assertThat(followupMetadata.getInternalOperationReference()).isEqualTo(123L);
     }
+  }
+
+  @Test
+  public void shouldProcessIsolatedCommandInItsOwnBatchWithoutInheritedMetadata() {
+    // given - the initial command appends an isolated follow-up command
+    final var defaultRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
+    final var resultBuilderCaptor = ArgumentCaptor.forClass(ProcessingResultBuilder.class);
+    final var processedBatchOperationReferences = new CopyOnWriteArrayList<Long>();
+    when(defaultRecordProcessor.process(any(), resultBuilderCaptor.capture()))
+        .thenAnswer(
+            invocation -> {
+              final var resultBuilder = resultBuilderCaptor.getValue();
+              resultBuilder.appendIsolatedCommand(
+                  2,
+                  Records.processInstance(1),
+                  new RecordMetadata()
+                      .recordType(RecordType.COMMAND)
+                      .intent(COMPLETE_ELEMENT)
+                      .rejectionType(RejectionType.NULL_VAL)
+                      .rejectionReason(""));
+              return resultBuilder.build();
+            })
+        .thenAnswer(
+            invocation -> {
+              final TypedRecord<?> command = invocation.getArgument(0);
+              processedBatchOperationReferences.add(command.getBatchOperationReference());
+              return resultBuilderCaptor.getValue().build();
+            });
+    streamPlatform.startStreamProcessor();
+
+    // when
+    streamPlatform.writeBatch(
+        RecordToWrite.command(1234L, 5678L)
+            .processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
+
+    // then - processed from the log, so it is the last processed position, not the initial command
+    verify(defaultRecordProcessor, TIMEOUT.times(2)).process(any(), any());
+    await("isolated command should be processed in its own batch")
+        .untilAsserted(
+            () ->
+                assertThat(
+                        streamPlatform.getStreamProcessor().getLastProcessedPositionAsync().join())
+                    .isEqualTo(2));
+    Assertions.assertThat(processedBatchOperationReferences)
+        .containsExactly(RecordMetadataEncoder.batchOperationReferenceNullValue());
   }
 
   @Test

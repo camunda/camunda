@@ -28,6 +28,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.BufferedCommandIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.stream.api.FollowUpCommandMetadata;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.ArrayDeque;
 import java.util.function.Consumer;
@@ -193,10 +194,19 @@ public final class BufferedCommandDrainProcessor
     return NOT_RESUMING_MESSAGE.formatted(processInstanceKey);
   }
 
+  /**
+   * Writes the buffered command back isolated, so it is processed as if the instance had never been
+   * suspended: within the resume's batch it would inherit the resume's metadata, and with a batch
+   * operation reference it would no longer count as internal and be rejected while {@code
+   * RESUMING}.
+   */
   private void appendBufferedCommand(final BufferedCommand buffered) {
     final var value = buffered.command();
     commandWriter.appendFollowUpCommand(
-        value.getCommandKey(), value.getIntent(), value.getCommandValue());
+        value.getCommandKey(),
+        value.getIntent(),
+        value.getCommandValue(),
+        FollowUpCommandMetadata.of(FollowUpCommandMetadata.Builder::isolated));
   }
 
   // DRAINED carries no payload: the applier removes the entry by record key, so repeating it would
@@ -216,6 +226,11 @@ public final class BufferedCommandDrainProcessor
             .setStorageOrdinal(storageOrdinal));
   }
 
+  /**
+   * Isolated like the drained command, so it is processed only after the drained command: processed
+   * within the current batch, it would run first, and the resume could reach {@code
+   * RESUME_USER_TASKS} or {@code RESUME_JOBS} before the drained commands took effect.
+   */
   private void appendNextDrainCommand(
       final long drainedCommandKey,
       final BufferedCommandRecord drainedCommandValue,
@@ -228,7 +243,8 @@ public final class BufferedCommandDrainProcessor
             .setProcessDefinitionKey(drainedCommandValue.getProcessDefinitionKey())
             .setTenantId(drainedCommandValue.getTenantId())
             .setCommandKey(drainedCommandKey)
-            .setStorageOrdinal(storageOrdinal));
+            .setStorageOrdinal(storageOrdinal),
+        FollowUpCommandMetadata.of(FollowUpCommandMetadata.Builder::isolated));
   }
 
   private void appendNextResumeStep(
