@@ -23,7 +23,9 @@ import io.camunda.search.connect.util.SecurityUtil;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
+import java.util.Objects;
 import java.util.Optional;
 import org.apache.hc.client5.http.config.ConnectionConfig;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -51,6 +53,10 @@ public final class ElasticsearchConnector {
   private final ConnectConfiguration configuration;
   private final ObjectMapper objectMapper;
   private final PluginRepository pluginRepository;
+  private final Integer ioThreadCount;
+  private final Integer connectionRequestTimeoutMillis;
+  private final HttpRequestInterceptor[] requestInterceptors;
+  private final boolean warnOnMissingCredentials;
 
   public ElasticsearchConnector(final ConnectConfiguration configuration) {
     this(
@@ -63,9 +69,35 @@ public final class ElasticsearchConnector {
       final ConnectConfiguration configuration,
       final ObjectMapper objectMapper,
       final PluginRepository pluginRepository) {
+    this(
+        configuration,
+        objectMapper,
+        pluginRepository,
+        null,
+        DEFAULT_CONNECT_REQUEST_TIMEOUT_MILLIS,
+        new HttpRequestInterceptor[0],
+        true);
+  }
+
+  private ElasticsearchConnector(
+      final ConnectConfiguration configuration,
+      final ObjectMapper objectMapper,
+      final PluginRepository pluginRepository,
+      final Integer ioThreadCount,
+      final Integer connectionRequestTimeoutMillis,
+      final HttpRequestInterceptor[] requestInterceptors,
+      final boolean warnOnMissingCredentials) {
     this.configuration = configuration;
     this.objectMapper = objectMapper;
     this.pluginRepository = pluginRepository;
+    this.ioThreadCount = ioThreadCount;
+    this.connectionRequestTimeoutMillis = connectionRequestTimeoutMillis;
+    this.requestInterceptors = requestInterceptors;
+    this.warnOnMissingCredentials = warnOnMissingCredentials;
+  }
+
+  public static Builder builder() {
+    return new Builder();
   }
 
   public ElasticsearchClient createClient() {
@@ -123,9 +155,12 @@ public final class ElasticsearchConnector {
     SecurityUtil.basicAuthorizationHeader(configuration.getUsername(), configuration.getPassword())
         .ifPresentOrElse(
             defaultHeaders::add,
-            () ->
+            () -> {
+              if (warnOnMissingCredentials) {
                 LOGGER.warn(
-                    "Username and/or password are empty. Basic authentication for elasticsearch is not used."));
+                    "Username and/or password are empty. Basic authentication for elasticsearch is not used.");
+              }
+            });
 
     return restClientBuilder
         .setDefaultHeaders(defaultHeaders.toArray(Header[]::new))
@@ -134,9 +169,15 @@ public final class ElasticsearchConnector {
                 configureConnectionManager(connectionManagerBuilder, configuration))
         .setHttpClientConfigCallback(
             httpClientBuilder ->
-                configureHttpClient(
-                    httpClientBuilder, configuration, pluginRepository.asRequestInterceptor()))
+                configureHttpClient(httpClientBuilder, configuration, allInterceptors()))
         .build();
+  }
+
+  private HttpRequestInterceptor[] allInterceptors() {
+    final var interceptors = new ArrayList<HttpRequestInterceptor>();
+    interceptors.add(pluginRepository.asRequestInterceptor());
+    interceptors.addAll(Arrays.asList(requestInterceptors));
+    return interceptors.toArray(HttpRequestInterceptor[]::new);
   }
 
   @VisibleForTesting
@@ -208,8 +249,11 @@ public final class ElasticsearchConnector {
    * default ever changes.
    */
   private void setupKeepAlive(final HttpAsyncClientBuilder httpAsyncClientBuilder) {
-    httpAsyncClientBuilder.setIOReactorConfig(
-        IOReactorConfig.custom().setSoKeepAlive(true).build());
+    final var ioReactorConfig = IOReactorConfig.custom().setSoKeepAlive(true);
+    if (ioThreadCount != null) {
+      ioReactorConfig.setIoThreadCount(ioThreadCount);
+    }
+    httpAsyncClientBuilder.setIOReactorConfig(ioReactorConfig.build());
   }
 
   @VisibleForTesting
@@ -227,9 +271,10 @@ public final class ElasticsearchConnector {
   @VisibleForTesting
   void setRequestTimeouts(final RequestConfig.Builder builder) {
     // Rest5ClientBuilder set this to 30s, so we are aligning this with the OS client
-    // default of 3 minutes
-    builder.setConnectionRequestTimeout(
-        Timeout.ofMilliseconds(DEFAULT_CONNECT_REQUEST_TIMEOUT_MILLIS));
+    // default of 3 minutes, unless the caller asked for the HTTP client's own default (null)
+    if (connectionRequestTimeoutMillis != null) {
+      builder.setConnectionRequestTimeout(Timeout.ofMilliseconds(connectionRequestTimeoutMillis));
+    }
   }
 
   private HttpHost getHttpHost(final ConnectConfiguration elsConfig) {
@@ -288,5 +333,79 @@ public final class ElasticsearchConnector {
         });
 
     LOGGER.debug("Preemptive proxy authentication enabled for proxy");
+  }
+
+  /**
+   * Builds a connector from a {@link ConnectConfiguration} plus the options that must not be bound
+   * from user properties. Unset options behave exactly like the constructors of {@link
+   * ElasticsearchConnector}.
+   */
+  public static final class Builder {
+    private ConnectConfiguration configuration;
+    private ObjectMapper objectMapper;
+    private PluginRepository pluginRepository = new PluginRepository();
+    private Integer ioThreadCount;
+    private Integer connectionRequestTimeoutMillis = DEFAULT_CONNECT_REQUEST_TIMEOUT_MILLIS;
+    private HttpRequestInterceptor[] requestInterceptors = new HttpRequestInterceptor[0];
+    private boolean warnOnMissingCredentials = true;
+
+    private Builder() {}
+
+    public Builder configuration(final ConnectConfiguration configuration) {
+      this.configuration = configuration;
+      return this;
+    }
+
+    /** Defaults to the mapper derived from the configuration. */
+    public Builder objectMapper(final ObjectMapper objectMapper) {
+      this.objectMapper = objectMapper;
+      return this;
+    }
+
+    public Builder pluginRepository(final PluginRepository pluginRepository) {
+      this.pluginRepository = pluginRepository;
+      return this;
+    }
+
+    /** Number of I/O threads of the HTTP client; by default the HTTP client's own default. */
+    public Builder ioThreadCount(final int ioThreadCount) {
+      this.ioThreadCount = ioThreadCount;
+      return this;
+    }
+
+    /**
+     * How long a request waits to lease a pooled connection. Defaults to 3 minutes; {@code null}
+     * leaves the HTTP client's own default.
+     */
+    public Builder connectionRequestTimeoutMillis(final Integer connectionRequestTimeoutMillis) {
+      this.connectionRequestTimeoutMillis = connectionRequestTimeoutMillis;
+      return this;
+    }
+
+    /** Applied after the plugin interceptor, in the given order. */
+    public Builder requestInterceptors(final HttpRequestInterceptor... requestInterceptors) {
+      this.requestInterceptors = requestInterceptors;
+      return this;
+    }
+
+    /** Whether to warn that basic authentication is not used when no credentials are set. */
+    public Builder warnOnMissingCredentials(final boolean warnOnMissingCredentials) {
+      this.warnOnMissingCredentials = warnOnMissingCredentials;
+      return this;
+    }
+
+    public ElasticsearchConnector build() {
+      Objects.requireNonNull(configuration, "configuration is required");
+      return new ElasticsearchConnector(
+          configuration,
+          objectMapper != null
+              ? objectMapper
+              : new JacksonConfiguration(configuration).createObjectMapper(),
+          pluginRepository,
+          ioThreadCount,
+          connectionRequestTimeoutMillis,
+          requestInterceptors,
+          warnOnMissingCredentials);
+    }
   }
 }
