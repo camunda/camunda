@@ -28,6 +28,7 @@ public class BaseDashboardDefinitionDto {
   protected boolean instantPreviewDashboard = false;
   protected boolean agenticControlDashboard = false;
   protected boolean businessValueDashboard = false;
+  protected boolean agentInsightsDashboard = false;
   protected List<DashboardFilterDto<?>> availableFilters = new ArrayList<>();
   protected Long refreshRateSeconds;
 
@@ -129,12 +130,21 @@ public class BaseDashboardDefinitionDto {
     this.businessValueDashboard = businessValueDashboard;
   }
 
+  public boolean isAgentInsightsDashboard() {
+    return agentInsightsDashboard;
+  }
+
+  public void setAgentInsightsDashboard(final boolean agentInsightsDashboard) {
+    this.agentInsightsDashboard = agentInsightsDashboard;
+  }
+
   @JsonIgnore
   public boolean isSystemGeneratedDashboard() {
     return managementDashboard
         || instantPreviewDashboard
         || agenticControlDashboard
-        || businessValueDashboard;
+        || businessValueDashboard
+        || agentInsightsDashboard;
   }
 
   public List<DashboardFilterDto<?>> getAvailableFilters() {
@@ -167,6 +177,7 @@ public class BaseDashboardDefinitionDto {
         && instantPreviewDashboard == that.instantPreviewDashboard
         && agenticControlDashboard == that.agenticControlDashboard
         && businessValueDashboard == that.businessValueDashboard
+        && agentInsightsDashboard == that.agentInsightsDashboard
         && Objects.equals(id, that.id)
         && Objects.equals(name, that.name)
         && Objects.equals(description, that.description)
@@ -194,6 +205,7 @@ public class BaseDashboardDefinitionDto {
         instantPreviewDashboard,
         agenticControlDashboard,
         businessValueDashboard,
+        agentInsightsDashboard,
         availableFilters,
         refreshRateSeconds);
   }
@@ -224,6 +236,8 @@ public class BaseDashboardDefinitionDto {
         + isAgenticControlDashboard()
         + ", businessValueDashboard="
         + isBusinessValueDashboard()
+        + ", agentInsightsDashboard="
+        + isAgentInsightsDashboard()
         + ", availableFilters="
         + getAvailableFilters()
         + ", refreshRateSeconds="
@@ -246,6 +260,7 @@ public class BaseDashboardDefinitionDto {
     public static final String instantPreviewDashboard = "instantPreviewDashboard";
     public static final String agenticControlDashboard = "agenticControlDashboard";
     public static final String businessValueDashboard = "businessValueDashboard";
+    public static final String agentInsightsDashboard = "agentInsightsDashboard";
     public static final String availableFilters = "availableFilters";
     public static final String refreshRateSeconds = "refreshRateSeconds";
   }

@@ -160,6 +160,7 @@ public class DashboardImportService {
     dashboardDefinition.setInstantPreviewDashboard(dashboardToImport.isInstantPreviewDashboard());
     dashboardDefinition.setAgenticControlDashboard(false);
     dashboardDefinition.setBusinessValueDashboard(false);
+    dashboardDefinition.setAgentInsightsDashboard(false);
     return dashboardDefinition;
   }
 }

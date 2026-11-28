@@ -80,6 +80,14 @@ public class DashboardReaderES implements DashboardReader {
                                                         t.field(
                                                                 DashboardIndex
                                                                     .BUSINESS_VALUE_DASHBOARD)
+                                                            .value(true)))
+                                        .mustNot(
+                                            m ->
+                                                m.term(
+                                                    t ->
+                                                        t.field(
+                                                                DashboardIndex
+                                                                    .AGENT_INSIGHTS_DASHBOARD)
                                                             .value(true))))));
     try {
       return esClient.count(countRequest).count();

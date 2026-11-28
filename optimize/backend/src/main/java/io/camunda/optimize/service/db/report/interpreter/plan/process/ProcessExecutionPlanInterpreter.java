@@ -50,8 +50,9 @@ public interface ProcessExecutionPlanInterpreter
 
   default Map<String, List<ProcessFilterDto<?>>> buildBaselineFiltersByDefinition(
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+    final ProcessReportDataDto reportData = context.getReportData();
     final List<Class<? extends ProcessFilterDto<?>>> effectiveBaselineFilters =
-        context.getReportData().isAgenticControlReport()
+        reportData.isAgenticControlReport() || reportData.isAgentInsightsReport()
             ? FILTERS_AFFECTING_AGENTIC_BASELINE
             : FILTERS_AFFECTING_BASELINE;
     return context.getReportData().groupFiltersByDefinitionIdentifier().entrySet().stream()

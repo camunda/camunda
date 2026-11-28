@@ -53,16 +53,19 @@ public class DashboardRestService {
   private final InstantPreviewDashboardService instantPreviewDashboardService;
   private final SessionService sessionService;
   private final DashboardRestMapper dashboardRestMapper;
+  private final AgenticPhase2Guard agenticPhase2Guard;
 
   public DashboardRestService(
       final DashboardService dashboardService,
       final InstantPreviewDashboardService instantPreviewDashboardService,
       final SessionService sessionService,
-      final DashboardRestMapper dashboardRestMapper) {
+      final DashboardRestMapper dashboardRestMapper,
+      final AgenticPhase2Guard agenticPhase2Guard) {
     this.dashboardService = dashboardService;
     this.instantPreviewDashboardService = instantPreviewDashboardService;
     this.sessionService = sessionService;
     this.dashboardRestMapper = dashboardRestMapper;
+    this.agenticPhase2Guard = agenticPhase2Guard;
   }
 
   @PostMapping()
@@ -151,6 +154,17 @@ public class DashboardRestService {
       final HttpServletRequest request) {
     final AuthorizedDashboardDefinitionResponseDto dashboardDefinition =
         dashboardService.getBusinessValueDashboard();
+    dashboardRestMapper.prepareRestResponse(
+        dashboardDefinition, request.getHeader(X_OPTIMIZE_CLIENT_LOCALE));
+    return dashboardDefinition;
+  }
+
+  @GetMapping(path = "/agent-insights")
+  public AuthorizedDashboardDefinitionResponseDto getAgentInsightsDashboard(
+      final HttpServletRequest request) {
+    agenticPhase2Guard.requireEnabled();
+    final AuthorizedDashboardDefinitionResponseDto dashboardDefinition =
+        dashboardService.getAgentInsightsDashboard();
     dashboardRestMapper.prepareRestResponse(
         dashboardDefinition, request.getHeader(X_OPTIMIZE_CLIENT_LOCALE));
     return dashboardDefinition;
