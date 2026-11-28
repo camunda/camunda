@@ -27,6 +27,17 @@ public enum HealthStatus {
    * healthy; only the health tree and its history show it.
    */
   DEGRADED,
+  /**
+   * The component is starting and does not serve yet, for example a partition installing its
+   * services. Outside the health tree it counts as not healthy, as it did before it had a status of
+   * its own; the tree shows that nothing is wrong, only not ready yet.
+   */
+  STARTING,
+  /**
+   * The component is shutting down on purpose. Outside the health tree it counts as not healthy,
+   * like {@link #STARTING}.
+   */
+  STOPPING,
   UNHEALTHY,
   DEAD;
 
@@ -41,6 +52,8 @@ public enum HealthStatus {
    *     <ul>
    *       <li>if any of the two is DEAD -> DEAD
    *       <li>if any of the two is UNHEALTHY -> UNHEALTHY
+   *       <li>if any of the two is STOPPING -> STOPPING
+   *       <li>if any of the two is STARTING -> STARTING
    *       <li>if any of the two is DEGRADED -> DEGRADED
    *       <li>if any of the two is NOTICE -> NOTICE
    *       <li>if both are HEALTHY -> HEALTHY

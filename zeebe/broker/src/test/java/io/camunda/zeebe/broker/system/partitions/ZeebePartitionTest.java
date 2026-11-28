@@ -791,7 +791,7 @@ public class ZeebePartitionTest {
   }
 
   @Test
-  public void shouldReportUnhealthyPerDefault() {
+  public void shouldReportStartingPerDefault() {
     // given
     final var captor = ArgumentCaptor.forClass(ZeebePartitionHealth.class);
     schedulerRule.submitActor(partition);
@@ -805,8 +805,8 @@ public class ZeebePartitionTest {
     final var zeebePartitionHealth = captor.getValue();
     final HealthReport healthReport = zeebePartitionHealth.getHealthReport();
 
-    assertThat(healthReport.getStatus()).isEqualTo(HealthStatus.UNHEALTHY);
-    assertThat(healthReport.getIssue().message()).contains("Services not installed");
+    assertThat(healthReport.getStatus()).isEqualTo(HealthStatus.STARTING);
+    assertThat(healthReport.getIssue().message()).contains("Services not installed yet");
   }
 
   @Test

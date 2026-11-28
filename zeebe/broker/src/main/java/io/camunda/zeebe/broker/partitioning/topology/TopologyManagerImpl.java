@@ -251,10 +251,10 @@ public final class TopologyManagerImpl extends Actor
           }
           if (status.isTreatedAsHealthy()) {
             localPartitionGroupInfo.setPartitionHealthy(partitionId);
-          } else if (status == HealthStatus.UNHEALTHY) {
-            localPartitionGroupInfo.setPartitionUnhealthy(partitionId);
           } else if (status == HealthStatus.DEAD) {
             localPartitionGroupInfo.setPartitionDead(partitionId);
+          } else {
+            localPartitionGroupInfo.setPartitionUnhealthy(partitionId);
           }
           publishTopologyChanges();
         });

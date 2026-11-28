@@ -165,6 +165,7 @@ public final class Broker implements AutoCloseable {
             startFuture
                 .thenAccept(
                     b -> {
+                      healthCheckService.setBrokerStopping();
                       brokerStartupActor.stop().join();
                       healthCheckService = null;
                       isClosed = true;

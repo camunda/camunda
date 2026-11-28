@@ -65,6 +65,11 @@ public record HealthReport(
     return new HealthReport(componentName, HealthStatus.UNHEALTHY, null, Map.of());
   }
 
+  /** A component that is expected but has not registered yet, or is still starting. */
+  public static HealthReport starting(final String componentName) {
+    return new HealthReport(componentName, HealthStatus.STARTING, null, Map.of());
+  }
+
   public static HealthReport healthy(final HealthMonitorable component) {
     return new HealthReport(component, HealthStatus.HEALTHY, null, Map.of());
   }
@@ -75,6 +80,14 @@ public record HealthReport(
 
   public static HealthReport degraded(final HealthMonitorable component) {
     return new HealthReport(component, HealthStatus.DEGRADED, null, Map.of());
+  }
+
+  public static HealthReport starting(final HealthMonitorable component) {
+    return starting(component.componentName());
+  }
+
+  public static HealthReport stopping(final HealthMonitorable component) {
+    return new HealthReport(component, HealthStatus.STOPPING, null, Map.of());
   }
 
   public static HealthReport unhealthy(final HealthMonitorable component) {
@@ -91,6 +104,8 @@ public record HealthReport(
       case HEALTHY -> HealthReport.healthy(component);
       case NOTICE -> HealthReport.notice(component);
       case DEGRADED -> HealthReport.degraded(component);
+      case STARTING -> HealthReport.starting(component);
+      case STOPPING -> HealthReport.stopping(component);
       case UNHEALTHY -> HealthReport.unhealthy(component);
       case DEAD -> HealthReport.dead(component);
       case null -> HealthReport.unknown(component.componentName());

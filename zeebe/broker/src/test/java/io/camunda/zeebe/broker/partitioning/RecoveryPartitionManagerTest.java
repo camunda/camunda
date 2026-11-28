@@ -57,6 +57,9 @@ import org.junit.jupiter.api.io.TempDir;
 
 final class RecoveryPartitionManagerTest {
 
+  /** The broker's own node in its health tree, next to the partitions. */
+  private static final String BROKER_LIFECYCLE = "Lifecycle";
+
   private static final String GROUP = PartitionManagerImpl.DEFAULT_GROUP_NAME;
   private static final int PARTITION_ID = 1;
   private static final int PARTITION_ID_2 = 2;
@@ -465,6 +468,7 @@ final class RecoveryPartitionManagerTest {
             () ->
                 assertThat(healthCheckService.getHealthReport().children())
                     .containsOnlyKeys(
+                        BROKER_LIFECYCLE,
                         partitionComponentName(PARTITION_ID),
                         partitionComponentName(PARTITION_ID_2)));
 
@@ -481,7 +485,10 @@ final class RecoveryPartitionManagerTest {
     await()
         .during(Duration.ofSeconds(1))
         .atMost(Duration.ofSeconds(5))
-        .untilAsserted(() -> assertThat(healthCheckService.getHealthReport().children()).isEmpty());
+        .untilAsserted(
+            () ->
+                assertThat(healthCheckService.getHealthReport().children())
+                    .containsOnlyKeys(BROKER_LIFECYCLE));
   }
 
   @Test

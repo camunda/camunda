@@ -32,6 +32,8 @@ class ZeebePartitionHealth implements HealthMonitorable {
   * - if the partition is not blocked in a transition step
   */
   private boolean servicesInstalled;
+  // until the first install the partition is starting; later installs are role transitions
+  private boolean installedOnce;
   // We assume disk space is available until otherwise notified
   private boolean diskSpaceAvailable = true;
 
@@ -54,6 +56,8 @@ class ZeebePartitionHealth implements HealthMonitorable {
           HealthReport.unhealthy(this).withMessage("Not enough disk space available", instant);
     } else if (partitionTransitionHealthIssue != null) {
       healthReport = HealthReport.unhealthy(this).withIssue(partitionTransitionHealthIssue);
+    } else if (!servicesInstalled && !installedOnce) {
+      healthReport = HealthReport.starting(this).withMessage("Services not installed yet", instant);
     } else if (!servicesInstalled) {
       healthReport = HealthReport.unhealthy(this).withMessage("Services not installed", instant);
     } else {
@@ -67,6 +71,7 @@ class ZeebePartitionHealth implements HealthMonitorable {
 
   void setServicesInstalled(final boolean servicesInstalled) {
     this.servicesInstalled = servicesInstalled;
+    installedOnce |= servicesInstalled;
     updateHealthStatus();
   }
 

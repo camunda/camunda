@@ -181,13 +181,13 @@ public class CriticalComponentsHealthMonitorTest {
   @Test
   public void shouldRemoveComponentMonitoredByNameOnly() {
     // given - a monitored name that nothing ever registers under, next to a healthy component:
-    // the placeholder counts as unknown and so drags the whole monitor down
+    // the placeholder counts as starting and so keeps the whole monitor from being healthy
     final ControllableComponent component = new ControllableComponent("registered");
     monitor.monitorComponent("placeholder");
     monitor.registerComponent(component);
     waitUntilAllDone();
     assertThat(monitor.getHealthReport().children()).containsOnlyKeys("placeholder", "registered");
-    assertThat(monitor.getHealthReport().getStatus()).isEqualTo(HealthStatus.UNHEALTHY);
+    assertThat(monitor.getHealthReport().getStatus()).isEqualTo(HealthStatus.STARTING);
 
     // when
     monitor.removeComponent("placeholder");

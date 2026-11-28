@@ -56,6 +56,8 @@ public final class HealthTreeMetrics implements ComponentTreeListener {
       case HEALTHY -> 1;
       case NOTICE -> 3;
       case DEGRADED -> 4;
+      case STARTING -> 5;
+      case STOPPING -> 6;
       case UNHEALTHY -> -1;
       case DEAD -> -2;
       case null -> 0;

@@ -36,6 +36,7 @@ public class BrokerHealthCheckServiceTest {
 
   private static final String SECOND_PHYSICAL_TENANT = "tenant-2";
 
+  private static final String LIFECYCLE = "Lifecycle";
   private final MemberId member = MemberId.from("member-1");
 
   @RegisterExtension
@@ -240,8 +241,8 @@ public class BrokerHealthCheckServiceTest {
   @Test
   public void shouldRemovePartitionsFromTheHealthTreeWhenTheTenantUnregisters() {
     // given a tenant with two bootstrap partitions, one of which registers a real health
-    // component while the other is left as the monitorComponent placeholder - counted as unknown,
-    // which reads unhealthy, and so drags the whole tree down
+    // component while the other is left as the monitorComponent placeholder - counted as
+    // starting, which keeps the whole tree from being healthy
     final var healthCheckService = newStartedHealthCheckService(DEFAULT_PHYSICAL_TENANT_ID);
     final var registered = new PartitionId(DEFAULT_PHYSICAL_TENANT_ID, 1);
     final var placeholder = new PartitionId(DEFAULT_PHYSICAL_TENANT_ID, 2);
@@ -254,16 +255,18 @@ public class BrokerHealthCheckServiceTest {
     scheduler.workUntilDone();
     assertThat(healthCheckService.getHealthReport().children())
         .containsOnlyKeys(
-            ZeebePartition.componentName(registered), ZeebePartition.componentName(placeholder));
-    assertThat(healthCheckService.getHealthReport().getStatus()).isEqualTo(HealthStatus.UNHEALTHY);
+            LIFECYCLE,
+            ZeebePartition.componentName(registered),
+            ZeebePartition.componentName(placeholder));
+    assertThat(healthCheckService.getHealthReport().getStatus()).isEqualTo(HealthStatus.STARTING);
 
     // when the tenant's partition manager stops as part of a mode transition
     healthCheckService.unregisterPhysicalTenant(DEFAULT_PHYSICAL_TENANT_ID);
     scheduler.workUntilDone();
 
     // then both nodes go with it. The placeholder is the one entry nothing else ever removes, so
-    // without this it would keep the broker unhealthy for the rest of its life
-    assertThat(healthCheckService.getHealthReport().children()).isEmpty();
+    // without this it would keep the broker starting for the rest of its life
+    assertThat(healthCheckService.getHealthReport().children()).containsOnlyKeys(LIFECYCLE);
   }
 
   @Test
@@ -392,6 +395,47 @@ public class BrokerHealthCheckServiceTest {
     assertThat(healthCheckService.getHealthReport().status()).isEqualTo(componentStatus);
     assertThat(healthCheckService.isBrokerHealthy()).isEqualTo(healthy);
     assertThat(healthCheckService.isBrokerDegraded()).isEqualTo(degraded);
+  }
+
+  @Test
+  public void shouldShowTheBrokerStartingUntilItIsReady() {
+    // given a started broker whose only partition is not installed yet
+    final var healthCheckService = newStartedHealthCheckService(DEFAULT_PHYSICAL_TENANT_ID);
+    final var partitionId = new PartitionId(DEFAULT_PHYSICAL_TENANT_ID, 1);
+    healthCheckService.registerBootstrapPartitions(
+        DEFAULT_PHYSICAL_TENANT_ID, List.of(partition(DEFAULT_PHYSICAL_TENANT_ID, 1)));
+    scheduler.workUntilDone();
+
+    // then - the startup steps are done, but the broker is not ready
+    assertThat(healthCheckService.getHealthReport().children().get(LIFECYCLE).status())
+        .isEqualTo(HealthStatus.STARTING);
+
+    // when
+    healthCheckService.onBecameRaftLeader(partitionId, 1);
+    scheduler.workUntilDone();
+
+    // then
+    assertThat(healthCheckService.isBrokerReady()).isTrue();
+    assertThat(healthCheckService.getHealthReport().children().get(LIFECYCLE).status())
+        .isEqualTo(HealthStatus.HEALTHY);
+  }
+
+  @Test
+  public void shouldShowTheBrokerStoppingOnceItShutsDown() {
+    // given
+    final var healthCheckService = newStartedHealthCheckService(DEFAULT_PHYSICAL_TENANT_ID);
+    healthCheckService.registerBootstrapPartitions(DEFAULT_PHYSICAL_TENANT_ID, List.of());
+    scheduler.workUntilDone();
+
+    // when
+    healthCheckService.setBrokerStopping();
+    scheduler.workUntilDone();
+
+    // then - a stopping broker is not healthy to anything outside the health tree
+    final var lifecycle = healthCheckService.getHealthReport().children().get(LIFECYCLE);
+    assertThat(lifecycle.status()).isEqualTo(HealthStatus.STOPPING);
+    assertThat(lifecycle.issue().message()).isEqualTo("Broker is shutting down");
+    assertThat(healthCheckService.isBrokerHealthy()).isFalse();
   }
 
   private BrokerHealthCheckService newHealthCheckService(final String... expectedPhysicalTenants) {

@@ -61,7 +61,7 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
     this.graphListener = graphListener;
     this.monitoringInterval = monitoringInterval;
     healthReport =
-        HealthReport.unhealthy(this)
+        HealthReport.starting(this)
             .withMessage("Components are not yet initialized", Instant.now());
     this.graphListener.registerNode(this, parentComponent);
   }
@@ -75,7 +75,12 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
 
   @Override
   public void monitorComponent(final String componentName) {
-    actor.run(() -> componentHealth.put(componentName, HealthReport.unknown(componentName)));
+    actor.run(
+        () ->
+            componentHealth.put(
+                componentName,
+                HealthReport.starting(componentName)
+                    .withMessage("Waiting for the component to start", Instant.now())));
   }
 
   @Override
@@ -183,7 +188,9 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
       return monitoredComponent.component.getHealthReport();
     }
 
-    return HealthReport.unknown(componentName);
+    // a name given to monitorComponent whose component has not registered yet; keep its report so
+    // that the time it started waiting stays the same
+    return componentHealth.getOrDefault(componentName, HealthReport.starting(componentName));
   }
 
   /**
@@ -220,7 +227,12 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
         return;
       }
 
-      log.warn("{} failed, marking it as unhealthy: {}", componentName, report);
+      if (report.getStatus() == HealthStatus.STARTING
+          || report.getStatus() == HealthStatus.STOPPING) {
+        log.info("{} is {}: {}", componentName, report.getStatus(), report.getIssue());
+      } else {
+        log.warn("{} failed, marking it as unhealthy: {}", componentName, report);
+      }
       componentHealth.put(componentName, report);
       calculateHealth();
       failureListeners.forEach(l -> l.onFailure(getHealthReport()));

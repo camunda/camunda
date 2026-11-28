@@ -127,7 +127,11 @@ public class MigrationSnapshotDirector implements HealthMonitorable, CloseableSi
                       retryState.getRetryCount(), nextDelay),
                   Instant.now())
               : HealthIssue.of(error, Instant.now());
-      healthReport = healthReport.withIssue(issue);
+      // retrying after an error is a failure; waiting for the first snapshot is part of starting
+      healthReport =
+          error == null
+              ? healthReport.withIssue(issue)
+              : HealthReport.unhealthy(this).withIssue(issue);
       notifyListeners();
       runningSnapshot =
           control.schedule(
@@ -191,7 +195,7 @@ public class MigrationSnapshotDirector implements HealthMonitorable, CloseableSi
   }
 
   private HealthReport snapshotNotTaken() {
-    return HealthReport.unhealthy(this).withMessage("No snapshot taken yet", Instant.now());
+    return HealthReport.starting(this).withMessage("No snapshot taken yet", Instant.now());
   }
 
   private static final class RetryState {

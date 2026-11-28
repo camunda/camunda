@@ -11,6 +11,8 @@ import static io.camunda.zeebe.util.health.HealthStatus.DEAD;
 import static io.camunda.zeebe.util.health.HealthStatus.DEGRADED;
 import static io.camunda.zeebe.util.health.HealthStatus.HEALTHY;
 import static io.camunda.zeebe.util.health.HealthStatus.NOTICE;
+import static io.camunda.zeebe.util.health.HealthStatus.STARTING;
+import static io.camunda.zeebe.util.health.HealthStatus.STOPPING;
 import static io.camunda.zeebe.util.health.HealthStatus.UNHEALTHY;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -48,9 +50,11 @@ public class HealthStatusTest {
 
   @Test
   public void shouldSortBasedOnSeverity() {
-    final var statuses = new HealthStatus[] {DEAD, NOTICE, HEALTHY, UNHEALTHY, DEGRADED};
+    final var statuses =
+        new HealthStatus[] {DEAD, STOPPING, NOTICE, HEALTHY, UNHEALTHY, STARTING, DEGRADED};
     Arrays.sort(statuses, HealthStatus.COMPARATOR);
-    assertThat(statuses).containsExactly(HEALTHY, NOTICE, DEGRADED, UNHEALTHY, DEAD);
+    assertThat(statuses)
+        .containsExactly(HEALTHY, NOTICE, DEGRADED, STARTING, STOPPING, UNHEALTHY, DEAD);
   }
 
   @Test

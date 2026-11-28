@@ -22,6 +22,7 @@ import io.camunda.zeebe.util.health.HealthMonitor;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
 import io.camunda.zeebe.util.health.HealthStatus;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
@@ -117,6 +118,7 @@ public final class BrokerHealthCheckService extends Actor implements PartitionRa
   private volatile boolean brokerStarted = false;
   private volatile @Nullable HealthHistory healthHistory;
   private final HealthMonitor healthMonitor;
+  private final BrokerLifecycle lifecycle = new BrokerLifecycle();
 
   public BrokerHealthCheckService(
       final MemberId nodeId,
@@ -244,6 +246,7 @@ public final class BrokerHealthCheckService extends Actor implements PartitionRa
   private void logBrokerReadyOnce() {
     if (!readyLogged && isBrokerReady()) {
       readyLogged = true;
+      lifecycle.update(HealthReport.healthy(lifecycle));
       LOG.info("All partitions are installed. Broker is ready!");
     }
   }
@@ -251,6 +254,7 @@ public final class BrokerHealthCheckService extends Actor implements PartitionRa
   @Override
   protected void onActorStarted() {
     healthMonitor.startMonitoring();
+    healthMonitor.registerComponent(lifecycle);
   }
 
   private void registerComponent(final HealthMonitorable component) {
@@ -322,7 +326,50 @@ public final class BrokerHealthCheckService extends Actor implements PartitionRa
         });
   }
 
+  /** Marks the broker as shutting down in its health tree, before its components stop. */
+  public void setBrokerStopping() {
+    lifecycle.update(
+        HealthReport.stopping(lifecycle).withMessage("Broker is shutting down", Instant.now()));
+  }
+
   public boolean isBrokerStarted() {
     return brokerStarted;
+  }
+
+  /**
+   * The broker's own place in its health tree: {@link HealthStatus#STARTING} until the broker is
+   * ready for the first time, {@link HealthStatus#STOPPING} once it shuts down, healthy in between.
+   * Without it, startup and shutdown only show as components that are not healthy yet or any more.
+   */
+  private static final class BrokerLifecycle implements HealthMonitorable {
+
+    private final Set<FailureListener> listeners = ConcurrentHashMap.newKeySet();
+    private volatile HealthReport report =
+        HealthReport.starting(this).withMessage("Broker is starting", Instant.now());
+
+    @Override
+    public String componentName() {
+      return "Lifecycle";
+    }
+
+    @Override
+    public HealthReport getHealthReport() {
+      return report;
+    }
+
+    @Override
+    public void addFailureListener(final FailureListener failureListener) {
+      listeners.add(failureListener);
+    }
+
+    @Override
+    public void removeFailureListener(final FailureListener failureListener) {
+      listeners.remove(failureListener);
+    }
+
+    private void update(final HealthReport next) {
+      report = next;
+      listeners.forEach(listener -> listener.onHealthReport(next));
+    }
   }
 }

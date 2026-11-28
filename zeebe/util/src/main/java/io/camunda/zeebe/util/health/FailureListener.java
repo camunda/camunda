@@ -10,7 +10,10 @@ package io.camunda.zeebe.util.health;
 /** Failure Listener invoked by a {@link HealthMonitorable} component. */
 public interface FailureListener {
 
-  /** Invoked when the health status becomes unhealthy. */
+  /**
+   * Invoked when the health status becomes unhealthy, or starting or stopping, which count as not
+   * healthy outside the health tree.
+   */
   void onFailure(HealthReport report);
 
   /**
@@ -30,7 +33,7 @@ public interface FailureListener {
   default void onHealthReport(final HealthReport healthReport) {
     switch (healthReport.getStatus()) {
       case HEALTHY, NOTICE, DEGRADED -> onRecovered(healthReport);
-      case UNHEALTHY -> onFailure(healthReport);
+      case STARTING, STOPPING, UNHEALTHY -> onFailure(healthReport);
       case DEAD -> onUnrecoverableFailure(healthReport);
       default -> {}
     }

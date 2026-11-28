@@ -107,17 +107,17 @@ public class SnapshotMigrationTransitionStepTest {
     // when
     step.prepareTransition(transitionContext, 0, role).join();
     step.transitionTo(transitionContext, 0, role).join();
-    // then
-    checkMetricsAre(HealthStatus.UNHEALTHY);
+    // then - waiting for the first snapshot after migrations is part of starting
+    checkMetricsAre(HealthStatus.STARTING);
     assertThat(transitionContext.getComponentHealthMonitor().getHealthReport())
         .satisfies(
             r -> {
               System.out.println(r);
-              assertThat(r.status()).isEqualTo(HealthStatus.UNHEALTHY);
+              assertThat(r.status()).isEqualTo(HealthStatus.STARTING);
               assertThat(r.children().get(MigrationSnapshotDirector.COMPONENT_NAME))
                   .satisfies(
                       mr -> {
-                        assertThat(mr.status()).isEqualTo(HealthStatus.UNHEALTHY);
+                        assertThat(mr.status()).isEqualTo(HealthStatus.STARTING);
                         assertThat(mr.issue())
                             .isNotNull()
                             .satisfies(
