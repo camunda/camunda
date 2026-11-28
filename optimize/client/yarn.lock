@@ -1213,10 +1213,10 @@
     react-markdown "10.1.0"
     semver "7.8.5"
 
-"@camunda/design-system@0.81.1":
-  version "0.81.1"
-  resolved "https://registry.yarnpkg.com/@camunda/design-system/-/design-system-0.81.1.tgz#2816e01634a0e14238f0f7438ba5368e88da5c4b"
-  integrity sha512-bkZ9vRnRwmO6TGgEdJ6jDHfbb+NLFm6D0XCb37N90US0KRaw5iuHAXTwTU7gWvN8yaBJhlnxXjnHZXDxfR8iuA==
+"@camunda/design-system@1.5.1":
+  version "1.5.1"
+  resolved "https://registry.yarnpkg.com/@camunda/design-system/-/design-system-1.5.1.tgz#ab0a5c508a42a9b0b812cc8a04983d4bbff0cfc6"
+  integrity sha512-r7LvbGn3gFkn9ulcMZUUhSEd+r2UhuMY9ORcUcc53uXGHeDl/HV670etYiMyjHunUhYKvzhPAzxe+8+VTFp9eQ==
   dependencies:
     "@tanstack/react-table" "^8.20.5"
     "@tanstack/react-virtual" "^3.14.2"
@@ -1232,7 +1232,7 @@
     recharts "^3.8.1"
     sonner "^2.0.8"
     tabbable "^6.5.0"
-    tailwind-merge "3.7.0"
+    tailwind-merge "3.7.1"
 
 "@camunda8/orchestration-cluster-api@10.1.0":
   version "10.1.0"
@@ -15468,10 +15468,10 @@ tabbable@^6.5.0:
   resolved "https://registry.yarnpkg.com/tabbable/-/tabbable-6.5.0.tgz#a65101385a4fd6cbd580b7546da0170f307b535d"
   integrity sha512-wieBHXygIm7OyQOu5hQlkk62/WyCFYGlWg7L6/ZCUZwx0o398Zkn4pVmMyfYhfMG8kGrj/Krt8eIk6UKC6VzwA==
 
-tailwind-merge@3.7.0:
-  version "3.7.0"
-  resolved "https://registry.yarnpkg.com/tailwind-merge/-/tailwind-merge-3.7.0.tgz#61e9a67ab11b64138dea7d4fa5b74a33e17f2c87"
-  integrity sha512-XPPUyAc+cvspz3lHTcR/QgPfW2A0lv/xQNIjX3HGhLR+Nq2lHaLq5MtTesHn8GUr3W3DguT2KT5x3NVgRtYwmA==
+tailwind-merge@3.7.1:
+  version "3.7.1"
+  resolved "https://registry.yarnpkg.com/tailwind-merge/-/tailwind-merge-3.7.1.tgz#9991f80b90d80306ca17ff89eb655b8e773192e2"
+  integrity sha512-v7y4BV4FUlO8exj/4M5UXKeoowDiuugVUg3tkMNIyOUCOHy5xp8+5aWQeXCtZ2491sUV1YPsVeM9EveZ6/xuZQ==
 
 tailwindcss@^3.0.2:
   version "3.4.14"
