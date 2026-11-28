@@ -307,6 +307,56 @@ jobs:
           fi
           echo "✅ http->https redirector running on port 80"
 
+      # Fail fast when the preview environment itself is gone before Playwright
+      # burns ~16 minutes per attempt failing in "Create Project Folder". This
+      # happens on "re-run failed jobs": attempt 1 passes some legs, their
+      # teardowns delete those environments, and attempt 2 replays the test
+      # matrix against hosts that no longer exist. The check goes through the
+      # tsh tunnel and the /etc/hosts mapping above, so it must stay after that
+      # step and before the Playwright steps. GET / on a healthy environment
+      # answers with a redirect to the app root (302), which curl -f accepts;
+      # a deleted environment answers 404 from the shared gateway.
+      - name: Pre-flight environment health check
+        env:
+          PREVIEW_HOST: ${{ matrix.deployment.host }}
+          # Interpolate a derived boolean, never the raw input: existing-host
+          # is free-form dispatch input, so putting it into Bash source would
+          # allow command injection on this Teleport-authenticated runner (the
+          # hostname validation above only checks PREVIEW_HOST, not this input,
+          # on the non-8.11 legs). Scoping to the 8.11 leg also keeps
+          # workflow-created legs on the rerun-recovery message.
+          REUSES_EXISTING_HOST: ${{ matrix.deployment.version == '8.11' && inputs.existing-host != '' }}
+        run: |
+          url="https://${PREVIEW_HOST}/"
+          # A slow preview environment may still be warming up behind the
+          # gateway, so give it three bounded attempts (~10s apart, 10s HTTP
+          # timeout each) instead of failing on a single probe.
+          attempts=3
+          for i in $(seq 1 "$attempts"); do
+            echo "Attempt ${i}/${attempts}: checking ${url}"
+            # -f fails on HTTP errors >= 400 and -S prints the error even when
+            # output is discarded; --max-time bounds each attempt.
+            if http_code=$(curl -fsS -m 10 -o /dev/null -w '%{http_code}' "${url}"); then
+              echo "✅ ${PREVIEW_HOST} is reachable (HTTP ${http_code})"
+              exit 0
+            fi
+            last_code="${http_code}"
+            # Retry only before the last attempt, and never on the last probe.
+            if [ "$i" -lt "$attempts" ]; then
+              echo "Not ready yet (HTTP ${last_code:-connection error}); retrying in 10s"
+              sleep 10
+            fi
+          done
+          if [ "${REUSES_EXISTING_HOST}" = "true" ]; then
+            echo "::error::Preview environment ${PREVIEW_HOST} is not reachable: HTTP ${last_code:-connection error}. This run reuses an existing environment via the existing-host input, so no rerun of this run can re-create it. Restore the supplied environment (e.g. redeploy it, or wait for its ArgoCD app to be recreated), or dispatch a new run without the existing-host input so the workflow builds and deploys a fresh environment. This failure is an environment-lifecycle problem, not a Playwright spec failure."
+          else
+            echo "::error::Preview environment ${PREVIEW_HOST} is not reachable: HTTP ${last_code:-connection error}. It was most likely torn down by an earlier attempt of this run. To recover, use 'Re-run all jobs' from the run page: app names derive from the run number, so this re-creates every environment, including this one; 'Re-run failed jobs' only works while the environment still exists. This failure is an environment-lifecycle problem, not a Playwright spec failure."
+          fi
+          # The annotation alone does not fail the step; exit nonzero so the job
+          # stops here, Playwright never runs against the dead environment, and
+          # the pre-flight step failure routes this leg to the deploy bucket.
+          exit 1
+
       - name: Generate GitHub Token
         id: github-token
         uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@405ecc95af077cd030bfe3249511e802fd9e4585 # generate-github-app-token-from-vault-secrets-1.3.1
@@ -419,13 +469,23 @@ jobs:
 
   teardown-8-8:
     name: Teardown 8.8 Preview Environment
+    # Teardown only when the whole run is green. Tearing down a passed leg
+    # while another version's deploy/build failed deletes the very
+    # environment a later "re-run failed jobs" needs, turning one flaky
+    # build into three misleading 404 smoke-test failures (see #70652).
     if: >
       always() &&
       needs.deploy-8-8.result == 'success' &&
+      contains(fromJSON('["success", "skipped"]'), needs.deploy-8-9.result) &&
+      contains(fromJSON('["success", "skipped"]'), needs.deploy-8-10.result) &&
+      contains(fromJSON('["success", "skipped"]'), needs.deploy-8-11.result) &&
       needs.test.result == 'success' &&
       !inputs.skip-teardown
     needs:
     - deploy-8-8
+    - deploy-8-9
+    - deploy-8-10
+    - deploy-8-11
     - test
     uses: camunda/camunda/.github/workflows/preview-env-teardown.yml@stable/8.8
     secrets: inherit
@@ -435,13 +495,21 @@ jobs:
 
   teardown-8-9:
     name: Teardown 8.9 Preview Environment
+    # Same all-green gate as teardown-8-8: keep environments alive for
+    # "re-run failed jobs" unless the entire run succeeded.
     if: >
       always() &&
       needs.deploy-8-9.result == 'success' &&
+      contains(fromJSON('["success", "skipped"]'), needs.deploy-8-8.result) &&
+      contains(fromJSON('["success", "skipped"]'), needs.deploy-8-10.result) &&
+      contains(fromJSON('["success", "skipped"]'), needs.deploy-8-11.result) &&
       needs.test.result == 'success' &&
       !inputs.skip-teardown
     needs:
+    - deploy-8-8
     - deploy-8-9
+    - deploy-8-10
+    - deploy-8-11
     - test
     uses: camunda/camunda/.github/workflows/preview-env-teardown.yml@stable/8.9
     secrets: inherit
@@ -451,13 +519,21 @@ jobs:
 
   teardown-8-10:
     name: Teardown 8.10 Preview Environment
+    # Same all-green gate as teardown-8-8: keep environments alive for
+    # "re-run failed jobs" unless the entire run succeeded.
     if: >
       always() &&
       needs.deploy-8-10.result == 'success' &&
+      contains(fromJSON('["success", "skipped"]'), needs.deploy-8-8.result) &&
+      contains(fromJSON('["success", "skipped"]'), needs.deploy-8-9.result) &&
+      contains(fromJSON('["success", "skipped"]'), needs.deploy-8-11.result) &&
       needs.test.result == 'success' &&
       !inputs.skip-teardown
     needs:
+    - deploy-8-8
+    - deploy-8-9
     - deploy-8-10
+    - deploy-8-11
     - test
     uses: camunda/camunda/.github/workflows/preview-env-teardown.yml@stable/8.10
     secrets: inherit
@@ -467,12 +543,20 @@ jobs:
 
   teardown-8-11:
     name: Teardown 8.11 Preview Environment
+    # Same all-green gate as teardown-8-8: keep environments alive for
+    # "re-run failed jobs" unless the entire run succeeded.
     if: >
       always() &&
       needs.deploy-8-11.result == 'success' &&
+      contains(fromJSON('["success", "skipped"]'), needs.deploy-8-8.result) &&
+      contains(fromJSON('["success", "skipped"]'), needs.deploy-8-9.result) &&
+      contains(fromJSON('["success", "skipped"]'), needs.deploy-8-10.result) &&
       needs.test.result == 'success' &&
       !inputs.skip-teardown
     needs:
+    - deploy-8-8
+    - deploy-8-9
+    - deploy-8-10
     - deploy-8-11
     - test
     permissions:
@@ -539,12 +623,18 @@ jobs:
         run: |
           # Split failed/cancelled jobs into two buckets so each red pages
           # the team that can act on it:
-          #   test   -> a smoke-test job that FAILED. Specs live in
-          #             camunda/c8-cross-component-e2e-tests and the products under
-          #             test are pinned images.
+          #   test   -> a smoke-test job that FAILED on a Playwright spec. Specs
+          #             live in camunda/c8-cross-component-e2e-tests and the
+          #             products under test are pinned images.
           #   deploy -> everything else (deploy/health failures, any cancellation
           #             incl. a cancelled smoke test, which is infra noise rather
           #             than a spec bug, and any other job).
+          # A smoke-test job whose "Pre-flight environment health check" step
+          # failed is an environment-lifecycle problem (the env is unreachable,
+          # e.g. torn down by an earlier attempt of this run), not a spec bug:
+          # the leg never reached Playwright, so it belongs in the deploy
+          # bucket. The jobs API payload carries steps[] with names and
+          # conclusions, so match the step by its exact display name.
           # The jobs endpoint returns 30 jobs per page by default. Without
           # pagination a run with more matrix jobs than one page would drop the
           # failed jobs on later pages from the classification, causing missed or
@@ -556,10 +646,11 @@ jobs:
             | jq -s '
                 map(select(.conclusion == "failure" or .conclusion == "cancelled"))
                 | map(
+                    ((.steps // []) | map(select(.name == "Pre-flight environment health check" and .conclusion == "failure")) | length > 0) as $preflight_failed |
                     (try (.name | capture("(?<v>8\\.[0-9]+)").v) // .name) as $ver |
                     (if .name | test("Deploy") then "deploy" elif .name | test("Test") then "tests" else "job" end) as $type |
                     {
-                      bucket: (if $type == "tests" and .conclusion == "failure" then "test" else "deploy" end),
+                      bucket: (if $type == "tests" and .conclusion == "failure" and ($preflight_failed | not) then "test" else "deploy" end),
                       line: "• *\($ver)* <\(.html_url)|\($type) \(if .conclusion == "cancelled" then "cancelled" else "failed" end)>"
                     }
                   )
