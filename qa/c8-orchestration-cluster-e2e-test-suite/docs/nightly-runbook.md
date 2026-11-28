@@ -25,7 +25,9 @@ The proposed area owners are not live yet. They wait for the area teams to appro
 |                                   Specs under `tests/`                                    |                  Owner                  |
 |-------------------------------------------------------------------------------------------|-----------------------------------------|
 | `operate/`                                                                                | `@camunda/operate-admin-pod`            |
+| `operate/swagger.spec.ts` (the REST gateway's OpenAPI document)                           | `@camunda/core-features`                |
 | `identity/` (Admin UI)                                                                    | `@camunda/operate-admin-pod`            |
+| `identity/login.spec.ts` and `identity/oidc-session-recovery.spec.ts` (login and session) | `@camunda/identity`                     |
 | `tasklist/`                                                                               | `@camunda/employee-engagement-tasklist` |
 | `api/`                                                                                    | `@camunda/core-features`                |
 | `api/v2/` authorization, group, role, tenant, user, mapping rule and authentication specs | `@camunda/identity`                     |
