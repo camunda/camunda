@@ -204,7 +204,11 @@ public final class BpmnBufferedMessageStartEventBehavior {
   public void correlateNextBufferedMessage(
       final DirectBuffer bpmnProcessId, final DirectBuffer correlationKey, final String tenantId) {
 
-    final var process = processState.getLatestProcessVersionByProcessId(bpmnProcessId, tenantId);
+    final var process =
+        processState.getLatestActiveProcessVersionByProcessId(bpmnProcessId, tenantId);
+    if (process == null) {
+      return;
+    }
 
     findNextMessageToCorrelate(process, correlationKey).ifPresent(this::triggerCorrelation);
   }
@@ -239,7 +243,8 @@ public final class BpmnBufferedMessageStartEventBehavior {
       metrics.recordBusinessIdFreed(
           businessId, BufferUtil.bufferAsString(bpmnProcessId), tenantId, clock.millis());
     }
-    final var process = processState.getLatestProcessVersionByProcessId(bpmnProcessId, tenantId);
+    final var process =
+        processState.getLatestActiveProcessVersionByProcessId(bpmnProcessId, tenantId);
     if (process == null) {
       return;
     }

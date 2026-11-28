@@ -444,7 +444,12 @@ public final class CallActivityProcessor
 
   private Either<Failure, DeployedProcess> getLatestProcessVersion(
       final DirectBuffer processId, final String tenantId) {
-    final var process = stateBehavior.getLatestProcessVersion(processId, tenantId);
+    // Without an active version, fall back to the latest one so a draining version still raises
+    // the "being deleted" incident instead of "not found"
+    final var process =
+        stateBehavior
+            .getLatestActiveProcessVersion(processId, tenantId)
+            .or(() -> stateBehavior.getLatestProcessVersion(processId, tenantId));
     return process
         .<Either<Failure, DeployedProcess>>map(Either::right)
         .orElseGet(
