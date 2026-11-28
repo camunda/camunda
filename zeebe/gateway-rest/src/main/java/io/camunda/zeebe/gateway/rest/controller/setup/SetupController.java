@@ -18,6 +18,7 @@ import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.security.validation.UserValidator;
+import io.camunda.service.UserServices.UserDTO;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.service.registry.ServiceRegistry;
@@ -69,6 +70,15 @@ public class SetupController {
           GatewayErrorMapper.mapErrorToProblem(exception));
     }
 
+    return userMapper
+        .toUserRequest(request)
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            dto -> createInitialAdminUser(physicalTenantId, dto));
+  }
+
+  private CompletableFuture<ResponseEntity<Object>> createInitialAdminUser(
+      final String physicalTenantId, final UserDTO dto) {
     final var anonymousAuth = authenticationProvider.getAnonymousCamundaAuthentication();
     if (serviceRegistry
         .roleServices(physicalTenantId)
@@ -78,17 +88,12 @@ public class SetupController {
           GatewayErrorMapper.mapErrorToProblem(exception));
     }
 
-    return userMapper
-        .toUserRequest(request)
-        .fold(
-            RestErrorMapper::mapProblemToCompletedResponse,
-            dto ->
-                RequestExecutor.executeServiceMethod(
-                    () ->
-                        serviceRegistry
-                            .userServices(physicalTenantId)
-                            .createInitialAdminUser(dto, anonymousAuth),
-                    ResponseMapper::toUserCreateResponse,
-                    HttpStatus.CREATED));
+    return RequestExecutor.executeServiceMethod(
+        () ->
+            serviceRegistry
+                .userServices(physicalTenantId)
+                .createInitialAdminUser(dto, anonymousAuth),
+        ResponseMapper::toUserCreateResponse,
+        HttpStatus.CREATED);
   }
 }
