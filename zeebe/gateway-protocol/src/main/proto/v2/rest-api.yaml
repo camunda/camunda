@@ -581,6 +581,8 @@ paths:
   # Variable endpoints
   /variables/history/search:
     $ref: 'variables.yaml#/paths/~1variables~1history~1search'
+  /variables/history/{variableHistoryItemKey}:
+    $ref: 'variables.yaml#/paths/~1variables~1history~1{variableHistoryItemKey}'
   /variables/search:
     $ref: 'variables.yaml#/paths/~1variables~1search'
   /variables/{variableKey}:

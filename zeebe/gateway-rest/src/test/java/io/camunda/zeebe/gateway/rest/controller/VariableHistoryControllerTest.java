@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -47,6 +48,7 @@ import org.springframework.test.json.JsonCompareMode;
 public class VariableHistoryControllerTest extends RestControllerTest {
 
   private static final String SEARCH_URL = "/v2/variables/history/search";
+  private static final String GET_URL = "/v2/variables/history/{key}";
   private static final String PREVIEW = "{\"truncated\":";
   private static final String FULL_VALUE = "{\"truncated\":\"no longer\"}";
 
@@ -58,6 +60,30 @@ public class VariableHistoryControllerTest extends RestControllerTest {
         "name": "orderTotal",
         "value": %s,
         "isTruncated": %s,
+        "scopeKey": "3",
+        "elementInstanceKey": %s,
+        "elementId": %s,
+        "processInstanceKey": "5",
+        "rootProcessInstanceKey": %s,
+        "processDefinitionKey": "7",
+        "processDefinitionId": "process",
+        "tenantId": "<default>",
+        "timestamp": "2024-01-01T00:00:00.000Z",
+        "operationType": "CREATE",
+        "variableOperationType": "API",
+        "actorType": "USER",
+        "actorId": %s,
+        "agentElementId": %s
+      }
+      """;
+
+  private static final String EXPECTED_GET_ITEM_TEMPLATE =
+      """
+      {
+        "variableHistoryItemKey": "1",
+        "variableKey": "2",
+        "name": "orderTotal",
+        "value": %s,
         "scopeKey": "3",
         "elementInstanceKey": %s,
         "elementId": %s,
@@ -564,6 +590,149 @@ public class VariableHistoryControllerTest extends RestControllerTest {
     webClient.post().uri(SEARCH_URL).exchange().expectStatus().isForbidden();
   }
 
+  @Test
+  void shouldGetVariableHistoryItem() {
+    // given
+    when(variableHistoryServices.getByKey(eq(1L), any()))
+        .thenReturn(entity(false, "\"v\"", null, true));
+
+    // when / then
+    webClient
+        .get()
+        .uri(GET_URL, 1L)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(
+            expectedGetItem(
+                "\"\\\"v\\\"\"", "\"4\"", "\"task1\"", "\"6\"", "\"demo\"", "\"agent\""),
+            JsonCompareMode.STRICT);
+
+    verify(variableHistoryServices).getByKey(eq(1L), any());
+  }
+
+  @Test
+  void shouldReturnFullValueOfPreviewForGet() {
+    // given
+    when(variableHistoryServices.getByKey(eq(1L), any()))
+        .thenReturn(entity(true, PREVIEW, FULL_VALUE, true));
+
+    // when / then
+    final var fullValueLiteral = "\"" + FULL_VALUE.replace("\"", "\\\"") + "\"";
+    webClient
+        .get()
+        .uri(GET_URL, 1L)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(
+            expectedGetItem(
+                fullValueLiteral, "\"4\"", "\"task1\"", "\"6\"", "\"demo\"", "\"agent\""),
+            JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldReturnNullableFieldsAsNullForGet() {
+    // given
+    when(variableHistoryServices.getByKey(eq(1L), any()))
+        .thenReturn(entity(false, "\"v\"", null, false));
+
+    // when / then
+    webClient
+        .get()
+        .uri(GET_URL, 1L)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(
+            expectedGetItem("\"\\\"v\\\"\"", "null", "null", "null", "null", "null"),
+            JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldFailForGetOfPreviewWithoutFullValue() {
+    // given
+    when(variableHistoryServices.getByKey(eq(1L), any()))
+        .thenReturn(entity(true, PREVIEW, null, true));
+
+    // when / then
+    webClient
+        .get()
+        .uri(GET_URL, 1L)
+        .exchange()
+        .expectStatus()
+        .isEqualTo(500)
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON);
+  }
+
+  @Test
+  void shouldReturnBadRequestForGetWithMalformedKey() {
+    // when / then
+    webClient
+        .get()
+        .uri(GET_URL, "abc")
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .jsonPath("$.detail")
+        .isEqualTo("Failed to convert 'variableHistoryItemKey' with value: 'abc'");
+
+    verify(variableHistoryServices, never()).getByKey(anyLong(), any());
+  }
+
+  @Test
+  void shouldReturnNotFoundForGetOfMissingItem() {
+    // given
+    when(variableHistoryServices.getByKey(eq(1L), any()))
+        .thenThrow(
+            new ServiceException("Variable history item with key '1' not found", Status.NOT_FOUND));
+
+    // when / then
+    webClient
+        .get()
+        .uri(GET_URL, 1L)
+        .exchange()
+        .expectStatus()
+        .isNotFound()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .jsonPath("$.detail")
+        .isEqualTo("Variable history item with key '1' not found");
+  }
+
+  @Test
+  void shouldReturnForbiddenForGetWhenNotAuthorized() {
+    // given
+    final var detail =
+        "Unauthorized to perform operation 'READ_PROCESS_INSTANCE' on resource"
+            + " 'PROCESS_DEFINITION'";
+    when(variableHistoryServices.getByKey(eq(1L), any()))
+        .thenThrow(new ServiceException(detail, Status.FORBIDDEN));
+
+    // when / then
+    webClient
+        .get()
+        .uri(GET_URL, 1L)
+        .exchange()
+        .expectStatus()
+        .isForbidden()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .jsonPath("$.detail")
+        .isEqualTo(detail);
+  }
+
   @ParameterizedTest
   @EnumSource(VariableHistoryItemVariableOperationTypeEnum.class)
   void shouldAcceptEveryVariableOperationTypeInTheSpec(
@@ -761,6 +930,17 @@ public class VariableHistoryControllerTest extends RestControllerTest {
         rootProcessInstanceKey,
         actorId,
         agentElementId);
+  }
+
+  private static String expectedGetItem(
+      final String value,
+      final String elementInstanceKey,
+      final String elementId,
+      final String rootProcessInstanceKey,
+      final String actorId,
+      final String agentElementId) {
+    return EXPECTED_GET_ITEM_TEMPLATE.formatted(
+        value, elementInstanceKey, elementId, rootProcessInstanceKey, actorId, agentElementId);
   }
 
   private static String expectedResponse(final String item) {

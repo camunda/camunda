@@ -7,6 +7,7 @@
  */
 package io.camunda.service;
 
+import static io.camunda.security.core.auth.RequiredAuthorization.withRequiredAuthorization;
 import static io.camunda.service.authorization.Authorizations.VARIABLE_HISTORY_READ_AUTHORIZATION;
 
 import io.camunda.search.clients.VariableHistorySearchClient;
@@ -51,5 +52,19 @@ public class VariableHistoryServices
                     securityContextProvider.provideSecurityContext(
                         authentication, VARIABLE_HISTORY_READ_AUTHORIZATION))
                 .searchVariableHistoryItems(query));
+  }
+
+  public VariableHistoryItemEntity getByKey(
+      final long key, final CamundaAuthentication authentication) {
+    return executeSearchRequest(
+        () ->
+            variableHistorySearchClient
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        authentication,
+                        withRequiredAuthorization(
+                            VARIABLE_HISTORY_READ_AUTHORIZATION,
+                            VariableHistoryItemEntity::processDefinitionId)))
+                .getVariableHistoryItem(key));
   }
 }

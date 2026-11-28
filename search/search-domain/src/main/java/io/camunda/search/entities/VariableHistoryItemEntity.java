@@ -20,7 +20,9 @@ import org.jspecify.annotations.Nullable;
  *     it. Readers must leave it {@code null} for an entry that records only the item added to the
  *     output collection of a multi-instance element or an ad-hoc sub-process: the REST mapping
  *     returns {@code fullValue} when {@code truncateValues} is false, so a non-null value would
- *     return the single item instead of the list.
+ *     return the single item instead of the list. The get endpoint returns {@code fullValue}
+ *     instead of {@code value} when {@code isPreview} is true and answers 500 when it is {@code
+ *     null}, so readers must set it for every entry with {@code isPreview} true.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record VariableHistoryItemEntity(
