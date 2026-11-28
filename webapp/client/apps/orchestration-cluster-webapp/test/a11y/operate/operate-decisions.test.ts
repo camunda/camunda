@@ -173,7 +173,7 @@ test('should have no accessibility violations with a selected decision and the d
 		}),
 	);
 	await operateDecisionsPage.goto('?decisionDefinitionId=invoiceClassification&decisionDefinitionVersion=1');
-	await page.getByRole('button', {name: /Delete decision definition/}).click();
+	await page.getByRole('button', {name: /Delete DRD/}).click();
 	await expect(page.getByRole('dialog')).toBeVisible();
 
 	const results = await makeAxeBuilder().analyze();

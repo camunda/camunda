@@ -120,6 +120,40 @@ test('should delete the selected DRD, refresh decisions and preserve tenant and 
 	await expect(page.getByText("Couldn't find the decision", {exact: true})).not.toBeVisible();
 });
 
+test('should link to the created batch operation after deleting a DRD', async ({
+	network,
+	page,
+	operateDecisionsPage,
+}) => {
+	network.use(
+		mockDeleteResourceEndpoint({
+			successResponse: HttpResponse.json({
+				resourceKey: DEFINITION.decisionRequirementsKey,
+				batchOperation: {
+					batchOperationKey: 'decision-delete-2',
+					batchOperationType: 'DELETE_DECISION_INSTANCE',
+				},
+			}),
+		}),
+		mockGetBatchOperationEndpoint({
+			successResponse: HttpResponse.json(
+				createBatchOperation({
+					batchOperationKey: 'decision-delete-2',
+					batchOperationType: 'DELETE_DECISION_INSTANCE',
+				}),
+			),
+		}),
+		mockQueryBatchOperationItemsEndpoint({
+			successResponse: HttpResponse.json(createQueryBatchOperationItemsResponse()),
+		}),
+	);
+	await operateDecisionsPage.goto(SEARCH);
+	await operateDecisionsPage.deleteDefinition();
+	await page.getByRole('button', {name: 'Go to operation details'}).click();
+
+	await expect(page).toHaveURL('/operate-preview/batch-operations/decision-delete-2');
+});
+
 test('should open the started batch operation from the decision instance deletion notification within a deployment prefix', async ({
 	network,
 	page,

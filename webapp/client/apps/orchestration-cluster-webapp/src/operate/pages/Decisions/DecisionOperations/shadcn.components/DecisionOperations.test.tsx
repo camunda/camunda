@@ -22,7 +22,7 @@ import {DecisionOperations} from './DecisionOperations';
 const DEFINITION = createDecisionDefinition({tenantId: 'tenant-a'});
 const INITIAL_ENTRY =
 	'/operate/decisions?decisionDefinitionId=my-decision&decisionDefinitionVersion=1&tenantId=tenant-a&businessId=order-1&failed=false';
-const ACTION_NAME = 'Delete decision definition "My Decision - version 1"';
+const ACTION_NAME = /Delete DRD/;
 const CONFIRMATION = 'Yes, I confirm I want to delete this DRD and all related instances.';
 
 function renderOperations(definition = DEFINITION) {
@@ -48,6 +48,12 @@ describe('<DecisionOperations />', () => {
 	afterEach(() => {
 		notificationsStore.reset();
 		toast.dismiss();
+	});
+
+	it('should show a visible Delete DRD label on the action', async () => {
+		const screen = await renderOperations();
+
+		await expect.element(screen.getByRole('button', {name: ACTION_NAME})).toHaveTextContent('Delete DRD');
 	});
 
 	it('should explain DRD-wide deletion and require fresh confirmation after cancel', async () => {
@@ -114,6 +120,36 @@ describe('<DecisionOperations />', () => {
 			evaluated: false,
 			failed: false,
 		});
+	});
+
+	it('should treat a successful deletion with an unreadable body as a plain success', async ({worker}) => {
+		worker.use(mockDeleteResourceEndpoint({successResponse: new HttpResponse('not json', {status: 200})}));
+		const screen = await renderOperations();
+
+		await submit(screen);
+
+		await expect.element(screen.getByText('Operation created', {exact: true})).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: ACTION_NAME})).toBeEnabled();
+	});
+
+	it('should let the user open the operation details from the success notification', async ({worker}) => {
+		worker.use(
+			mockDeleteResourceEndpoint({
+				successResponse: HttpResponse.json({
+					resourceKey: DEFINITION.decisionRequirementsKey,
+					batchOperation: {
+						batchOperationKey: 'decision-delete-1',
+						batchOperationType: 'DELETE_DECISION_INSTANCE',
+					},
+				}),
+			}),
+		);
+		const screen = await renderOperations();
+
+		await submit(screen);
+		await userEvent.click(screen.getByRole('button', {name: 'Go to operation details'}));
+
+		expect(screen.router.state.location.pathname).toBe('/operate-preview/batch-operations/decision-delete-1');
 	});
 
 	it.for([

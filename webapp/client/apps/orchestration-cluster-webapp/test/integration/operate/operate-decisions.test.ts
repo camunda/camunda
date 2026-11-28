@@ -111,9 +111,7 @@ test.describe('Operate Decisions DS (/operate/decisions)', () => {
 		);
 		await operateDecisionsPage.goto('?decisionDefinitionId=invoice&decisionDefinitionVersion=1');
 
-		await expect(
-			operateDecisionsPage.decisionPanel.getByRole('button', {name: /Delete decision definition/}),
-		).toBeVisible();
+		await expect(operateDecisionsPage.decisionPanel.getByRole('button', {name: /Delete DRD/})).toBeVisible();
 	});
 
 	test('should delete the selected decision instances in bulk', async ({network, operateDecisionsPage, page}) => {

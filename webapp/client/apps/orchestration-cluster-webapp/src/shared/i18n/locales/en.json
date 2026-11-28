@@ -1694,10 +1694,12 @@
 						"emptyAdditionalInfo": "To see some results, select at least one instance state"
 					},
 					"toolbar": {
-						"deleteSuccessSubtitle": "You can track its progress in the batch operation page"
+						"deleteSuccessSubtitle": "You can track its progress in the batch operation page",
+						"deleteSuccessActionLabel": "Go to operation details"
 					},
 					"definitionDeletion": {
-						"buttonTitle": "Delete decision definition \"{{name}} - version {{version}}\"",
+						"buttonLabel": "Delete DRD",
+						"buttonTitle": "Delete DRD \"{{name}}\" and all decision instances",
 						"details": "DRD details"
 					}
 				}

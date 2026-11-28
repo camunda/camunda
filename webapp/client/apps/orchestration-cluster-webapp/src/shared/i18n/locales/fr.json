@@ -1660,7 +1660,8 @@
 				},
 				"ds": {
 					"definitionDeletion": {
-						"buttonTitle": "Supprimer la définition de décision \"{{name}} - version {{version}}\"",
+						"buttonLabel": "Supprimer le DRD",
+						"buttonTitle": "Supprimer le DRD « {{name}} » et toutes les instances de décision",
 						"details": "Détails du DRD"
 					},
 					"diagramPanel": {
@@ -1689,7 +1690,8 @@
 						"title": "Instances de décision"
 					},
 					"toolbar": {
-						"deleteSuccessSubtitle": "Vous pouvez suivre son avancement dans la page Opérations par lot"
+						"deleteSuccessSubtitle": "Vous pouvez suivre son avancement dans la page Opérations par lot",
+						"deleteSuccessActionLabel": "Voir les détails de l'opération"
 					}
 				}
 			},

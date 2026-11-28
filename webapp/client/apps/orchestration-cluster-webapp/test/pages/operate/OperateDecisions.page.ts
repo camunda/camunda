@@ -40,7 +40,7 @@ class OperateDecisionsPage extends BasePage {
 	}
 
 	get deleteDefinitionButton() {
-		return this.page.getByRole('button', {name: /Delete decision definition/});
+		return this.page.getByRole('button', {name: /Delete DRD/});
 	}
 
 	get deleteDefinitionDialog() {

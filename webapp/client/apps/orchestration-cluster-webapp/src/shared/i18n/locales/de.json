@@ -1657,7 +1657,8 @@
 				},
 				"ds": {
 					"definitionDeletion": {
-						"buttonTitle": "Entscheidungsdefinition \"{{name}} - Version {{version}}\" löschen",
+						"buttonLabel": "DRD löschen",
+						"buttonTitle": "DRD \"{{name}}\" und alle Entscheidungsinstanzen löschen",
 						"details": "DRD-Details"
 					},
 					"diagramPanel": {
@@ -1686,7 +1687,8 @@
 						"title": "Entscheidungsinstanzen"
 					},
 					"toolbar": {
-						"deleteSuccessSubtitle": "Sie können den Fortschritt auf der Seite Batch-Operationen verfolgen"
+						"deleteSuccessSubtitle": "Sie können den Fortschritt auf der Seite Batch-Operationen verfolgen",
+						"deleteSuccessActionLabel": "Zu den Operationsdetails"
 					}
 				}
 			},
