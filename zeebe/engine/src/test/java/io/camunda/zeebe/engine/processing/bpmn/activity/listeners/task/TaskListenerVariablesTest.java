@@ -17,6 +17,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.Before;
@@ -206,6 +207,34 @@ public class TaskListenerVariablesTest {
         .describedAs("Expect that only the specified variable foo is provided to the job")
         .allSatisfy(
             job -> assertThat(job.getVariables()).containsExactly(Map.entry("foo", "overwritten")));
+  }
+
+  @Test
+  public void shouldProvideNullVariableOfTaskCompletionWhenFetchingSpecifiedVariables() {
+    // given
+    final var processInstanceKey =
+        helper.createProcessInstanceWithVariables(
+            helper.createProcessWithCompletingTaskListeners(listenerType), Map.of("bar", 123));
+
+    final Map<String, Object> completionVariables = new HashMap<>();
+    completionVariables.put("foo", null);
+    completionVariables.put("bar", 456);
+
+    // when
+    ENGINE.userTask().ofInstance(processInstanceKey).withVariables(completionVariables).complete();
+
+    // then
+    assertThat(
+            ENGINE
+                .jobs()
+                .withType(listenerType)
+                .withFetchVariables("foo")
+                .activate()
+                .getValue()
+                .getJobs())
+        .describedAs("Expect that the requested variable foo is provided with its null value")
+        .singleElement()
+        .satisfies(job -> assertThat(job.getVariables()).hasSize(1).containsEntry("foo", null));
   }
 
   @Test

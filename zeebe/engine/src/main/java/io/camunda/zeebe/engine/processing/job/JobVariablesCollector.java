@@ -17,7 +17,6 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Collection;
 import java.util.Map;
-import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 
 public class JobVariablesCollector {
@@ -81,8 +80,10 @@ public class JobVariablesCollector {
     if (requestedVariables.isEmpty()) {
       return taskVariablesMap;
     }
-    return taskVariablesMap.entrySet().stream()
-        .filter(e -> requestedVariables.contains(BufferUtil.wrapString(e.getKey())))
-        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    // filter in place: a variable set to null is a null value here, which Collectors.toMap rejects
+    taskVariablesMap
+        .keySet()
+        .removeIf(name -> !requestedVariables.contains(BufferUtil.wrapString(name)));
+    return taskVariablesMap;
   }
 }
