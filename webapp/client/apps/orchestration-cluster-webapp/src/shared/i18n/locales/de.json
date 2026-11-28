@@ -1364,7 +1364,11 @@
 					"helperReviewDs": "2. Klicken Sie auf „Änderung prüfen“.",
 					"exitDescriptionDs": "Beim Beenden wird Ihre geplante Verschiebung verworfen.",
 					"exitDescriptionEmptyDs": "Batch-Änderungsmodus beenden.",
-					"undoAriaDs": "Verschiebung nach „{{target}}“ rückgängig machen"
+					"undoAriaDs": "Verschiebung nach „{{target}}“ rückgängig machen",
+					"frameTitleDs": "Batch-Änderungsmodus",
+					"helperTitleDs": "Batch-Änderungsmodus",
+					"summaryTitleDs": "Änderungen anwenden",
+					"summaryHeadingDs": "Elementänderungen"
 				},
 				"toolbar": {
 					"delete": "Löschen",
@@ -1396,6 +1400,7 @@
 					"noIncidents": "Keine Prozessinstanzen mit Incident ausgewählt. Wählen Sie mindestens eine Prozessinstanz mit Incident für einen erneuten Versuch aus.",
 					"noSuspended": "Keine ausgesetzten Prozessinstanzen ausgewählt. Wählen Sie mindestens eine ausgesetzte Prozessinstanz zum Fortsetzen aus.",
 					"actionMode": "Im Batch-Modifikationsmodus nicht verfügbar",
+					"actionModeDs": "Im Batch-Änderungsmodus nicht verfügbar",
 					"started": "Die Batch-Operation „{{operationType}}“ wurde gestartet",
 					"progressSubtitle": "Sie können den Fortschritt auf der Seite der Batch-Operation verfolgen",
 					"details": "Zu den Operationsdetails",

@@ -1367,7 +1367,11 @@
 					"helperReviewDs": "2. Cliquez sur « Vérifier la modification ».",
 					"exitDescriptionDs": "Quitter annule le déplacement prévu.",
 					"exitDescriptionEmptyDs": "Quitter le mode de modification par lot.",
-					"undoAriaDs": "Annuler le déplacement vers « {{target}} »"
+					"undoAriaDs": "Annuler le déplacement vers « {{target}} »",
+					"frameTitleDs": "Mode de modification par lot",
+					"helperTitleDs": "Mode de modification par lot",
+					"summaryTitleDs": "Appliquer les modifications",
+					"summaryHeadingDs": "Modifications des éléments"
 				},
 				"toolbar": {
 					"delete": "Supprimer",
@@ -1399,6 +1403,7 @@
 					"noIncidents": "Aucune instance de processus avec incident sélectionnée. Sélectionnez au moins une instance avec incident pour réessayer.",
 					"noSuspended": "Aucune instance de processus suspendue sélectionnée. Sélectionnez au moins une instance suspendue à reprendre.",
 					"actionMode": "Non disponible en mode de modification par lots",
+					"actionModeDs": "Non disponible en mode de modification par lot",
 					"started": "L’opération par lots « {{operationType}} » a été démarrée",
 					"progressSubtitle": "Vous pouvez suivre sa progression sur la page de l’opération par lots",
 					"details": "Voir les détails de l’opération",

@@ -215,7 +215,7 @@ test('should have no accessibility violations with the process definition deleti
 	expect(results.violations).toEqual([]);
 });
 
-test('should have no accessibility violations in batch move mode and its helper dialog', async ({
+test('should have no accessibility violations in batch modification mode and its helper dialog', async ({
 	network,
 	operatePreviewProcessesPage,
 	page,

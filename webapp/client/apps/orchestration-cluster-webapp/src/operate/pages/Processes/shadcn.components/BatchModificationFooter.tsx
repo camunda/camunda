@@ -111,6 +111,7 @@ const BatchModificationFooter: React.FC<Props> = ({
 					<AlertDialogFooter>
 						<AlertDialogCancel>{t('operate.processes.toolbar.cancel')}</AlertDialogCancel>
 						<AlertDialogAction
+							variant="destructive"
 							onClick={(event) => {
 								event.preventDefault();
 								setIsExitOpen(false);
@@ -132,14 +133,14 @@ const BatchModificationFooter: React.FC<Props> = ({
 			>
 				<DialogContent size="lg" dismissOnOutsideClick={false}>
 					<DialogHeader>
-						<DialogTitle>{t('operate.processes.batchModification.summaryTitle')}</DialogTitle>
+						<DialogTitle>{t('operate.processes.batchModification.summaryTitleDs')}</DialogTitle>
 						<DialogDescription>
 							{t('operate.processes.batchModification.summaryDescription', {processName})}
 						</DialogDescription>
 					</DialogHeader>
 					<DialogBody className="flex flex-col gap-3">
 						<Heading as="h3" variant="heading-xs">
-							{t('operate.processes.batchModification.summaryHeading')}
+							{t('operate.processes.batchModification.summaryHeadingDs')}
 						</Heading>
 						<Table>
 							<TableHeader>
@@ -153,7 +154,7 @@ const BatchModificationFooter: React.FC<Props> = ({
 							</TableHeader>
 							<TableBody>
 								<TableRow>
-									<TableCell>{t('operate.processes.batchModification.batchMove')}</TableCell>
+									<TableCell>{t('operate.processes.batchModification.move')}</TableCell>
 									<TableCell>{`${sourceLabel} --> ${targetLabel}`}</TableCell>
 									<TableCell>{count}</TableCell>
 								</TableRow>
