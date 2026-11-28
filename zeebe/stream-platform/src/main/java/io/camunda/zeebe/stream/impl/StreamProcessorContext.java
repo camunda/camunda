@@ -62,6 +62,7 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   private @Nullable LogStreamWriter logStreamWriter;
   private @Nullable CommandResponseWriter commandResponseWriter;
   private @Nullable InterPartitionCommandSender partitionCommandSender;
+  private Runnable stepDownHook = () -> {};
 
   // this is accessed outside, which is why we need to make sure that it is thread-safe
   private volatile StreamProcessor.Phase phase = Phase.INITIAL;
@@ -260,6 +261,14 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
 
   public void partitionCommandSender(final InterPartitionCommandSender partitionCommandSender) {
     this.partitionCommandSender = partitionCommandSender;
+  }
+
+  public Runnable getStepDownHook() {
+    return stepDownHook;
+  }
+
+  public void stepDownHook(final Runnable stepDownHook) {
+    this.stepDownHook = stepDownHook;
   }
 
   public Phase getStreamProcessorPhase() {

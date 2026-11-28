@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
 import io.atomix.raft.RaftServer.Role;
+import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.engine.impl.BoundedScheduledCommandCache;
 import io.camunda.zeebe.broker.engine.impl.ScheduledCommandCacheMetrics.BoundedCommandCacheMetrics;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
@@ -26,11 +27,13 @@ import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.stream.impl.StreamProcessorMode;
 import java.util.List;
 import java.util.function.BiFunction;
+import org.slf4j.Logger;
 
 public final class StreamProcessorTransitionStep implements PartitionTransitionStep {
 
-  private final BiFunction<PartitionTransitionContext, Role, StreamProcessor>
-      streamProcessorCreator;
+  private static final Logger LOG = Loggers.SYSTEM_LOGGER;
+
+  private final StreamProcessorCreator streamProcessorCreator;
 
   public StreamProcessorTransitionStep() {
     this(StreamProcessorTransitionStep::createStreamProcessor);
@@ -39,6 +42,10 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
   // Used for testing
   public StreamProcessorTransitionStep(
       final BiFunction<PartitionTransitionContext, Role, StreamProcessor> streamProcessorCreator) {
+    this((context, term, role) -> streamProcessorCreator.apply(context, role));
+  }
+
+  private StreamProcessorTransitionStep(final StreamProcessorCreator streamProcessorCreator) {
     this.streamProcessorCreator = streamProcessorCreator;
   }
 
@@ -88,7 +95,8 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
 
     if (shouldInstallOnTransition(targetRole, currentRole)
         || (context.getStreamProcessor() == null && targetRole != Role.INACTIVE)) {
-      final StreamProcessor streamProcessor = streamProcessorCreator.apply(context, targetRole);
+      final StreamProcessor streamProcessor =
+          streamProcessorCreator.create(context, term, targetRole);
       context.setStreamProcessor(streamProcessor);
       final ActorFuture<Void> openFuture = streamProcessor.openAsync(!context.shouldProcess());
       final ActorFuture<Void> future = concurrencyControl.createFuture();
@@ -137,8 +145,25 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
         .setMaxResponseMessageSize((int) brokerCfg.getNetwork().getMaxMessageSizeInBytes());
   }
 
+  /**
+   * Steps down if this broker still leads the term the stream processor was created for. The Raft
+   * partition is consulted instead of the transition context because the context only learns the
+   * new term and role once the transition completes, which a failing stream processor can precede.
+   */
+  static void stepDownIfLeaderInTerm(final PartitionTransitionContext context, final long term) {
+    final var raftPartition = context.getRaftPartition();
+    if (raftPartition.getRole() == Role.LEADER && raftPartition.term() == term) {
+      LOG.info(
+          "Stepping down from leadership of partition {} in term {} because the stream processor "
+              + "met a record from a newer broker version",
+          context.getPartitionId(),
+          term);
+      raftPartition.stepDown();
+    }
+  }
+
   private static StreamProcessor createStreamProcessor(
-      final PartitionTransitionContext context, final Role targetRole) {
+      final PartitionTransitionContext context, final long term, final Role targetRole) {
     final StreamProcessorMode streamProcessorMode =
         targetRole == Role.LEADER ? StreamProcessorMode.PROCESSING : StreamProcessorMode.REPLAY;
 
@@ -186,6 +211,8 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
         .setScheduledTaskCheckInterval(
             context.getBrokerCfg().getProcessing().getScheduledTaskCheckInterval())
         .processingFilter(processingFilter)
+        .stepDownHook(
+            () -> context.getConcurrencyControl().run(() -> stepDownIfLeaderInTerm(context, term)))
         .listener(
             processedPosition ->
                 context.getLogStream().getFlowControl().onProcessed(processedPosition))
@@ -211,5 +238,10 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
         .scheduledCommandCache(scheduledCommandCache)
         .clock(context.getStreamClock())
         .build();
+  }
+
+  @FunctionalInterface
+  private interface StreamProcessorCreator {
+    StreamProcessor create(PartitionTransitionContext context, long term, Role targetRole);
   }
 }

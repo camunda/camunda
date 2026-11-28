@@ -116,7 +116,7 @@ public final class ProcessingStateMachine implements CloseableSilently {
   private static final String ERROR_MESSAGE_PROCESSING_FAILED_RETRY_PROCESSING =
       "Expected to process record '{} {}' successfully on stream processor, but caught recoverable exception. Retry processing.";
   private static final String ERROR_MESSAGE_PROCESSING_FAILED_UNRECOVERABLE =
-      "Expected to process record '{} {}' successfully on stream processor, but caught unrecoverable exception.";
+      "Expected to process record '%s %s' successfully on stream processor, but caught unrecoverable exception.";
   private static final String NOTIFY_PROCESSED_LISTENER_ERROR_MESSAGE =
       "Expected to invoke processed listener for record {} successfully, but exception was thrown.";
   private static final String NOTIFY_SKIPPED_LISTENER_ERROR_MESSAGE =
@@ -341,6 +341,12 @@ public final class ProcessingStateMachine implements CloseableSilently {
         metadata.getValueType());
 
     try {
+      final var value = recordValues.readRecordValue(loggedEvent, metadata.getValueType());
+      if (value == null) {
+        // only unknown value types have no value, and no processor accepts those
+        throw NoSuchProcessorException.forRecord(UnprocessableRecord.of(loggedEvent, metadata));
+      }
+
       // Here we need to get the current time, since we want to calculate
       // how long it took between writing to the dispatcher and processing.
       // In all other cases we should prefer to use the Prometheus Timer API.
@@ -349,8 +355,6 @@ public final class ProcessingStateMachine implements CloseableSilently {
           processingMetrics.startProcessingDurationTimer(
               metadata.getValueType(), metadata.getIntent());
 
-      final var value =
-          requireNonNull(recordValues.readRecordValue(loggedEvent, metadata.getValueType()));
       typedCommand.wrap(loggedEvent, metadata, value);
 
       zeebeDbTransaction = transactionContext.getCurrentTransaction();
@@ -370,9 +374,14 @@ public final class ProcessingStateMachine implements CloseableSilently {
           recoverableException);
       actor.schedule(
           PROCESSING_RETRY_DELAY, () -> processCommand(requireNonNull(this.currentRecord)));
+    } catch (final NoSuchProcessorException noProcessor) {
+      // it identifies the record itself and is classified by StreamProcessor from its data
+      throw noProcessor;
     } catch (final UnrecoverableException unrecoverableException) {
-      LOG.error(ERROR_MESSAGE_PROCESSING_FAILED_UNRECOVERABLE, loggedEvent, metadata);
-      throw unrecoverableException;
+      // StreamProcessor#onFailure logs the failure, so carry the record along for it to report.
+      throw new UnrecoverableException(
+          ERROR_MESSAGE_PROCESSING_FAILED_UNRECOVERABLE.formatted(loggedEvent, metadata),
+          unrecoverableException);
     } catch (final ExceededBatchRecordSizeException exceededBatchRecordSizeException) {
       if (processedCommandsCount > 0) {
         LOG.warn(
@@ -400,6 +409,10 @@ public final class ProcessingStateMachine implements CloseableSilently {
             writeRecords();
           });
     }
+  }
+
+  private @Nullable RecordProcessor findProcessor(final ValueType valueType) {
+    return recordProcessors.stream().filter(p -> p.accepts(valueType)).findFirst().orElse(null);
   }
 
   /**
@@ -448,11 +461,11 @@ public final class ProcessingStateMachine implements CloseableSilently {
         }
       }
 
-      currentProcessor =
-          recordProcessors.stream()
-              .filter(p -> p.accepts(command.getValueType()))
-              .findFirst()
-              .orElseThrow(() -> NoSuchProcessorException.forRecord(command));
+      final var processor = findProcessor(command.getValueType());
+      if (processor == null) {
+        throw NoSuchProcessorException.forRecord(UnprocessableRecord.of(command));
+      }
+      currentProcessor = processor;
 
       currentProcessingResult = currentProcessor.process(command, processingResultBuilder);
 

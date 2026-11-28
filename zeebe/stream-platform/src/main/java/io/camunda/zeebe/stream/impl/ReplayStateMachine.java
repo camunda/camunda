@@ -21,7 +21,6 @@ import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.encoding.RecordMetadataBlock;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -30,7 +29,6 @@ import io.camunda.zeebe.scheduler.retry.RecoverableRetryStrategy;
 import io.camunda.zeebe.scheduler.retry.RetryStrategy;
 import io.camunda.zeebe.stream.api.EventFilter;
 import io.camunda.zeebe.stream.api.RecordProcessor;
-import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGeneratorControls;
 import io.camunda.zeebe.stream.api.state.MutableLastProcessedPositionState;
 import io.camunda.zeebe.stream.impl.metrics.ReplayMetrics;
@@ -174,7 +172,10 @@ public final class ReplayStateMachine implements LogRecordAwaiter, CloseableSile
             .runWithRetry(() -> tryToReplayBatch(batch), abortCondition)
             .onComplete(
                 (success, failure) -> {
-                  if (failure != null) {
+                  if (failure instanceof final NoSuchProcessorException noProcessor) {
+                    // it identifies the record itself and is classified by its type
+                    throw noProcessor;
+                  } else if (failure != null) {
                     throw new RuntimeException(
                         "Failed to replay batch at '%s %s'"
                             .formatted(batch.current(), typedEvent.getMetadata()),
@@ -238,19 +239,23 @@ public final class ReplayStateMachine implements LogRecordAwaiter, CloseableSile
             || currentEvent.getSourceEventPosition()
                 < 0)) { // some events might not have a source pointer
       readMetadata(currentEvent);
-      final var currentTypedEvent = requireNonNull(readRecordValue(currentEvent));
+      final var value = recordValues.readRecordValue(currentEvent, metadata.getValueType());
+      final var processor =
+          recordProcessors.stream()
+              .filter(p -> p.accepts(metadata.getValueType()))
+              .findFirst()
+              .orElse(null);
+      if (value == null || processor == null) {
+        throw NoSuchProcessorException.forRecord(UnprocessableRecord.of(currentEvent, metadata));
+      }
+      typedEvent.wrap(currentEvent, metadata, value);
+      final var currentTypedEvent = typedEvent;
       LOG.trace("Replaying event {}: {}", currentTypedEvent.getPosition(), currentTypedEvent);
       currentStateDescription.set(
           "replaying event",
           currentTypedEvent.getPosition(),
           currentTypedEvent.getIntent(),
           currentTypedEvent.getValueType());
-
-      final var processor =
-          recordProcessors.stream()
-              .filter(p -> p.accepts(currentTypedEvent.getValueType()))
-              .findFirst()
-              .orElseThrow(() -> NoSuchProcessorException.forRecord(currentTypedEvent));
 
       processor.replay(currentTypedEvent);
       lastReplayedEventPosition = currentTypedEvent.getPosition();
@@ -341,13 +346,6 @@ public final class ReplayStateMachine implements LogRecordAwaiter, CloseableSile
       final var errorMsg = String.format(ERROR_MSG_EXPECTED_TO_READ_METADATA, currentEvent);
       throw new ProcessingException(errorMsg, currentEvent, null, e);
     }
-  }
-
-  private TypedRecord<?> readRecordValue(final LoggedEvent currentEvent) {
-    final UnifiedRecordValue value =
-        requireNonNull(recordValues.readRecordValue(currentEvent, metadata.getValueType()));
-    typedEvent.wrap(currentEvent, metadata, value);
-    return typedEvent;
   }
 
   public long getLastSourceEventPosition() {

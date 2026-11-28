@@ -16,6 +16,8 @@ import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.logstreams.log.LogRecordAwaiter;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
+import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
@@ -222,7 +224,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
         replayCompletedFuture.onComplete(
             (v, error) -> {
               if (error != null) {
-                LOG.error("The replay of events failed.", error);
                 onFailure(error);
               }
             });
@@ -231,7 +232,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
         replayCompletedFuture.onComplete(
             (lastProcessingPositions, error) -> {
               if (error != null) {
-                LOG.error("The replay of events failed.", error);
                 onFailure(error);
               } else {
                 onRecovered(lastProcessingPositions);
@@ -465,9 +465,74 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
             actor);
   }
 
-  private void onFailure(final Throwable throwable) {
-    LOG.error("Actor {} failed in phase {}.", getName(), actor.getLifecyclePhase(), throwable);
+  /**
+   * A record read from the log that this broker cannot process is expected while a rolling update
+   * is in progress if it was written by a newer broker version, and a genuine error otherwise.
+   */
+  private void onUnprocessableRecord(
+      final NoSuchProcessorException error, final UnprocessableRecord record) {
+    final var inReplayMode =
+        streamProcessorContext.getProcessorMode() == StreamProcessorMode.REPLAY;
+    if (record.isFromNewerVersion()) {
+      logRecordFromNewerVersion(record);
+      if (inReplayMode) {
+        failActor(error, true);
+      } else {
+        // Reporting a leader as dead stops the partition on this broker. A record from a newer
+        // version only means this broker cannot lead until it is upgraded, so hand leadership to
+        // a broker that can.
+        failActor(error, true, streamProcessorContext.getStepDownHook());
+      }
+    } else {
+      onFailure(error, inReplayMode);
+    }
+  }
 
+  private void logRecordFromNewerVersion(final UnprocessableRecord record) {
+    final var valueType = record.valueType();
+    final var valueTypeDescription =
+        valueType == ValueType.NULL_VAL || valueType == ValueType.SBE_UNKNOWN
+            ? "unknown"
+            : valueType.name();
+    LOG.warn(
+        "Stopping at record [position: {}, valueType: {}] written by broker version {}, which is "
+            + "newer than this broker's version {}. This is expected during a rolling upgrade. "
+            + "This broker must be upgraded to at least version {} to proceed.",
+        record.position(),
+        valueTypeDescription,
+        record.brokerVersion(),
+        RecordMetadata.CURRENT_BROKER_VERSION,
+        record.brokerVersion());
+  }
+
+  private void onFailure(final Throwable throwable) {
+    if (throwable instanceof final NoSuchProcessorException noProcessor) {
+      onUnprocessableRecord(noProcessor, noProcessor.unprocessableRecord());
+      return;
+    }
+    onFailure(
+        throwable,
+        streamProcessorContext.getProcessorMode() == StreamProcessorMode.REPLAY
+            && !(throwable instanceof UnrecoverableException));
+  }
+
+  private void onFailure(final Throwable throwable, final boolean reportUnhealthy) {
+    LOG.error("Actor {} failed in phase {}.", getName(), actor.getLifecyclePhase(), throwable);
+    failActor(throwable, reportUnhealthy);
+  }
+
+  /**
+   * Fails the actor and reports the failure.
+   *
+   * @param reportUnhealthy whether to report this processor as unhealthy, which is not critical, or
+   *     as dead, which stops the partition on this broker
+   */
+  private void failActor(final Throwable throwable, final boolean reportUnhealthy) {
+    failActor(throwable, reportUnhealthy, () -> {});
+  }
+
+  private void failActor(
+      final Throwable throwable, final boolean reportUnhealthy, final Runnable afterReported) {
     // The context does not exist yet if we fail while recovering from the snapshot; there are no
     // async actors to close then, but we must still fail the actor and notify everyone waiting.
     final ActorFuture<Void> actorsClosed =
@@ -485,8 +550,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
             future.completeExceptionally(throwable);
           }
 
-          if (streamProcessorContext.getProcessorMode().equals(StreamProcessorMode.REPLAY)
-              && !(throwable instanceof UnrecoverableException)) {
+          if (reportUnhealthy) {
             // If the stream processor is in replay mode, we do not want to report it as dead
             // because it is not critical. The leaders are still active and able to process
             // requests.
@@ -500,6 +564,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
             final var report = HealthReport.dead(this).withIssue(throwable, instant);
             failureListeners.forEach(l -> l.onUnrecoverableFailure(report));
           }
+          afterReported.run();
         });
   }
 

@@ -11,6 +11,7 @@ import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.protocol.impl.encoding.InternalOperationReference;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.VersionInfo;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
@@ -150,6 +151,33 @@ public final class RecordToWrite implements LogAppendEntry {
         .valueType(ValueType.PROCESS_INSTANCE_MODIFICATION)
         .intent(ProcessInstanceModificationIntent.MODIFY);
     unifiedRecordValue = (ProcessInstanceModificationRecord) value;
+    return this;
+  }
+
+  /**
+   * Simulates a record whose value type is unknown to the current version: the SBE codec decodes
+   * such a value type as {@link ValueType#SBE_UNKNOWN}, which round-trips to {@link
+   * ValueType#NULL_VAL}. A concrete value is attached only so the record can be serialized; on read
+   * its value is {@code null}.
+   */
+  public RecordToWrite unknownValueType() {
+    recordMetadata
+        .valueType(ValueType.SBE_UNKNOWN)
+        .intent(ProcessInstanceIntent.ELEMENT_ACTIVATING);
+    unifiedRecordValue = new ProcessInstanceRecord();
+    return this;
+  }
+
+  /**
+   * Simulates a record written by a newer broker version: an {@link #unknownValueType()} record
+   * stamped with a broker version newer than the current one.
+   */
+  public RecordToWrite fromNewerBrokerVersion() {
+    unknownValueType();
+    final var current = RecordMetadata.CURRENT_BROKER_VERSION;
+    recordMetadata.brokerVersion(
+        new VersionInfo(
+            current.getMajorVersion() + 1, current.getMinorVersion(), current.getPatchVersion()));
     return this;
   }
 
