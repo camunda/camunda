@@ -26,6 +26,7 @@ import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.MessagingException;
 import io.atomix.cluster.messaging.MessagingService;
+import io.atomix.cluster.messaging.UnicastService;
 import io.atomix.utils.concurrent.OrderedFuture;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.util.StringUtil;
@@ -112,19 +113,40 @@ import org.agrona.CloseHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Netty based MessagingService. */
-public final class NettyMessagingService implements ManagedMessagingService {
+/**
+ * Netty based MessagingService.
+ *
+ * <p>It also carries unreliable unicast over the same TCP transport, so that a cluster can run
+ * without UDP. That path allocates no Netty resources of its own: it reuses this class's name
+ * resolution, event loop groups, connection pool, TLS, compression and heartbeats. Whether it is
+ * used is decided by {@link CompositeUnicastService}, not here — this class always accepts unicast
+ * traffic, which is what lets the UDP switch be flipped one node at a time.
+ *
+ * <p>Its lifecycle belongs to the {@link io.atomix.cluster.messaging.ManagedNetworkService} that
+ * owns this instance, so unicast over TCP is available exactly while this service is running.
+ */
+public final class NettyMessagingService implements ManagedMessagingService, UnicastService {
   private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(5);
   private static final String TLS_PROTOCOL = "TLSv1.3";
   private static final String MESSAGE_DISPATCHER_NAME = "handler";
 
+  /**
+   * Gossip to a peer that is down fails on every round (250ms by default) until membership declares
+   * it dead, so failed unicasts are logged at most once per interval, without a stack trace.
+   */
+  private static final Duration UNICAST_FAILURE_LOG_INTERVAL = Duration.ofSeconds(10);
+
   private final Logger log = LoggerFactory.getLogger(getClass());
+  private final Logger unicastFailureLog = new ThrottledLogger(log, UNICAST_FAILURE_LOG_INTERVAL);
   private final Address advertisedAddress;
   private final Collection<Address> bindingAddresses = new ArrayList<>();
   private final int preamble;
   private final ProtocolVersion protocolVersion;
   private final AtomicBoolean started = new AtomicBoolean(false);
   private final HandlerRegistry handlers = new HandlerRegistry();
+  // the listener currently registered per unicast subject, and the registry handler wrapping it, so
+  // removeListener only removes what it registered; guarded by this
+  private final Map<String, UnicastRegistration> unicastListeners = new HashMap<>();
   private final Map<Channel, RemoteClientConnection> connections = Maps.newConcurrentMap();
   private final AtomicLong messageIdGenerator = new AtomicLong(0);
   private final ChannelPool channelPool;
@@ -401,6 +423,58 @@ public final class NettyMessagingService implements ManagedMessagingService {
   }
 
   @Override
+  public void unicast(final Address address, final String subject, final byte[] payload) {
+    if (!started.get()) {
+      log.debug("Failed sending unicast message, messaging service was not started.");
+      return;
+    }
+
+    // fire-and-forget: a failure here must not reach the caller. the try/catch covers the
+    // shutdown race, where sendAsync can throw synchronously rather than return a failed future
+    try {
+      sendAsync(address, subject, payload)
+          .exceptionally(
+              error -> {
+                logUnicastFailure(address, subject, error);
+                return null;
+              });
+    } catch (final Exception e) {
+      logUnicastFailure(address, subject, e);
+    }
+  }
+
+  private void logUnicastFailure(
+      final Address address, final String subject, final Throwable error) {
+    unicastFailureLog.debug(
+        "Failed sending unicast message to {} on {}: {}", address, subject, error.toString());
+  }
+
+  @Override
+  public synchronized void addListener(
+      final String subject, final BiConsumer<Address, byte[]> listener, final Executor executor) {
+    // unicast shares the subject namespace with messaging handlers. the only caller registering
+    // both on one subject is DefaultClusterCommunicationService#consume, whose two handlers are
+    // equivalent, so replacing one with the other changes nothing
+    final BiConsumer<ProtocolRequest, ServerConnection> handler =
+        (message, connection) ->
+            executor.execute(() -> listener.accept(message.sender(), message.payload()));
+    unicastListeners.put(subject, new UnicastRegistration(listener, handler));
+    handlers.register(subject, handler);
+  }
+
+  @Override
+  public synchronized void removeListener(
+      final String subject, final BiConsumer<Address, byte[]> listener) {
+    // compared by identity, as in NettyUnicastService: a stale reference must not unregister its
+    // replacement, nor a messaging handler registered on the same subject since
+    final var registration = unicastListeners.get(subject);
+    if (registration != null && registration.listener() == listener) {
+      unicastListeners.remove(subject);
+      handlers.unregister(subject, registration.handler());
+    }
+  }
+
+  @Override
   public boolean isRunning() {
     return started.get();
   }
@@ -441,10 +515,13 @@ public final class NettyMessagingService implements ManagedMessagingService {
               localConnection = new LocalClientConnection(handlers);
               started.set(true);
               log.info(
-                  "Started messaging service bound to {}, advertising {}, and using {}",
+                  "Started messaging service bound to {}, advertising {}, and using {}{}",
                   bindingAddresses,
                   advertisedAddress,
-                  config.isTlsEnabled() ? "TLS" : "plaintext");
+                  config.isTlsEnabled() ? "TLS" : "plaintext",
+                  config.isUdpEnabled()
+                      ? ""
+                      : ", with UDP disabled (also carries membership gossip)");
             })
         .thenApply(v -> this);
   }
@@ -1296,4 +1373,8 @@ public final class NettyMessagingService implements ManagedMessagingService {
           clazz, k -> new ThrottledLogger(log, THROTTLED_LOGGER_INTERVAL));
     }
   }
+
+  private record UnicastRegistration(
+      BiConsumer<Address, byte[]> listener,
+      BiConsumer<ProtocolRequest, ServerConnection> handler) {}
 }

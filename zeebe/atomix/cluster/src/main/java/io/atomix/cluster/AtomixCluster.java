@@ -39,6 +39,7 @@ import io.atomix.utils.Version;
 import io.atomix.utils.concurrent.SingleThreadContext;
 import io.atomix.utils.concurrent.ThreadContext;
 import io.atomix.utils.net.Address;
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
@@ -178,6 +179,17 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
   @Override
   public UnicastService getUnicastService() {
     return networkService.unicastService();
+  }
+
+  /**
+   * Returns the service that owns both cluster transports, so that tests can cut a node off the
+   * cluster by stopping it, and reconnect it by starting it again.
+   *
+   * @return the cluster network service
+   */
+  @VisibleForTesting
+  public ManagedNetworkService getNetworkService() {
+    return networkService;
   }
 
   /**

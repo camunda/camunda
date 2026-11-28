@@ -47,6 +47,29 @@ public class MessagingConfig implements Config {
   private int socketReceiveBuffer = AUTO_SOCKET_SIZE;
   private Duration heartbeatTimeout = Duration.ofSeconds(15);
   private Duration heartbeatInterval = Duration.ofSeconds(5);
+  private boolean udpEnabled = true;
+
+  /**
+   * Returns whether unreliable unicast may use UDP.
+   *
+   * @return true if unreliable unicast sends over UDP, false if it sends over the TCP messaging
+   *     transport
+   */
+  public boolean isUdpEnabled() {
+    return udpEnabled;
+  }
+
+  /**
+   * Sets whether unreliable unicast may use UDP. When disabled, no datagram socket is bound at all
+   * and unicast traffic is carried by the TCP messaging transport instead.
+   *
+   * @param udpEnabled whether unreliable unicast may use UDP
+   * @return this config for chaining
+   */
+  public MessagingConfig setUdpEnabled(final boolean udpEnabled) {
+    this.udpEnabled = udpEnabled;
+    return this;
+  }
 
   /**
    * Returns the local interfaces to which to bind the node.
