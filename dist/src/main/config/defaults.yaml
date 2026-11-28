@@ -2074,18 +2074,19 @@ camunda: # Type: io.camunda.configuration.Camunda
     # Controls whether the system clock or mutable one. When enabled, time progression can be controlled
     # programmatically for testing purposes.
     clock-controlled: false # Type: Boolean, Env: CAMUNDA_SYSTEM_CLOCKCONTROLLED
-    # Controls the number of non-blocking CPU threads in the broker-wide actor pool. When
-    # `camunda.system.actor-pool.enabled` is true, this still sizes the shared pool for actors that are
-    # not specific to a physical tenant; each tenant's pool is additional. WARNING: You should never
-    # specify a value that is larger than the number of physical cores available. Good practice is to
-    # leave 1-2 cores for IO threads and the operating system (it has to run somewhere). For example, when
-    # running Zeebe on a machine which has 4 cores, a good value would be 2.
-    cpu-thread-count: 2 # Type: Integer, Env: CAMUNDA_SYSTEM_CPUTHREADCOUNT
+    # Controls the number of non-blocking CPU threads in the broker-wide actor pool. Unless overridden,
+    # one CPU thread is used per partition configured by camunda.cluster.partition-count (legacy
+    # zeebe.broker.cluster.partitionsCount). When `camunda.system.actor-pool.enabled` is true, this still
+    # sizes the shared pool for actors that are not specific to a physical tenant; each tenant's pool is
+    # additional. Keep the CPU thread count within the number of available physical cores.
+    cpu-thread-count: null # Type: Integer, Env: CAMUNDA_SYSTEM_CPUTHREADCOUNT
     # Controls the number of IO threads in the broker-wide actor pool. These threads are used for
     # workloads that write data to disk. While writing, these threads are blocked which means that they
-    # yield the CPU. When `camunda.system.actor-pool.enabled` is true, this still sizes the shared pool
-    # for actors that are not specific to a physical tenant; each tenant's pool is additional.
-    io-thread-count: 2 # Type: Integer, Env: CAMUNDA_SYSTEM_IOTHREADCOUNT
+    # yield the CPU. Unless overridden, one IO thread is used per partition configured by
+    # camunda.cluster.partition-count (legacy zeebe.broker.cluster.partitionsCount). When
+    # `camunda.system.actor-pool.enabled` is true, this still sizes the shared pool for actors that are
+    # not specific to a physical tenant; each tenant's pool is additional.
+    io-thread-count: null # Type: Integer, Env: CAMUNDA_SYSTEM_IOTHREADCOUNT
     legacy-query-api: # Type: io.camunda.configuration.system.LegacyQueryApi  
       # Enables the broker's internal legacy query API.
       enabled: false # Type: Boolean, Env: CAMUNDA_SYSTEM_LEGACYQUERYAPI_ENABLED
