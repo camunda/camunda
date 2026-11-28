@@ -13,8 +13,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.optimize.service.db.es.schema.index.AgentDefinitionIndexES;
 import io.camunda.optimize.service.db.es.schema.index.AgentRunIndexES;
+import io.camunda.optimize.service.db.es.schema.index.AuthorizationIndexES;
+import io.camunda.optimize.service.db.es.schema.index.MappingRuleIndexES;
+import io.camunda.optimize.service.db.es.schema.index.RoleIndexES;
 import io.camunda.optimize.service.db.os.schema.index.AgentDefinitionIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.AgentRunIndexOS;
+import io.camunda.optimize.service.db.os.schema.index.AuthorizationIndexOS;
+import io.camunda.optimize.service.db.os.schema.index.MappingRuleIndexOS;
+import io.camunda.optimize.service.db.os.schema.index.RoleIndexOS;
 import io.camunda.optimize.service.db.schema.IndexMappingCreator;
 import io.camunda.optimize.upgrade.AbstractUpgradeIT;
 import io.camunda.optimize.upgrade.plan.UpgradePlan;
@@ -59,6 +65,23 @@ public class Upgrade810to811PlanFactoryIT extends AbstractUpgradeIT {
         .isEqualTo(1);
   }
 
+  @Test
+  public void shouldCreateAccessStoreIndicesOnUpgrade() {
+    // given an 8.10 cluster without the access store indices
+    setMetadataVersion(FROM_PATCH);
+    assertThat(getIndicesForMapping(roleIndex())).isEmpty();
+    assertThat(getIndicesForMapping(mappingRuleIndex())).isEmpty();
+    assertThat(getIndicesForMapping(authorizationIndex())).isEmpty();
+
+    // when
+    performUpgrade();
+
+    // then
+    assertThat(getIndicesForMapping(roleIndex())).isNotEmpty();
+    assertThat(getIndicesForMapping(mappingRuleIndex())).isNotEmpty();
+    assertThat(getIndicesForMapping(authorizationIndex())).isNotEmpty();
+  }
+
   private void performUpgrade() {
     final UpgradePlan plan =
         new Upgrade810to811PlanFactory().createUpgradePlan(upgradeDependencies);
@@ -71,5 +94,17 @@ public class Upgrade810to811PlanFactoryIT extends AbstractUpgradeIT {
 
   private IndexMappingCreator agentDefinitionIndex() {
     return isElasticSearchUpgrade() ? new AgentDefinitionIndexES() : new AgentDefinitionIndexOS();
+  }
+
+  private IndexMappingCreator roleIndex() {
+    return isElasticSearchUpgrade() ? new RoleIndexES() : new RoleIndexOS();
+  }
+
+  private IndexMappingCreator mappingRuleIndex() {
+    return isElasticSearchUpgrade() ? new MappingRuleIndexES() : new MappingRuleIndexOS();
+  }
+
+  private IndexMappingCreator authorizationIndex() {
+    return isElasticSearchUpgrade() ? new AuthorizationIndexES() : new AuthorizationIndexOS();
   }
 }

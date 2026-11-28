@@ -10,6 +10,7 @@ package io.camunda.optimize.service.db.schema;
 import io.camunda.optimize.service.db.es.schema.index.AgentDefinitionIndexES;
 import io.camunda.optimize.service.db.es.schema.index.AgentRunIndexES;
 import io.camunda.optimize.service.db.es.schema.index.AlertIndexES;
+import io.camunda.optimize.service.db.es.schema.index.AuthorizationIndexES;
 import io.camunda.optimize.service.db.es.schema.index.BusinessKeyIndexES;
 import io.camunda.optimize.service.db.es.schema.index.BusinessValueOverviewIndexES;
 import io.camunda.optimize.service.db.es.schema.index.BusinessValueTargetIndexES;
@@ -21,11 +22,13 @@ import io.camunda.optimize.service.db.es.schema.index.DecisionInstanceIndexES;
 import io.camunda.optimize.service.db.es.schema.index.ExternalProcessVariableIndexES;
 import io.camunda.optimize.service.db.es.schema.index.InstantPreviewDashboardMetadataIndexES;
 import io.camunda.optimize.service.db.es.schema.index.JobRegistryIndexES;
+import io.camunda.optimize.service.db.es.schema.index.MappingRuleIndexES;
 import io.camunda.optimize.service.db.es.schema.index.MetadataIndexES;
 import io.camunda.optimize.service.db.es.schema.index.ProcessDefinitionIndexES;
 import io.camunda.optimize.service.db.es.schema.index.ProcessInstanceIndexES;
 import io.camunda.optimize.service.db.es.schema.index.ProcessOverviewIndexES;
 import io.camunda.optimize.service.db.es.schema.index.ReportShareIndexES;
+import io.camunda.optimize.service.db.es.schema.index.RoleIndexES;
 import io.camunda.optimize.service.db.es.schema.index.SettingsIndexES;
 import io.camunda.optimize.service.db.es.schema.index.TenantIndexES;
 import io.camunda.optimize.service.db.es.schema.index.TerminatedUserSessionIndexES;
@@ -39,6 +42,7 @@ import io.camunda.optimize.service.db.es.schema.index.report.SingleProcessReport
 import io.camunda.optimize.service.db.os.schema.index.AgentDefinitionIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.AgentRunIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.AlertIndexOS;
+import io.camunda.optimize.service.db.os.schema.index.AuthorizationIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.BusinessKeyIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.BusinessValueOverviewIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.BusinessValueTargetIndexOS;
@@ -50,11 +54,13 @@ import io.camunda.optimize.service.db.os.schema.index.DecisionInstanceIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.ExternalProcessVariableIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.InstantPreviewDashboardMetadataIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.JobRegistryIndexOS;
+import io.camunda.optimize.service.db.os.schema.index.MappingRuleIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.MetadataIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.ProcessDefinitionIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.ProcessInstanceIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.ProcessOverviewIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.ReportShareIndexOS;
+import io.camunda.optimize.service.db.os.schema.index.RoleIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.SettingsIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.TenantIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.TerminatedUserSessionIndexOS;
@@ -141,6 +147,9 @@ public class IndexLookupUtil {
         ProcessDefinitionIndexES.class.getSimpleName(), index -> new ProcessDefinitionIndexOS());
     lookupMap.put(SettingsIndexES.class.getSimpleName(), index -> new SettingsIndexOS());
     lookupMap.put(TenantIndexES.class.getSimpleName(), index -> new TenantIndexOS());
+    lookupMap.put(RoleIndexES.class.getSimpleName(), index -> new RoleIndexOS());
+    lookupMap.put(MappingRuleIndexES.class.getSimpleName(), index -> new MappingRuleIndexOS());
+    lookupMap.put(AuthorizationIndexES.class.getSimpleName(), index -> new AuthorizationIndexOS());
     lookupMap.put(ReportShareIndexES.class.getSimpleName(), index -> new ReportShareIndexOS());
     lookupMap.put(
         TerminatedUserSessionIndexES.class.getSimpleName(),
@@ -201,6 +210,9 @@ public class IndexLookupUtil {
         ProcessDefinitionIndexOS.class.getSimpleName(), index -> new ProcessDefinitionIndexES());
     lookupMap.put(SettingsIndexOS.class.getSimpleName(), index -> new SettingsIndexES());
     lookupMap.put(TenantIndexOS.class.getSimpleName(), index -> new TenantIndexES());
+    lookupMap.put(RoleIndexOS.class.getSimpleName(), index -> new RoleIndexES());
+    lookupMap.put(MappingRuleIndexOS.class.getSimpleName(), index -> new MappingRuleIndexES());
+    lookupMap.put(AuthorizationIndexOS.class.getSimpleName(), index -> new AuthorizationIndexES());
     lookupMap.put(ReportShareIndexOS.class.getSimpleName(), index -> new ReportShareIndexES());
     lookupMap.put(
         TerminatedUserSessionIndexOS.class.getSimpleName(),

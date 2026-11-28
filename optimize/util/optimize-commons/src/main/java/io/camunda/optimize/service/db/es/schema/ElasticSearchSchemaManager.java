@@ -25,6 +25,7 @@ import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.es.schema.index.AgentDefinitionIndexES;
 import io.camunda.optimize.service.db.es.schema.index.AgentRunIndexES;
 import io.camunda.optimize.service.db.es.schema.index.AlertIndexES;
+import io.camunda.optimize.service.db.es.schema.index.AuthorizationIndexES;
 import io.camunda.optimize.service.db.es.schema.index.BusinessKeyIndexES;
 import io.camunda.optimize.service.db.es.schema.index.BusinessValueOverviewIndexES;
 import io.camunda.optimize.service.db.es.schema.index.BusinessValueTargetIndexES;
@@ -35,10 +36,12 @@ import io.camunda.optimize.service.db.es.schema.index.DecisionDefinitionIndexES;
 import io.camunda.optimize.service.db.es.schema.index.ExternalProcessVariableIndexES;
 import io.camunda.optimize.service.db.es.schema.index.InstantPreviewDashboardMetadataIndexES;
 import io.camunda.optimize.service.db.es.schema.index.JobRegistryIndexES;
+import io.camunda.optimize.service.db.es.schema.index.MappingRuleIndexES;
 import io.camunda.optimize.service.db.es.schema.index.MetadataIndexES;
 import io.camunda.optimize.service.db.es.schema.index.ProcessDefinitionIndexES;
 import io.camunda.optimize.service.db.es.schema.index.ProcessOverviewIndexES;
 import io.camunda.optimize.service.db.es.schema.index.ReportShareIndexES;
+import io.camunda.optimize.service.db.es.schema.index.RoleIndexES;
 import io.camunda.optimize.service.db.es.schema.index.SettingsIndexES;
 import io.camunda.optimize.service.db.es.schema.index.TenantIndexES;
 import io.camunda.optimize.service.db.es.schema.index.TerminatedUserSessionIndexES;
@@ -398,6 +401,9 @@ public class ElasticSearchSchemaManager
         new ReportShareIndexES(),
         new SettingsIndexES(),
         new TenantIndexES(),
+        new RoleIndexES(),
+        new MappingRuleIndexES(),
+        new AuthorizationIndexES(),
         new TerminatedUserSessionIndexES(),
         new WebSessionIndexES(),
         new TimestampBasedImportIndexES(),

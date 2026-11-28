@@ -23,6 +23,7 @@ import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import io.camunda.optimize.service.db.os.schema.index.AgentDefinitionIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.AgentRunIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.AlertIndexOS;
+import io.camunda.optimize.service.db.os.schema.index.AuthorizationIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.BusinessKeyIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.BusinessValueOverviewIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.BusinessValueTargetIndexOS;
@@ -33,10 +34,12 @@ import io.camunda.optimize.service.db.os.schema.index.DecisionDefinitionIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.ExternalProcessVariableIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.InstantPreviewDashboardMetadataIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.JobRegistryIndexOS;
+import io.camunda.optimize.service.db.os.schema.index.MappingRuleIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.MetadataIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.ProcessDefinitionIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.ProcessOverviewIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.ReportShareIndexOS;
+import io.camunda.optimize.service.db.os.schema.index.RoleIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.SettingsIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.TenantIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.TerminatedUserSessionIndexOS;
@@ -571,6 +574,9 @@ public class OpenSearchSchemaManager
         new TerminatedUserSessionIndexOS(),
         new WebSessionIndexOS(),
         new TenantIndexOS(),
+        new RoleIndexOS(),
+        new MappingRuleIndexOS(),
+        new AuthorizationIndexOS(),
         new TimestampBasedImportIndexOS(),
         new PositionBasedImportIndexOS(),
         new CombinedReportIndexOS(),
