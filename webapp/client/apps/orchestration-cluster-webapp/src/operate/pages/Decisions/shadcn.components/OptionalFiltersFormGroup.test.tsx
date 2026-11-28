@@ -285,9 +285,8 @@ describe('<OptionalFiltersFormGroup /> (design system)', () => {
 		await userEvent.click(screen.getByRole('button', {name: 'Clear date and time range'}));
 		await userEvent.click(screen.getByRole('button', {name: 'submit'}));
 
-		expect(onSubmit).toHaveBeenCalledWith(
-			expect.not.objectContaining({evaluationDateFrom: expect.anything(), evaluationDateTo: expect.anything()}),
-		);
+		expect(onSubmit).toHaveBeenCalledWith(expect.not.objectContaining({evaluationDateFrom: expect.anything()}));
+		expect(onSubmit).toHaveBeenCalledWith(expect.not.objectContaining({evaluationDateTo: expect.anything()}));
 	});
 
 	it('should show the existing evaluation date range', async () => {
