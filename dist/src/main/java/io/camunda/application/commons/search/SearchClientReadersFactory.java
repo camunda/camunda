@@ -89,6 +89,7 @@ import io.camunda.webapps.schema.descriptors.template.SequenceFlowTemplate;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
+import io.camunda.webapps.schema.descriptors.template.VariableHistoryTemplate;
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
 import io.camunda.webapps.schema.descriptors.template.WaitStateTemplate;
 
@@ -172,7 +173,8 @@ public final class SearchClientReadersFactory {
         new VariableDocumentReader(executor, descriptors.get(VariableTemplate.class));
     final var clusterVariableReader =
         new ClusterVariableDocumentReader(executor, descriptors.get(ClusterVariableIndex.class));
-    final var variableHistoryReader = new VariableHistoryDocumentReader();
+    final var variableHistoryReader =
+        new VariableHistoryDocumentReader(executor, descriptors.get(VariableHistoryTemplate.class));
     final var caseReader = new CaseDocumentReader();
     final var auditLogReader =
         new AuditLogDocumentReader(executor, descriptors.get(AuditLogTemplate.class));
