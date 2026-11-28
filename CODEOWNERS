@@ -11,9 +11,9 @@
 /docs/assets/observability*  @npepinpe @ChrisKujawa
 
 # C8Run by Distro team
-.github/actions/setup-c8run/* @camunda/distribution
-.github/workflows/c8run* @camunda/distribution
-/c8run/ @camunda/distribution
+.github/actions/setup-c8run/* @camunda/smx
+.github/workflows/c8run* @camunda/smx
+/c8run/ @camunda/smx
 
 # General Automation, Unified CI and release helpers by Engineering Operations team
 /.github/actions/build*/*                                @camunda/engineering-operations

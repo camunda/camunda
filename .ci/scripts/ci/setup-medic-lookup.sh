@@ -51,7 +51,6 @@ lookupTeamMedic["@camunda/clients-sdks-ai-first-tooling"]=$clientsSdksAiFirstToo
 
 # @smx-medic
 distroMedic="<!subteam^S0CBB7Y72SV|smx-medic>"
-lookupTeamMedic["@camunda/distribution"]=$distroMedic
 lookupTeamMedic["@camunda/smx"]=$distroMedic
 
 # @reliability-testing-team

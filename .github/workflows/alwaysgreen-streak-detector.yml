@@ -227,7 +227,7 @@ jobs:
                   [[ -z "$owner" ]] && continue
                   case "$owner" in
                     "@camunda/test-automation-team")   mentions+=("${MEDIC_TEST_AUTOMATION}") ;;
-                    "@camunda/distribution"|"@camunda/smx") mentions+=("${MEDIC_DISTRIBUTION}") ;;
+                    "@camunda/smx") mentions+=("${MEDIC_DISTRIBUTION}") ;;
                     "@camunda/core-features")           mentions+=("${MEDIC_CORE_FEATURES}") ;;
                   esac
                 done <<<"$OWNERS"
