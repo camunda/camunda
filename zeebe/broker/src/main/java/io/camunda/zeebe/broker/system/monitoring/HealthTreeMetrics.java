@@ -45,6 +45,9 @@ public final class HealthTreeMetrics implements ComponentTreeListener {
   }
 
   /**
+   * Maps a status to the value of its gauge. Values are identifiers, not an ordering: dashboards
+   * map each one to a state, and {@link #RECOVERING_VALUE} takes 2.
+   *
    * @param status to be mapped
    * @return a numerical value mapped from status that can be reported by the gauge
    */
@@ -52,7 +55,7 @@ public final class HealthTreeMetrics implements ComponentTreeListener {
     return switch (status) {
       case HEALTHY -> 1;
       case NOTICE -> 3;
-      case DEGRADED -> 2;
+      case DEGRADED -> 4;
       case UNHEALTHY -> -1;
       case DEAD -> -2;
       case null -> 0;
