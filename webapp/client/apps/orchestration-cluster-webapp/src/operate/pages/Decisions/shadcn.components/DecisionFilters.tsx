@@ -52,6 +52,7 @@ const DecisionFilters: React.FC<Props> = ({
 			: decisionDefinitionVersion === undefined
 				? ALL_VERSIONS
 				: String(decisionDefinitionVersion);
+	const versionHelpId = 'decision-version-filter-help';
 
 	return (
 		<div className="flex flex-col gap-8">
@@ -106,7 +107,12 @@ const DecisionFilters: React.FC<Props> = ({
 								});
 							}}
 						>
-							<SelectTrigger id="decision-version-filter" size="sm" className="w-full">
+							<SelectTrigger
+								id="decision-version-filter"
+								size="sm"
+								className="w-full"
+								aria-describedby={decisionDefinitionId === undefined ? versionHelpId : undefined}
+							>
 								<SelectValue placeholder={t('operate.decisions.ds.filters.selectVersion')} />
 							</SelectTrigger>
 							<SelectContent>
@@ -118,6 +124,11 @@ const DecisionFilters: React.FC<Props> = ({
 								))}
 							</SelectContent>
 						</Select>
+						{decisionDefinitionId === undefined && (
+							<p id={versionHelpId} className="text-sm text-muted-foreground">
+								{t('operate.decisions.ds.filters.versionDisabledReason')}
+							</p>
+						)}
 					</div>
 				</section>
 			</div>

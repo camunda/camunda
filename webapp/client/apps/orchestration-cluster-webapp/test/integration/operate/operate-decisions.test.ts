@@ -70,6 +70,7 @@ test.describe('Operate Decisions DS (/operate/decisions)', () => {
 		await expect(operateDecisionsPage.moreFiltersButton).toBeVisible();
 		await expect(operateDecisionsPage.decisionPanel).toBeVisible();
 		await expect(operateDecisionsPage.decisionPanel.getByRole('heading', {name: 'Select a decision'})).toBeVisible();
+		await expect(page.getByText('Select a decision first to choose a version', {exact: true})).toBeVisible();
 		await expect(operateDecisionsPage.instancesTable).toBeVisible();
 	});
 

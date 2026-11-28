@@ -24,7 +24,7 @@ class OperateDecisionsPage extends BasePage {
 	}
 
 	get decisionPanel() {
-		return this.page.getByRole('region', {name: 'Decision Panel'});
+		return this.page.getByRole('region', {name: 'Decision panel'});
 	}
 
 	get decisionViewer() {

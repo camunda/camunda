@@ -1656,6 +1656,9 @@
 					"successTitle": "Operation erstellt"
 				},
 				"ds": {
+					"diagramHeader": {
+						"copyButtonDescription": "Entscheidungs-ID / klicken zum Kopieren"
+					},
 					"definitionDeletion": {
 						"buttonLabel": "DRD löschen",
 						"buttonTitle": "DRD \"{{name}}\" und alle Entscheidungsinstanzen löschen",
@@ -1664,6 +1667,7 @@
 					"diagramPanel": {
 						"multipleTenantsSelected": "Die Entscheidung \"{{name}}\" ist in mehr als einem Mandanten vorhanden",
 						"multipleVersionsSelected": "Für die Entscheidung \"{{name}}\" ist mehr als eine Version ausgewählt",
+						"ariaLabel": "Entscheidungsbereich",
 						"noDecisionSelected": "Entscheidung auswählen",
 						"selectDecisionInFilters": "Um eine Entscheidungstabelle oder einen literalen Ausdruck zu sehen, wählen Sie eine Entscheidung im Filterbereich aus",
 						"selectSingleTenant": "Um eine Entscheidungstabelle oder einen literalen Ausdruck zu sehen, wählen Sie einen einzelnen Mandanten aus",
@@ -1676,7 +1680,8 @@
 						"processInstanceKey": "Prozessinstanzschlüssel",
 						"removeFilter": "Filter „{{label}}“ entfernen",
 						"searchByName": "Nach Entscheidungsname suchen",
-						"selectVersion": "Entscheidungsversion auswählen"
+						"selectVersion": "Entscheidungsversion auswählen",
+						"versionDisabledReason": "Wählen Sie zuerst eine Entscheidung aus, um eine Version auszuwählen"
 					},
 					"instancesTable": {
 						"decisionInstanceKey": "Entscheidungsinstanzschlüssel",
@@ -1688,7 +1693,9 @@
 					},
 					"toolbar": {
 						"deleteSuccessSubtitle": "Sie können den Fortschritt auf der Seite Batch-Operationen verfolgen",
-						"deleteSuccessActionLabel": "Zu den Operationsdetails"
+						"deleteSuccessActionLabel": "Zu den Operationsdetails",
+						"instanceSelected": "{{count}} Instanz ausgewählt",
+						"instancesSelected": "{{count}} Instanzen ausgewählt"
 					}
 				}
 			},

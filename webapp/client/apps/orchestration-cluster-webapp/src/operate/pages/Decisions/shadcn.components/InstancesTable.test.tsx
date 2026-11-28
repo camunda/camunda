@@ -181,7 +181,7 @@ describe('<InstancesTable /> (shadcn)', () => {
 			await userEvent.click(screen.getByRole('checkbox', {name: 'Select row 1'}));
 
 			await expect.element(screen.getByRole('button', {name: 'Delete'})).toBeVisible();
-			await expect.element(screen.getByText('1 item selected')).toBeVisible();
+			await expect.element(screen.getByText('1 instance selected')).toBeVisible();
 
 			await userEvent.click(screen.getByRole('button', {name: 'Discard'}));
 
@@ -201,7 +201,7 @@ describe('<InstancesTable /> (shadcn)', () => {
 			await expect.element(screen.getByRole('checkbox', {name: 'Select row 2'})).toBeVisible();
 			await userEvent.click(screen.getByRole('checkbox', {name: 'Select all rows'}));
 
-			await expect.element(screen.getByText('2 items selected')).toBeVisible();
+			await expect.element(screen.getByText('2 instances selected')).toBeVisible();
 			await expect.element(screen.getByRole('checkbox', {name: 'Select row 1'})).toBeChecked();
 			await expect.element(screen.getByRole('checkbox', {name: 'Select row 2'})).toBeChecked();
 		});
@@ -226,11 +226,11 @@ describe('<InstancesTable /> (shadcn)', () => {
 			});
 
 			await userEvent.click(screen.getByRole('checkbox', {name: 'Select row 1'}));
-			await expect.element(screen.getByText('1 item selected')).toBeVisible();
+			await expect.element(screen.getByText('1 instance selected')).toBeVisible();
 
 			await userEvent.click(screen.getByRole('button', {name: 'Change filter'}));
 
-			await expect.element(screen.getByText('1 item selected')).not.toBeInTheDocument();
+			await expect.element(screen.getByText('1 instance selected')).not.toBeInTheDocument();
 		});
 
 		it('should delete the selected instance and show a success notification', async ({worker}) => {

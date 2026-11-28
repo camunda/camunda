@@ -1668,17 +1668,22 @@
 					"successTitle": "Operation created"
 				},
 				"ds": {
+					"diagramHeader": {
+						"copyButtonDescription": "Decision ID / click to copy"
+					},
 					"diagramPanel": {
 						"multipleVersionsSelected": "There is more than one version selected for decision \"{{name}}\"",
 						"selectSingleVersion": "To see a decision table or a literal expression, select a single version",
 						"multipleTenantsSelected": "Decision \"{{name}}\" exists in more than one tenant",
 						"selectSingleTenant": "To see a decision table or a literal expression, select a single tenant",
+						"ariaLabel": "Decision panel",
 						"noDecisionSelected": "Select a decision",
 						"selectDecisionInFilters": "To see a decision table or a literal expression, select a decision in the filters panel"
 					},
 					"filters": {
 						"searchByName": "Search by decision name",
 						"selectVersion": "Select a decision version",
+						"versionDisabledReason": "Select a decision first to choose a version",
 						"instancesStates": "Instances states",
 						"decisionInstanceKey": "Decision instance key(s)",
 						"processInstanceKey": "Process instance key",
@@ -1694,6 +1699,8 @@
 						"emptyAdditionalInfo": "To see some results, select at least one instance state"
 					},
 					"toolbar": {
+						"instanceSelected": "{{count}} instance selected",
+						"instancesSelected": "{{count}} instances selected",
 						"deleteSuccessSubtitle": "You can track its progress in the batch operation page",
 						"deleteSuccessActionLabel": "Go to operation details"
 					},

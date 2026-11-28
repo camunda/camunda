@@ -95,10 +95,15 @@ describe('<DecisionFilters /> (design system)', () => {
 	it('should write the selected decision to the URL', async () => {
 		const screen = await renderWithRouter(Harness, {path: PATH, initialEntry: PATH});
 
+		await expect.element(screen.getByText('Select a decision first to choose a version', {exact: true})).toBeVisible();
+
 		await userEvent.click(screen.getByLabelText('Name'));
 		await userEvent.click(screen.getByRole('option', {name: 'Invoice'}));
 
 		await expect.poll(() => screen.router.state.location.search).toMatchObject({decisionDefinitionId: 'invoice'});
+		await expect
+			.element(screen.getByText('Select a decision first to choose a version', {exact: true}))
+			.not.toBeInTheDocument();
 	});
 
 	it('should clear the selected name when navigating back', async () => {

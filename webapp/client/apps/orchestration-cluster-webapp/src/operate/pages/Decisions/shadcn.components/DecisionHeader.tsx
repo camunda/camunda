@@ -29,7 +29,7 @@ const DecisionHeader: React.FC<Props> = ({decisionDefinitionSelection, children}
 			{decisionDefinitionSelection.kind !== 'no-match' && (
 				<CopiableContent
 					className="relative ml-12 before:absolute before:-left-4 before:h-6 before:w-px before:bg-[var(--neutral-border-subtle)]"
-					copyButtonDescription={t('operate.decisions.diagramHeader.copyButtonDescription')}
+					copyButtonDescription={t('operate.decisions.ds.diagramHeader.copyButtonDescription')}
 					content={decisionDefinitionSelection.definition.decisionDefinitionId}
 				/>
 			)}

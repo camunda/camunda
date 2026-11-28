@@ -1659,6 +1659,9 @@
 					"successTitle": "Opération créée"
 				},
 				"ds": {
+					"diagramHeader": {
+						"copyButtonDescription": "ID de décision / cliquer pour copier"
+					},
 					"definitionDeletion": {
 						"buttonLabel": "Supprimer le DRD",
 						"buttonTitle": "Supprimer le DRD « {{name}} » et toutes les instances de décision",
@@ -1667,6 +1670,7 @@
 					"diagramPanel": {
 						"multipleTenantsSelected": "La décision \"{{name}}\" existe dans plusieurs locataires",
 						"multipleVersionsSelected": "Plusieurs versions sont sélectionnées pour la décision \"{{name}}\"",
+						"ariaLabel": "Panneau de décision",
 						"noDecisionSelected": "Sélectionnez une décision",
 						"selectDecisionInFilters": "Pour voir une table de décision ou une expression littérale, sélectionnez une décision dans le panneau de filtres",
 						"selectSingleTenant": "Pour voir une table de décision ou une expression littérale, sélectionnez un seul locataire",
@@ -1679,7 +1683,8 @@
 						"processInstanceKey": "Clé d'instance de processus",
 						"removeFilter": "Supprimer le filtre {{label}}",
 						"searchByName": "Rechercher par nom de décision",
-						"selectVersion": "Sélectionner une version de décision"
+						"selectVersion": "Sélectionner une version de décision",
+						"versionDisabledReason": "Sélectionnez d’abord une décision pour choisir une version"
 					},
 					"instancesTable": {
 						"decisionInstanceKey": "Clé d'instance de décision",
@@ -1691,7 +1696,9 @@
 					},
 					"toolbar": {
 						"deleteSuccessSubtitle": "Vous pouvez suivre son avancement dans la page Opérations par lot",
-						"deleteSuccessActionLabel": "Voir les détails de l'opération"
+						"deleteSuccessActionLabel": "Voir les détails de l'opération",
+						"instanceSelected": "{{count}} instance sélectionnée",
+						"instancesSelected": "{{count}} instances sélectionnées"
 					}
 				}
 			},
