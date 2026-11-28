@@ -477,6 +477,11 @@ public final class TestStreams {
       return this;
     }
 
+    public FluentLogWriter operationReference(final long operationReference) {
+      metadata.operationReference(operationReference);
+      return this;
+    }
+
     public FluentLogWriter recordType(final RecordType recordType) {
       metadata.recordType(recordType);
       return this;

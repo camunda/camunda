@@ -28,6 +28,7 @@ import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
+import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
@@ -120,7 +121,44 @@ public class CommandRedistributionSchedulerTest {
     // then
     verify(mockCommandSender, times(1))
         .sendCommand(
-            1, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, AuthInfo.EMPTY);
+            1,
+            ValueType.USER,
+            UserIntent.CREATE,
+            distributionKey,
+            recordValue,
+            AuthInfo.EMPTY,
+            RecordMetadataDecoder.operationReferenceNullValue());
+  }
+
+  @Test
+  public void shouldRetryWithPersistedOperationReference() {
+    // given
+    final long operationReference = 4242L;
+    final long otherDistributionKey = Protocol.encodePartitionId(1, 200);
+    distributionState.addCommandDistribution(
+        otherDistributionKey,
+        new CommandDistributionRecord()
+            .setPartitionId(1)
+            .setValueType(ValueType.USER)
+            .setIntent(UserIntent.CREATE)
+            .setCommandValue(recordValue)
+            .setOperationReference(operationReference));
+    distributionState.addRetriableDistribution(otherDistributionKey, 2);
+
+    // when
+    commandRedistributor.runRetryCycle();
+    commandRedistributor.runRetryCycle();
+
+    // then
+    verify(mockCommandSender, times(1))
+        .sendCommand(
+            2,
+            ValueType.USER,
+            UserIntent.CREATE,
+            otherDistributionKey,
+            recordValue,
+            AuthInfo.EMPTY,
+            operationReference);
   }
 
   private CommandRedistributionScheduler getCommandRedistributor(
@@ -177,13 +215,31 @@ public class CommandRedistributionSchedulerTest {
       // then
       verify(mockCommandSender, times(1))
           .sendCommand(
-              1, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, AuthInfo.EMPTY);
+              1,
+              ValueType.USER,
+              UserIntent.CREATE,
+              distributionKey,
+              recordValue,
+              AuthInfo.EMPTY,
+              RecordMetadataDecoder.operationReferenceNullValue());
       verify(mockCommandSender, times(1))
           .sendCommand(
-              2, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, AuthInfo.EMPTY);
+              2,
+              ValueType.USER,
+              UserIntent.CREATE,
+              distributionKey,
+              recordValue,
+              AuthInfo.EMPTY,
+              RecordMetadataDecoder.operationReferenceNullValue());
       verify(mockCommandSender, never())
           .sendCommand(
-              3, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, AuthInfo.EMPTY);
+              3,
+              ValueType.USER,
+              UserIntent.CREATE,
+              distributionKey,
+              recordValue,
+              AuthInfo.EMPTY,
+              RecordMetadataDecoder.operationReferenceNullValue());
     }
 
     @Test
@@ -197,13 +253,31 @@ public class CommandRedistributionSchedulerTest {
       // then
       verify(mockCommandSender, times(1))
           .sendCommand(
-              1, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, AuthInfo.EMPTY);
+              1,
+              ValueType.USER,
+              UserIntent.CREATE,
+              distributionKey,
+              recordValue,
+              AuthInfo.EMPTY,
+              RecordMetadataDecoder.operationReferenceNullValue());
       verify(mockCommandSender, times(1))
           .sendCommand(
-              2, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, AuthInfo.EMPTY);
+              2,
+              ValueType.USER,
+              UserIntent.CREATE,
+              distributionKey,
+              recordValue,
+              AuthInfo.EMPTY,
+              RecordMetadataDecoder.operationReferenceNullValue());
       verify(mockCommandSender, never())
           .sendCommand(
-              3, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, AuthInfo.EMPTY);
+              3,
+              ValueType.USER,
+              UserIntent.CREATE,
+              distributionKey,
+              recordValue,
+              AuthInfo.EMPTY,
+              RecordMetadataDecoder.operationReferenceNullValue());
 
       // then
       // Partition 3 is now scaled up, so it should be redistributed to
@@ -214,7 +288,13 @@ public class CommandRedistributionSchedulerTest {
       commandRedistributor.runRetryCycle();
       verify(mockCommandSender, times(1))
           .sendCommand(
-              3, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, AuthInfo.EMPTY);
+              3,
+              ValueType.USER,
+              UserIntent.CREATE,
+              distributionKey,
+              recordValue,
+              AuthInfo.EMPTY,
+              RecordMetadataDecoder.operationReferenceNullValue());
     }
   }
 
@@ -274,10 +354,22 @@ public class CommandRedistributionSchedulerTest {
 
       verify(mockCommandSender, times(4))
           .sendCommand(
-              1, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, AuthInfo.EMPTY);
+              1,
+              ValueType.USER,
+              UserIntent.CREATE,
+              distributionKey,
+              recordValue,
+              AuthInfo.EMPTY,
+              RecordMetadataDecoder.operationReferenceNullValue());
       verify(mockCommandSender, times(4))
           .sendCommand(
-              2, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, AuthInfo.EMPTY);
+              2,
+              ValueType.USER,
+              UserIntent.CREATE,
+              distributionKey,
+              recordValue,
+              AuthInfo.EMPTY,
+              RecordMetadataDecoder.operationReferenceNullValue());
     }
   }
 }

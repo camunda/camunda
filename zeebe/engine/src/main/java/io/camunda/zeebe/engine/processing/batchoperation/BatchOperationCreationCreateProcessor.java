@@ -150,7 +150,11 @@ public final class BatchOperationCreationCreateProcessor
         .withKey(key)
         .inQueue(DistributionQueue.BATCH_OPERATION)
         .distribute(
-            command.getValueType(), command.getIntent(), recordWithKey, command.getAuthInfo());
+            command.getValueType(),
+            command.getIntent(),
+            recordWithKey,
+            command.getAuthInfo(),
+            command.getOperationReference());
 
     metrics.recordCreated(recordWithKey.getBatchOperationType());
   }

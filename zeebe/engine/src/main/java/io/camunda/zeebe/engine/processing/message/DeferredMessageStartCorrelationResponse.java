@@ -102,10 +102,14 @@ final class DeferredMessageStartCorrelationResponse {
         .setProcessDefinitionKey(reply.getProcessDefinitionKey())
         .setStorageOrdinal(reply.getStorageOrdinal())
         .setRequestId(requestData.getRequestId())
-        .setRequestStreamId(requestData.getRequestStreamId());
+        .setRequestStreamId(requestData.getRequestStreamId())
+        .setOperationReference(requestData.getOperationReference());
 
     stateWriter.appendFollowUpEvent(
-        messageKey, MessageCorrelationIntent.CORRELATED, correlationRecord);
+        messageKey,
+        MessageCorrelationIntent.CORRELATED,
+        correlationRecord,
+        m -> m.operationReference(requestData.getOperationReference()));
     responseWriter.writeAcceptedResponse(
         messageKey,
         MessageCorrelationIntent.CORRELATED,
@@ -152,10 +156,14 @@ final class DeferredMessageStartCorrelationResponse {
         .setMessageKey(messageKey)
         .setStorageOrdinal(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED)
         .setRequestId(requestData.getRequestId())
-        .setRequestStreamId(requestData.getRequestStreamId());
+        .setRequestStreamId(requestData.getRequestStreamId())
+        .setOperationReference(requestData.getOperationReference());
 
     stateWriter.appendFollowUpEvent(
-        messageKey, MessageCorrelationIntent.NOT_CORRELATED, correlationRecord);
+        messageKey,
+        MessageCorrelationIntent.NOT_CORRELATED,
+        correlationRecord,
+        m -> m.operationReference(requestData.getOperationReference()));
     responseWriter.writeRejectedResponse(
         messageKey,
         MessageCorrelationIntent.CORRELATE,

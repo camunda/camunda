@@ -66,11 +66,18 @@ public final class InterPartitionCommandSenderService extends Actor
       final Intent intent,
       final Long recordKey,
       final UnifiedRecordValue command,
-      final AuthInfo authInfo) {
+      final AuthInfo authInfo,
+      final long operationReference) {
     actor.submit(
         () ->
             commandSender.sendCommand(
-                receiverPartitionId, valueType, intent, recordKey, command, authInfo));
+                receiverPartitionId,
+                valueType,
+                intent,
+                recordKey,
+                command,
+                authInfo,
+                operationReference));
   }
 
   @Override
