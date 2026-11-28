@@ -37,12 +37,16 @@ class EnvSecretStoreSaasValidation implements CrossTenantValidation {
 
     final List<String> envStoreTenants =
         tenantsMatching(
-            resolvedByTenant, camunda -> !camunda.getSecrets().getStores().getEnv().isEmpty());
+            resolvedByTenant,
+            camunda ->
+                !camunda.getSecrets().getStores().getEnv().isEmpty()
+                    || camunda.getSecrets().getInternalConfig().getEnv() != null);
     if (!envStoreTenants.isEmpty()) {
       throw new UnifiedConfigurationException(
           ("The environment-variable secret store is not supported in SaaS: remove "
-                  + "camunda.secrets.stores.env and camunda.physical-tenants.<id>.secrets.stores.env "
-                  + "and use the file store instead. Configured for physical tenants %s; SaaS is "
+                  + "camunda.secrets.stores.env, camunda.secrets.internal-config.env and their "
+                  + "camunda.physical-tenants.<id>.secrets counterparts, and use the file store "
+                  + "instead. Configured for physical tenants %s; SaaS is "
                   + "set by camunda.security.saas.cluster-id for physical tenants %s.")
               .formatted(envStoreTenants, saasTenants));
     }

@@ -15,6 +15,7 @@ import io.camunda.configuration.Secrets.AzureKeyVaultStore;
 import io.camunda.configuration.Secrets.EnvStore;
 import io.camunda.configuration.Secrets.FileStore;
 import io.camunda.configuration.Secrets.GcpSecretManagerStore;
+import io.camunda.configuration.Secrets.InternalConfig;
 import io.camunda.configuration.Secrets.Stores;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.secretstore.ConcurrentSecretStore;
@@ -36,6 +37,7 @@ import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
+import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -44,6 +46,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
@@ -60,38 +63,51 @@ import org.springframework.context.annotation.Configuration;
 @Configuration(proxyBeanMethods = false)
 public class SecretStoreConfiguration {
 
-  private static final Logger LOG = LoggerFactory.getLogger(SecretStoreConfiguration.class);
-  private static final NoopSecretStore NOOP_STORE = new NoopSecretStore();
-
   /**
    * One entry per supported secret store type. Adding a new backend means adding a single binding
-   * here (plus its factory method) — the per-tenant count check and registration loop below are
-   * type-agnostic and never need to change.
+   * here (plus its factory method and scope); the code below doesn't need to change.
    */
-  private static final List<StoreBinding<?>> STORE_BINDINGS =
+  static final List<StoreBinding<?>> STORE_BINDINGS =
       List.of(
           new StoreBinding<>(
               "file",
               "file",
               Stores::getFile,
-              StoreFactory.unmetered(SecretStoreConfiguration::fileStore)),
+              InternalConfig::getFile,
+              StoreFactory.unmetered(SecretStoreConfiguration::fileStore),
+              StoreScope::of),
           new StoreBinding<>(
               "aws",
               "AWS Secrets Manager",
               Stores::getAws,
-              StoreFactory.unmetered(SecretStoreConfiguration::awsStore)),
+              InternalConfig::getAws,
+              StoreFactory.unmetered(SecretStoreConfiguration::awsStore),
+              StoreScope::of),
           new StoreBinding<>(
               "gcp",
               "GCP Secret Manager",
               Stores::getGcp,
-              StoreFactory.unmetered(SecretStoreConfiguration::gcpStore)),
+              InternalConfig::getGcp,
+              StoreFactory.unmetered(SecretStoreConfiguration::gcpStore),
+              StoreScope::of),
           new StoreBinding<>(
               "env",
               "environment variable",
               Stores::getEnv,
-              StoreFactory.unmetered(SecretStoreConfiguration::envStore)),
+              InternalConfig::getEnv,
+              StoreFactory.unmetered(SecretStoreConfiguration::envStore),
+              StoreScope::of),
           new StoreBinding<>(
-              "azure", "Azure Key Vault", Stores::getAzure, SecretStoreConfiguration::azureStore));
+              "azure",
+              "Azure Key Vault",
+              Stores::getAzure,
+              InternalConfig::getAzure,
+              SecretStoreConfiguration::azureStore,
+              StoreScope::of));
+
+  private static final Logger LOG = LoggerFactory.getLogger(SecretStoreConfiguration.class);
+  private static final NoopSecretStore NOOP_STORE = new NoopSecretStore();
+  private static final String INTERNAL_CONFIG = "internal-config";
 
   /**
    * @param meterRegistry the cluster-wide registry each physical tenant's secret cache meters are
@@ -111,14 +127,7 @@ public class SecretStoreConfiguration {
         new SecretStoreRegistries(
             (tenantId, secrets) -> build(tenantId, secrets, timeSource, meterRegistry));
     try {
-      // the default tenant goes first: it is the root configuration itself, which every other
-      // tenant inherits, so an invalid root value fails here under the root property the operator
-      // wrote rather than under the first declared tenant's property, where it was only inherited
-      resolver.mapValues(Camunda::getSecrets).entrySet().stream()
-          .sorted(
-              Comparator.comparing(
-                  entry -> !PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(entry.getKey())))
-          .forEachOrdered(entry -> registries.put(entry.getKey(), entry.getValue()));
+      secretsDefaultFirst(resolver).forEach(registries::put);
     } catch (final Throwable e) {
       try {
         registries.close();
@@ -148,6 +157,68 @@ public class SecretStoreConfiguration {
       }
       throw e;
     }
+  }
+
+  @Bean
+  public ConfigurationSecretStores configurationSecretStores(
+      final PhysicalTenantResolver resolver) {
+    return ConfigurationSecretStores.of(resolver);
+  }
+
+  /**
+   * The secrets configuration of every physical tenant, default first: every tenant inherits the
+   * root configuration, so an invalid root value is reported under the root property, where the
+   * operator wrote it.
+   */
+  static Map<String, Secrets> secretsDefaultFirst(final PhysicalTenantResolver resolver) {
+    final var secrets = new LinkedHashMap<String, Secrets>();
+    resolver.mapValues(Camunda::getSecrets).entrySet().stream()
+        .sorted(
+            Comparator.comparing(
+                entry -> !PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(entry.getKey())))
+        .forEachOrdered(entry -> secrets.put(entry.getKey(), entry.getValue()));
+    return secrets;
+  }
+
+  /**
+   * Fails if any tenant's job store can read a tenant's configuration secrets. Tenants share the
+   * node's environment and filesystem, and their cloud stores may share an account.
+   */
+  static void requireConfigurationStoresApart(final Map<String, Secrets> secretsByTenant) {
+    secretsByTenant.forEach(
+        (tenantId, secrets) ->
+            secretsByTenant.forEach(
+                (jobTenantId, jobSecrets) ->
+                    STORE_BINDINGS.forEach(
+                        binding ->
+                            binding.requireApart(
+                                tenantId,
+                                secrets.getInternalConfig(),
+                                jobTenantId,
+                                jobSecrets.getStores()))));
+  }
+
+  /** Builds the configuration secrets store of one physical tenant, if it configures one. */
+  static @Nullable SecretStore buildConfigurationStore(
+      final String tenantId, final Secrets secrets) {
+    final InternalConfig config = secrets.getInternalConfig();
+    final var property = internalConfigProperty(tenantId);
+    final var configured =
+        STORE_BINDINGS.stream().filter(binding -> binding.configures(config)).toList();
+    if (configured.isEmpty()) {
+      return null;
+    }
+    if (configured.size() > 1) {
+      throw new IllegalStateException(
+          "Physical tenant '%s' has %d configuration secrets stores configured under %s, but only one is supported"
+              .formatted(tenantId, configured.size(), property));
+    }
+    final var store =
+        configured
+            .getFirst()
+            .buildConfigurationStore(tenantId, property, secrets.getStores(), config);
+    LOG.info("Registered configuration secrets store for physical tenant '{}'", tenantId);
+    return store;
   }
 
   private static SecretStoreRegistry buildRegistry(
@@ -319,6 +390,14 @@ public class SecretStoreConfiguration {
                 SecretStoreRegistry.DEFAULT_STORE_ID));
   }
 
+  /** The property under which the tenant configures its configuration secrets store. */
+  private static String internalConfigProperty(final String tenantId) {
+    return (PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(tenantId)
+            ? "camunda."
+            : "camunda.physical-tenants." + tenantId + ".")
+        + "secrets.internal-config";
+  }
+
   /** The property under which the tenant configures stores of the given type. */
   private static String storesProperty(final String tenantId, final String storeTypeProperty) {
     return (PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(tenantId)
@@ -328,21 +407,21 @@ public class SecretStoreConfiguration {
   }
 
   private static SecretStore fileStore(
-      final String storeId, final String tenantId, final FileStore config) {
+      final String storeId, final String tenantId, final String property, final FileStore config) {
     final var path = config.getPath();
     if (path.isBlank()) {
       throw new IllegalStateException(
-          "File store '"
-              + storeId
-              + "' for physical tenant '"
-              + tenantId
-              + "' has no path configured");
+          "File store '%s' for physical tenant '%s' has no %s.path configured"
+              .formatted(storeId, tenantId, property));
     }
     return new FileBasedSecretStore(Path.of(path));
   }
 
   private static SecretStore awsStore(
-      final String storeId, final String tenantId, final AwsSecretsManagerStore config) {
+      final String storeId,
+      final String tenantId,
+      final String property,
+      final AwsSecretsManagerStore config) {
     return AwsSecretsManagerSecretStore.fromConfig(
         new AwsSecretsManagerStoreConfig(
             config.getRegion(),
@@ -357,7 +436,10 @@ public class SecretStoreConfiguration {
   }
 
   private static SecretStore gcpStore(
-      final String storeId, final String tenantId, final GcpSecretManagerStore config) {
+      final String storeId,
+      final String tenantId,
+      final String property,
+      final GcpSecretManagerStore config) {
     return GcpSecretManagerSecretStore.fromConfig(
         new GcpSecretManagerStoreConfig(
             config.getProjectId(),
@@ -371,9 +453,9 @@ public class SecretStoreConfiguration {
   private static SecretStore azureStore(
       final String storeId,
       final String tenantId,
+      final String property,
       final AzureKeyVaultStore config,
       final Supplier<MeterRegistry> meterRegistry) {
-    final var property = storesProperty(tenantId, "azure") + "." + storeId;
     final var vaultUrl = config.getVaultUrl();
     if (vaultUrl == null || vaultUrl.isEmpty()) {
       throw new IllegalStateException(
@@ -403,20 +485,15 @@ public class SecretStoreConfiguration {
   }
 
   private static SecretStore envStore(
-      final String storeId, final String tenantId, final EnvStore config) {
+      final String storeId, final String tenantId, final String property, final EnvStore config) {
     final var prefix = config.getPrefix();
     final SecretStore store;
     try {
       store = EnvVarSecretStore.fromConfig(new EnvVarSecretStoreConfig(prefix, System.getenv()));
     } catch (final IllegalArgumentException invalidPrefix) {
       throw new IllegalStateException(
-          "Environment-variable store '%s' for physical tenant '%s' has an invalid %s.%s.prefix: %s"
-              .formatted(
-                  storeId,
-                  tenantId,
-                  storesProperty(tenantId, "env"),
-                  storeId,
-                  invalidPrefix.getMessage()),
+          "Environment-variable store '%s' for physical tenant '%s' has an invalid %s.prefix: %s"
+              .formatted(storeId, tenantId, property, invalidPrefix.getMessage()),
           invalidPrefix);
     }
     LOG.info(
@@ -462,13 +539,66 @@ public class SecretStoreConfiguration {
    *     configuration error can name the exact property the operator has to change
    * @param displayName human-readable store type name used in log messages
    * @param selector reads this type's {@code storeId -> config} entries from the tenant's stores
+   * @param configurationSelector reads the configuration secrets store, if it is of this type
    * @param factory builds a store from one entry, applying any per-type validation
+   * @param scope the secret ids a store of this type can reach
    */
-  private record StoreBinding<C>(
+  record StoreBinding<C>(
       String propertyKey,
       String displayName,
       Function<Stores, Map<String, C>> selector,
-      StoreFactory<C> factory) {
+      Function<InternalConfig, @Nullable C> configurationSelector,
+      StoreFactory<C> factory,
+      Function<C, StoreScope> scope) {
+
+    private boolean configures(final InternalConfig config) {
+      return configurationSelector.apply(config) != null;
+    }
+
+    private SecretStore buildConfigurationStore(
+        final String tenantId,
+        final String property,
+        final Stores jobs,
+        final InternalConfig config) {
+      requireApart(tenantId, config, tenantId, jobs);
+      final var entry = Objects.requireNonNull(configurationSelector.apply(config));
+      return factory.create(
+          INTERNAL_CONFIG,
+          tenantId,
+          property + "." + propertyKey,
+          entry,
+          // meters of configuration secrets stores aren't published
+          CompositeMeterRegistry::new);
+    }
+
+    /**
+     * Fails if one of the job tenant's stores of this type can read the tenant's configuration
+     * secrets.
+     */
+    private void requireApart(
+        final String tenantId,
+        final InternalConfig config,
+        final String jobTenantId,
+        final Stores jobs) {
+      final var entry = configurationSelector.apply(config);
+      if (entry == null) {
+        return;
+      }
+      final var configurationScope = scope.apply(entry);
+      selector
+          .apply(jobs)
+          .forEach(
+              (storeId, job) -> {
+                if (scope.apply(job).overlaps(configurationScope)) {
+                  throw new IllegalStateException(
+                      "Physical tenant '%s' configures a configuration secrets store under %s that shares secrets with the job secret store under %s; give them scopes that don't overlap, so that jobs can't read configuration secrets"
+                          .formatted(
+                              tenantId,
+                              internalConfigProperty(tenantId) + "." + propertyKey,
+                              storesProperty(jobTenantId, propertyKey) + "." + storeId));
+                }
+              });
+    }
 
     private Set<String> ids(final Stores config) {
       return selector.apply(config).keySet();
@@ -496,7 +626,12 @@ public class SecretStoreConfiguration {
                       displayName,
                       // the raw id is what the operator wrote, so it is what a factory names in its
                       // own validation errors
-                      factory.create(storeId, tenantId, entry, meterRegistry)));
+                      factory.create(
+                          storeId,
+                          tenantId,
+                          storesProperty(tenantId, propertyKey) + "." + storeId,
+                          entry,
+                          meterRegistry)));
     }
   }
 
@@ -507,20 +642,24 @@ public class SecretStoreConfiguration {
    * for a store that publishes meters of its own; asking for it creates it.
    */
   @FunctionalInterface
-  private interface StoreFactory<C> {
+  interface StoreFactory<C> {
     SecretStore create(
-        String storeId, String tenantId, C config, Supplier<MeterRegistry> meterRegistry);
+        String storeId,
+        String tenantId,
+        String property,
+        C config,
+        Supplier<MeterRegistry> meterRegistry);
 
     /** Adapts the factory of a store type that publishes no meters of its own. */
     static <C> StoreFactory<C> unmetered(final UnmeteredStoreFactory<C> factory) {
-      return (storeId, tenantId, config, meterRegistry) ->
-          factory.create(storeId, tenantId, config);
+      return (storeId, tenantId, property, config, meterRegistry) ->
+          factory.create(storeId, tenantId, property, config);
     }
   }
 
   @FunctionalInterface
   private interface UnmeteredStoreFactory<C> {
-    SecretStore create(String storeId, String tenantId, C config);
+    SecretStore create(String storeId, String tenantId, String property, C config);
   }
 
   /**
