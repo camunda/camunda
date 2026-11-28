@@ -39,7 +39,7 @@ lookupTeamMedic["@camunda/employee-engagement-tasklist"]=$tasklistMedic
 
 # @bi-pod-medic
 optimizeFrontendMedic="<!subteam^S0BPBPG5H2S|bi-pod-medic>"
-lookupTeamMedic["@camunda/optimize-frontend"]=$optimizeFrontendMedic
+lookupTeamMedic["@camunda/optimize"]=$optimizeFrontendMedic
 
 # failure in QA test
 lookupTeamMedic["QA"]="QA Acceptance Test, requires investigation"
