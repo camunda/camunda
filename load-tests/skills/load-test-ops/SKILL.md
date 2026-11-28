@@ -197,6 +197,82 @@ make realistic # Installs the camunda platform and load tester with the realisti
 After running the script, check the deployment via kubectl (this path doesn't dispatch a GHA workflow, so `gh run view` won't show anything). Use the kubectl commands in the
 [Check status](#check-status) section below.
 
+### Physical tenants: size the broker memory before deploying
+
+Every physical tenant (`pt1..ptN`) has its own partitions, so a broker hosts
+`tenant-count × partitionCount × replicationFactor / clusterSize` partitions. The broker refuses to
+start when RocksDB gets less than 32 MiB (33554432 bytes) per partition, and the default 4Gi limit
+is too small for many tenants. Check this before every physical tenants deploy:
+
+1. Count the partitions per broker. The setup defaults are `partitionCount=3`, `replicationFactor=3`,
+   `clusterSize=3`, so 10 tenants (the default tenant plus 9) give 30 partitions per broker.
+2. Require at least 320 MiB of container memory per partition, since the RocksDB budget is about 10% of
+   the memory (observed: 4Gi over 30 partitions gave 14316557 bytes per partition, and 10% of 4Gi / 30
+   is exactly that). 30 partitions need about 9.4Gi, so round up with margin, for example 12Gi.
+3. Pass the memory with the same value for request and limit (the pods are Guaranteed), via the
+   `platform-helm-values` workflow input or `--platform-helm-values` of the installer:
+
+   ```
+   --set orchestration.resources.requests.memory=12Gi --set orchestration.resources.limits.memory=12Gi
+   ```
+
+If the brokers crash-loop anyway, the cause is in their log:
+`Expected the allocated memory for RocksDB per partition to be at least 33554432 bytes`.
+
+### Physical tenants: size the PostgreSQL connections before deploying
+
+Each broker opens one connection pool per physical tenant, so the connections to PostgreSQL grow with
+`brokers × tenants`. 10 tenants on 3 brokers used 173–192 connections, which exhausts the default
+`max_connections=100`. Symptoms: `CannotGetJdbcConnectionException` in the RDBMS exporter, flushes that
+last 30 s (the pool wait), export queues that grow, and a broker stuck in startup.
+
+- The `camunda-physical-tenants-load-test` workflow puts PgBouncer in front of PostgreSQL by default
+  (`use-pgbouncer: true`), which avoids the problem. Keep it on for PostgreSQL runs.
+- A local `make` deploy without the pooler needs `max_connections` raised before the load starts
+  (300 for 10 tenants on 3 brokers):
+
+  ```
+  kubectl -n <ns> patch cluster.postgresql.cnpg.io postgresql --type merge \
+    -p '{"spec":{"postgresql":{"parameters":{"max_connections":"300"}}}}'
+  ```
+
+### Physical tenants: size the workers and the offered load
+
+- **Workers.** The daily stress tests run the chart default of 3 worker replicas (capacity 60, 10 threads,
+  50 ms completion) for 650 PI/s without secondary storage, over gRPC and REST, and for 300 PI/s with
+  Elasticsearch. So one replica carries well over 100 PI/s, and the workflow default of 0.4 replicas per
+  100 PI/s (1 replica for a 117 PI/s tenant) is right. In one run a 117 PI/s tenant on one replica logged
+  `maximum capacity (maxJobsActive)` and its jobs timed out (152/s), but the exporters were stalled on the
+  connection limit (above) at the time and slow completions fill `maxJobsActive`; the replicas and the
+  connections were raised together, so a worker limit was never shown. When a worker logs that message,
+  check the broker first (completion latency, backpressure, exporter lag) before adding replicas.
+- **Capacity.** The offered load only shows interference between tenants when it is slightly above what the
+  cluster can process. Measured on PostgreSQL over REST (10 tenants, 3 brokers with 4 CPU): 8.11 sustains
+  about 340 PI/s without backpressure; at 423 offered it completed 313 PI/s, 8.10 completed 377. At 299 PI/s
+  there were no 503s at all and so nothing to observe. The workflow does not use that value: for
+  PostgreSQL, OpenSearch and Elasticsearch it takes the same uncalibrated estimate, 600 PI/s over gRPC and
+  390 over REST (35% less). On PostgreSQL over REST 390 is above the measured 340, so the defaults (one
+  saturating tenant at 3× and the quiet ones at 0.85×) overload it more than the intended 107%. Other
+  storages need `cluster-capacity-rate`. Calibrate with a short run first.
+- **Retries inflate the load.** The starters retry on 503, so at 423 PI/s offered the brokers saw about 550
+  create requests/s. In an overload run the request rate is not the offered rate.
+
+### Measure on the broker, not on the starter
+
+The starter counts every HTTP 200 as a started instance and can disagree with the broker, especially while
+the cluster is unhealthy. Use the broker counters per `physicalTenant` and compare at equal throughput:
+
+- completed PIs: `zeebe_element_instance_events_total{type="PROCESS",action="completed"}`
+- completed jobs: `zeebe_job_events_total{action="completed"}`, with `failed` and `timed out` next to it
+- rejected requests: `http_server_requests_seconds_count{status="503"}`
+- CPU per completed PI: `container_cpu_usage_seconds_total` of the brokers divided by the PI rate
+- allocation: `jvm_gc_memory_allocated_bytes_total`. Do not infer allocation rates from profile sample counts.
+
+Take the window after the exporters have caught up (`zeebe_log_appender_last_committed_position` against
+`zeebe_exporter_last_exported_position`, and `zeebe_rdbms_exporter_flush_duration_seconds`), and compare
+two versions only at the same offered load without backpressure: under overload the difference mixes the
+cost of rejecting requests with the cost of processing.
+
 ---
 
 ## Check status

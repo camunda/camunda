@@ -1,0 +1,231 @@
+# description: Deploys the shared physical-tenants load test (mixed scenario of the noisy neighbour
+#              epic): quiet tenants next to saturating tenants that exceed their allowance by a
+#              multiple, together offering more than the cluster can process, each tenant with its own starter and worker. The traffic of every
+#              tenant is a multiplier of its allowance (its weighted share of the cluster
+#              capacity), computed by .github/scripts/load-test-physical-tenant-profiles.py, and
+#              the deployment is delegated to camunda-load-test.yml. Use the same inputs on every
+#              solution to compare results. It runs the max scenario of the daily stress test.
+#              saturating-tenant-count 0 is the reference run
+#              without a noisy neighbour, tenant-count 1 with total-rate the single tenant one.
+# calls: camunda-load-test.yml
+# monitoring: https://dashboard.benchmark.camunda.cloud/
+# type: CI
+# owner: @camunda/reliability-testing
+name: Camunda physical tenants load test
+run-name: "Physical tenants load test: ${{ inputs.name }}"
+
+on:
+  workflow_dispatch:
+    inputs:
+      name:
+        description: 'Name of the load test (namespace suffix, c8- is added). Use a unique name per run, e.g. pt-baseline-<yyyymmdd>-<hhmm>'
+        type: string
+        required: true
+      cluster-capacity-rate:
+        description: '── Load ──────────────────────────── Process instances/s the cluster sustains (100%). Empty uses an uncalibrated estimate for Elasticsearch, OpenSearch and PostgreSQL (600 over gRPC, REST 35% below); other storages need a calibrated value'
+        type: string
+        default: ""
+        required: false
+      tenant-count:
+        description: 'Total number of tenants including the default tenant (the others are pt1..). 1 runs the default tenant only'
+        type: number
+        default: 10
+        required: false
+      saturating-tenant-count:
+        description: 'How many tenants offer more than the cluster can process (the noisy neighbours, pt1..). 0 is the reference run without noise'
+        type: number
+        default: 1
+        required: false
+      saturating-multiplier:
+        description: 'Load of each saturating tenant as a multiple of its allowance (2-5 in the user stories). With quiet tenants near their share, 3 pushes the cluster past its capacity'
+        type: number
+        default: 3
+        required: false
+      quiet-multiplier:
+        description: 'Load of each quiet tenant (and the default tenant), as a multiple of its allowance. 0.85 keeps them close to their fair share, so interference is visible'
+        type: number
+        default: 0.85
+        required: false
+      worker-replicas-per-100-pi:
+        description: 'Worker replicas per 100 PI/s of a tenant, scaled linearly and rounded up (at least 1). The default is 3 workers for 800 PI/s, like the daily stress tests (3 workers for 650 PI/s), with some margin'
+        type: number
+        default: 0.4
+        required: false
+      tenant-weights:
+        description: 'Relative share of tenants, e.g. pt2=3,default=2. Unlisted tenants have weight 1'
+        type: string
+        default: ""
+        required: false
+      tenant-overrides:
+        description: 'Fixed load of single tenants as a multiple of their allowance, e.g. pt3=4,pt5=0.5,default=0.1. Never rescaled'
+        type: string
+        default: ""
+        required: false
+      total-rate:
+        description: 'Keep the total load at this many PI/s by scaling the quiet tenants (to compare with the single tenant run). 0 disables. Not for overload runs'
+        type: number
+        default: 0
+        required: false
+      secondary-storage-type:
+        description: '── Cluster ───────────────────────── Secondary storage shared by all tenants'
+        type: choice
+        options:
+          - elasticsearch
+          - postgresql
+          - opensearch
+        default: elasticsearch
+        required: false
+      prefer-rest:
+        description: 'API the load testers use: true is REST (what customers use), false is gRPC (no Tomcat and Spring layer, so it isolates the engine from gateway overhead). The capacity differs per API, REST is estimated 35% below gRPC'
+        type: boolean
+        default: true
+        required: false
+      use-pgbouncer:
+        description: 'Put PgBouncer in front of PostgreSQL (ignored for other storages)'
+        type: boolean
+        default: true
+        required: false
+      stable-vms:
+        description: 'Run on non-spot VMs, avoiding node churn during the run (more stable, higher cost). The daily tests use spot VMs'
+        type: boolean
+        default: false
+        required: false
+      platform-helm-values:
+        description: 'Extra Helm values for the Camunda chart, e.g. broker/partition count or resources (--set orchestration.clusterSize=3)'
+        type: string
+        default: ""
+        required: false
+      ref:
+        description: '── Build ─────────────────────────── Git ref to build the image from and to take the setup scripts from'
+        type: string
+        default: 'main'
+        required: false
+      target-version:
+        description: 'Setup folder under load-tests/setup/ (main, stable-810, ...). Needs orchestration-tag when not main'
+        type: string
+        default: 'main'
+        required: false
+      orchestration-tag:
+        description: 'Official Docker Hub image tag (e.g. an 8.10.x release) instead of building ref. Needed to run an older target-version'
+        type: string
+        default: ""
+        required: false
+      reuse-tag:
+        description: 'Pre-built image tag from the internal registry, to skip the build (not with orchestration-tag)'
+        type: string
+        default: ""
+        required: false
+      ttl:
+        description: 'Days before the namespace is deleted automatically'
+        type: number
+        default: 1
+        required: false
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  prepare:
+    name: Compute tenant profiles
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      profiles: ${{ steps.profiles.outputs.profiles }}
+      load-test-load: ${{ steps.flags.outputs.load-test-load }}
+      physical-tenant-count: ${{ steps.profiles.outputs.physical-tenant-count }}
+      use-pgbouncer: ${{ steps.pgbouncer.outputs.use-pgbouncer }}
+    steps:
+      - name: Validate version inputs
+        env:
+          ORCHESTRATION_TAG: ${{ inputs.orchestration-tag }}
+          REUSE_TAG: ${{ inputs.reuse-tag }}
+          REF: ${{ inputs.ref }}
+          TARGET_VERSION: ${{ inputs.target-version }}
+        run: |-
+          # A target-version other than main runs the setup scripts of ref with an older setup folder,
+          # so the image must not be built from main.
+          if [[ "${TARGET_VERSION}" != "main" && -z "${ORCHESTRATION_TAG}" && -z "${REUSE_TAG}" && "${REF}" == "main" ]]; then
+            echo "::error::target-version '${TARGET_VERSION}' needs orchestration-tag (or reuse-tag, or a matching ref): building main would not match the setup folder"
+            exit 1
+          fi
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/scripts
+
+      - name: Compute profiles
+        id: profiles
+        env:
+          TENANT_COUNT: ${{ inputs.tenant-count }}
+          SATURATING_COUNT: ${{ inputs.saturating-tenant-count }}
+          STORAGE: ${{ inputs.secondary-storage-type }}
+          CAPACITY_RATE: ${{ inputs.cluster-capacity-rate }}
+          PREFER_REST: ${{ inputs.prefer-rest }}
+          SATURATING_MULTIPLIER: ${{ inputs.saturating-multiplier }}
+          QUIET_MULTIPLIER: ${{ inputs.quiet-multiplier }}
+          WORKER_REPLICAS_PER_100_PI: ${{ inputs.worker-replicas-per-100-pi }}
+          TENANT_WEIGHTS: ${{ inputs.tenant-weights }}
+          TENANT_OVERRIDES: ${{ inputs.tenant-overrides }}
+          TOTAL_RATE: ${{ inputs.total-rate }}
+        run: python3 .github/scripts/load-test-physical-tenant-profiles.py
+
+      - name: Compose load tester flags
+        id: flags
+        env:
+          DEFAULT_TENANT_FLAGS: ${{ steps.profiles.outputs.default-tenant-flags }}
+          PREFER_REST: ${{ inputs.prefer-rest }}
+        run: |-
+          flags="${DEFAULT_TENANT_FLAGS}"
+          # The chart default is REST, so only gRPC needs an explicit flag. It applies to every tenant.
+          if [[ "${PREFER_REST}" != "true" ]]; then
+            flags="${flags} --set global.preferRest.enabled=false"
+          fi
+          echo "load-test-load=${flags}" >> "$GITHUB_OUTPUT"
+          echo "Load tester API: $([[ "${PREFER_REST}" == "true" ]] && echo REST || echo gRPC)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Resolve PgBouncer
+        id: pgbouncer
+        env:
+          STORAGE: ${{ inputs.secondary-storage-type }}
+          USE_PGBOUNCER: ${{ inputs.use-pgbouncer }}
+        run: |-
+          if [[ "${STORAGE}" == "postgresql" && "${USE_PGBOUNCER}" == "true" ]]; then
+            echo "use-pgbouncer=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "use-pgbouncer=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  deploy:
+    name: Deploy load test
+    needs: prepare
+    permissions:
+      contents: read
+      id-token: write # Teleport auth in called workflow
+    uses: ./.github/workflows/camunda-load-test.yml
+    secrets: inherit
+    with:
+      name: ${{ inputs.name }}
+      ref: ${{ inputs.ref }}
+      target-version: ${{ inputs.target-version }}
+      orchestration-tag: ${{ inputs.orchestration-tag }}
+      reuse-tag: ${{ inputs.reuse-tag }}
+      ttl: ${{ inputs.ttl }}
+      # The scenario of the daily stress test, which is validated every day. More scenarios (e.g.
+      # realistic) need a measured capacity of their own first.
+      scenario: max
+      secondary-storage-type: ${{ inputs.secondary-storage-type }}
+      use-pgbouncer: ${{ needs.prepare.outputs.use-pgbouncer == 'true' }}
+      physical-tenant-count: ${{ fromJSON(needs.prepare.outputs.physical-tenant-count) }}
+      physical-tenant-profiles: ${{ needs.prepare.outputs.profiles }}
+      load-test-load: ${{ needs.prepare.outputs.load-test-load }}
+      platform-helm-values: ${{ inputs.platform-helm-values }}
+      stable-vms: ${{ inputs.stable-vms }}
+      # Optimize is not part of the measurement and would add load of its own.
+      enable-optimize: false
+      enable-chaos: false

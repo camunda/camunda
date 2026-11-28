@@ -403,6 +403,23 @@ tenants.
 In the GitHub workflow, set the `physical-tenant-count` input (with `secondary-storage-type` set to
 the storage you want all tenants to share).
 
+By default every tenant runs the scenario's rate. To give tenants different traffic, pass
+`physical_tenant_profiles`: a space-separated list of `<starter-rate>[:<worker-replicas>]` entries, the
+i-th applying to `pt<i>`. A tenant without an entry keeps the scenario defaults, and the default tenant
+is configured through the usual load test flags.
+
+```sh
+# pt1 saturates, pt2 is heavy, pt3 is quiet
+make install physical_tenant_count=3 physical_tenant_profiles="150:6 50:2 5:1" scenario=max
+```
+
+The [`Camunda physical tenants load test`](../../.github/workflows/camunda-physical-tenants-load-test.yml)
+workflow builds these profiles from the cluster capacity: every tenant runs at a multiple of its
+allowance (its weighted share of the capacity), and saturating tenants offer more than the whole
+cluster can process. It deploys the mixed scenario of the noisy neighbour epic. Run it with
+`saturating-tenant-count: 0` for the reference without a noisy neighbour, and with the same inputs for
+every build you compare. The job summary lists the rate of every tenant.
+
 Verify the tenants receive writes — for rdbms, table names fold to the RDBMS's default identifier
 case (e.g. Postgres lowercases unquoted identifiers):
 
