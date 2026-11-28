@@ -1,4 +1,10 @@
-plugins { id("buildlogic.server-conventions") }
+import buildlogic.dockerImageName
+import buildlogic.useDockerImage
+
+plugins {
+  id("buildlogic.server-conventions")
+  id("buildlogic.docker-image-test-conventions")
+}
 
 dependencies {
   implementation(project(":configuration"))
@@ -24,5 +30,8 @@ dependencies {
 
   testImplementation(libs.org.testcontainers.testcontainers.junit.jupiter)
 }
+
+// CamundaClusterTest starts the container from the unit test task.
+tasks.test { useDockerImage(dockerImageName(), configurations.getByName("dockerImageIdFiles")) }
 
 description = "Camunda TestContainer"
