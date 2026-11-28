@@ -21,13 +21,16 @@ import io.atomix.raft.protocol.ReplicatableJournalRecord;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.atomix.raft.storage.log.entry.RaftEntry;
 import io.camunda.zeebe.journal.JournalRecord;
+import java.util.UUID;
 
 /** Indexed journal entry. */
-record IndexedRaftLogEntryImpl(long index, long term, RaftEntry entry, JournalRecord record)
+record IndexedRaftLogEntryImpl(
+    long index, long term, UUID epoch, RaftEntry entry, JournalRecord record)
     implements IndexedRaftLogEntry {
 
-  IndexedRaftLogEntryImpl(final long term, final RaftEntry entry, final JournalRecord record) {
-    this(record.index(), term, entry, record);
+  IndexedRaftLogEntryImpl(
+      final long term, final UUID epoch, final RaftEntry entry, final JournalRecord record) {
+    this(record.index(), term, epoch, entry, record);
   }
 
   @Override
