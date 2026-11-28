@@ -9,7 +9,12 @@ package io.camunda.zeebe.it.cluster.management;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.CamundaFuture;
+import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.PartitionInfo;
+import io.camunda.client.api.response.ProcessInstanceResult;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.qa.util.actuator.RebalanceActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestGateway;
@@ -18,6 +23,12 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
@@ -57,6 +68,70 @@ final class RebalancingEndpointIT {
 
     // then
     reachesGoodLeaderDistribution();
+  }
+
+  @Test
+  void shouldRespondToAwaitedResultsOfInstancesWhosePartitionMoved() {
+    // given
+    forceBadLeaderDistribution();
+    final var processId = "await-result";
+    client
+        .newDeployResourceCommand()
+        .addProcessModel(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .serviceTask("task", t -> t.zeebeJobType(processId))
+                .endEvent()
+                .done(),
+            "await-result.bpmn")
+        .send()
+        .join();
+    final List<CamundaFuture<ProcessInstanceResult>> results = new ArrayList<>();
+    final Map<Long, ActivatedJob> jobs = new HashMap<>();
+    Awaitility.await("an instance awaiting its result on every partition")
+        .atMost(Duration.ofSeconds(30))
+        .until(
+            () -> {
+              results.add(
+                  client
+                      .newCreateInstanceCommand()
+                      .bpmnProcessId(processId)
+                      .latestVersion()
+                      .withResult()
+                      .requestTimeout(Duration.ofMinutes(1))
+                      .send());
+              activateJobs(processId, jobs);
+              return jobs.keySet().stream().map(Protocol::decodePartitionId).distinct().count()
+                  == cluster.partitionsCount();
+            });
+    Awaitility.await("a job for every awaited instance")
+        .atMost(Duration.ofSeconds(30))
+        .until(() -> activateJobs(processId, jobs) == results.size());
+
+    // when
+    triggerRebalancing();
+    reachesGoodLeaderDistribution();
+    jobs.values().forEach(job -> client.newCompleteCommand(job).send().join());
+
+    // then
+    Assertions.assertThat(results)
+        .allSatisfy(
+            result ->
+                Assertions.assertThat(result.join(10, TimeUnit.SECONDS).getBpmnProcessId())
+                    .isEqualTo(processId));
+  }
+
+  private int activateJobs(final String jobType, final Map<Long, ActivatedJob> jobs) {
+    client
+        .newActivateJobsCommand()
+        .jobType(jobType)
+        .maxJobsToActivate(10)
+        .timeout(Duration.ofMinutes(5))
+        .send()
+        .join()
+        .getJobs()
+        .forEach(job -> jobs.put(job.getKey(), job));
+    return jobs.size();
   }
 
   private void triggerRebalancing() {

@@ -17,9 +17,14 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
+import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.AsyncRequestIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceResultIntent;
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Map;
 import java.util.Set;
@@ -182,6 +187,64 @@ public final class CreateProcessInstanceWithResultTest {
     verify(ENGINE.getCommandResponseWriter(), timeout(1000).times(1))
         .rejectionType(RejectionType.NOT_FOUND);
     verify(ENGINE.getCommandResponseWriter(), timeout(1000).times(1)).tryWriteResponse(3, 3);
+  }
+
+  @Test
+  public void shouldSendResultAfterStateWasRebuiltFromTheLog() {
+    // given
+    ENGINE.deployment().withXmlResource(processWithServiceTask("REPLAYED")).deploy();
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId("REPLAYED")
+            .withResult()
+            .withRequestId(4L)
+            .withRequestStreamId(4)
+            .create();
+    ENGINE.reprocess();
+
+    // when
+    ENGINE.job().ofInstance(processInstanceKey).withType("REPLAYED").complete();
+
+    // then
+    verify(mockCommandResponseWriter, timeout(1000).times(1))
+        .intent(ProcessInstanceResultIntent.COMPLETED);
+    verify(mockCommandResponseWriter, timeout(1000).times(1)).tryWriteResponse(4, 4L);
+  }
+
+  @Test
+  public void shouldForgetAwaitingRequestWhenInstanceIsCancelled() {
+    // given
+    ENGINE.deployment().withXmlResource(processWithServiceTask("CANCELLED")).deploy();
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId("CANCELLED")
+            .withResult()
+            .withRequestId(5L)
+            .withRequestStreamId(5)
+            .create();
+
+    // when
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
+
+    // then
+    assertThat(
+            RecordingExporter.asyncRequestRecords()
+                .withRequestScopeKey(processInstanceKey)
+                .withRequestValueType(ValueType.PROCESS_INSTANCE_CREATION)
+                .withRequestIntent(ProcessInstanceCreationIntent.CREATE_WITH_AWAITING_RESULT)
+                .limit(2))
+        .extracting(Record::getIntent)
+        .containsExactly(AsyncRequestIntent.RECEIVED, AsyncRequestIntent.PROCESSED);
+  }
+
+  private static BpmnModelInstance processWithServiceTask(final String processId) {
+    return Bpmn.createExecutableProcess(processId)
+        .startEvent()
+        .serviceTask("task", t -> t.zeebeJobType(processId))
+        .endEvent()
+        .done();
   }
 
   private static void interceptResponseWriter(

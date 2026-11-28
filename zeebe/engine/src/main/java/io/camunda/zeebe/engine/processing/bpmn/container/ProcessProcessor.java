@@ -113,6 +113,7 @@ public final class ProcessProcessor
     final var noActiveChildInstances = stateTransitionBehavior.terminateChildInstances(context);
 
     if (noActiveChildInstances) {
+      processResultSenderBehavior.closeAwaitingRequest(context);
       transitionTo(
           element,
           context,
@@ -203,6 +204,7 @@ public final class ProcessProcessor
     } else if (stateBehavior.canBeTerminated(childContext)) {
       if (flowScopeInstance.isTerminating()) {
         // the process instance was canceled, or interrupted by a parent process instance
+        processResultSenderBehavior.closeAwaitingRequest(flowScopeContext);
         transitionTo(
             element,
             flowScopeContext,
