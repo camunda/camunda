@@ -8,16 +8,23 @@
 package io.camunda.zeebe.it.cluster.backup;
 
 import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.protocol.rest.RestoreBrokerStatus;
+import io.camunda.client.protocol.rest.RestorePartitionStatus;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.data.primarystorage.PrimaryStorageBackup.BackupStoreType;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.topology.ClusterActuatorAssert;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -242,6 +249,91 @@ final class RestoreScaledUpPartitionsBackIT {
                 InProcessRestoreTestUtil.assertNewInstancesLandOnPartitions(
                     broker, PROCESS_ID, SCALED_PARTITIONS_COUNT));
     InProcessRestoreTestUtil.awaitJobsOfInstancesActivatable(client, JOB_TYPE, instanceKeys);
+  }
+
+  @Test
+  void shouldNotReportPartitionsMissingFromTheBackupInTheRestoreStatus() throws IOException {
+
+    // given - a backup taken before the cluster is scaled up past the backup's partition count
+    InProcessRestoreTestUtil.deployAndCreateInstancesOnEveryPartition(
+        client, PROCESS_ID, JOB_TYPE, BACKUP_PARTITIONS_COUNT);
+    InProcessRestoreTestUtil.takeSnapshotOnEveryBroker(cluster, DEFAULT_PHYSICAL_TENANT_ID);
+    InProcessRestoreTestUtil.takeBackup(cluster, DEFAULT_PHYSICAL_TENANT_ID, BACKUP_ID);
+    final var clusterActuator = ClusterActuator.of(cluster.availableGateway());
+    InProcessRestoreTestUtil.scaleUpPartitions(
+        clusterActuator, SCALED_PARTITIONS_COUNT, BROKERS_COUNT);
+
+    // and - partition 2 fails to restore on every broker until its backup is repaired, which holds
+    // the restore open so its status can be observed
+    final var originalSnapshotFiles = corruptBackupOfPartition(BACKUP_PARTITIONS_COUNT);
+
+    final var toRecovering = InProcessRestoreTestUtil.changeMode(client, "RECOVERING", false);
+    Awaitility.await("cluster transitions to RECOVERING")
+        .timeout(Duration.ofSeconds(60))
+        .untilAsserted(
+            () ->
+                ClusterActuatorAssert.assertThat(clusterActuator)
+                    .hasCompletedChanges(toRecovering)
+                    .doesNotHavePendingChanges());
+
+    // when
+    final var restore = InProcessRestoreTestUtil.triggerRestore(client, BACKUP_ID);
+
+    // then - once every broker's copy of the scaled up partition has been wiped, the status lists
+    // only the backup's partitions
+    Awaitility.await("scaled up partition is wiped and partition 1 is restored")
+        .timeout(Duration.ofSeconds(60))
+        .untilAsserted(
+            () -> {
+              assertThat(clusterActuator.getTopology().getPendingChange().getCompleted())
+                  .filteredOn(
+                      op ->
+                          "PARTITION_PRE_RESTORE".equals(String.valueOf(op.getOperation()))
+                              && Integer.valueOf(SCALED_PARTITIONS_COUNT)
+                                  .equals(op.getPartitionId()))
+                  .hasSize(BROKERS_COUNT);
+              assertEveryBrokerReportsRestored(1);
+            });
+
+    // and - the restore completes once the backup is repaired
+    InProcessRestoreTestUtil.restoreOriginalSnapshotFiles(originalSnapshotFiles);
+    Awaitility.await("restore change plan completes")
+        .timeout(Duration.ofMinutes(2))
+        .untilAsserted(
+            () ->
+                ClusterActuatorAssert.assertThat(clusterActuator)
+                    .hasCompletedChanges(restore)
+                    .doesNotHavePendingChanges());
+  }
+
+  private void assertEveryBrokerReportsRestored(final int partitionsRestored) {
+    assertThat(InProcessRestoreTestUtil.getRestoreStatus(client).getBrokers())
+        .hasSize(BROKERS_COUNT)
+        .allSatisfy(
+            broker -> {
+              assertThat(broker.getPartitions())
+                  .extracting(RestorePartitionStatus::getPartitionId)
+                  .containsExactly(1, BACKUP_PARTITIONS_COUNT);
+              assertThat(broker)
+                  .returns(BACKUP_PARTITIONS_COUNT, RestoreBrokerStatus::getPartitionsToRestore)
+                  .returns(partitionsRestored, RestoreBrokerStatus::getPartitionsRestored);
+            });
+  }
+
+  /** Corrupts the copy of the partition in the backup, whichever broker took it. */
+  private Map<Path, byte[]> corruptBackupOfPartition(final int partitionId) throws IOException {
+    final var originalSnapshotFiles = new HashMap<Path, byte[]>();
+    for (int nodeId = 0; nodeId < BROKERS_COUNT; nodeId++) {
+      final var snapshotDir =
+          backupDir.resolve("contents/%d/%d/%d/snapshot".formatted(partitionId, BACKUP_ID, nodeId));
+      if (Files.isDirectory(snapshotDir)) {
+        originalSnapshotFiles.putAll(
+            InProcessRestoreTestUtil.corruptPartitionSnapshot(
+                backupDir, BACKUP_ID, nodeId, partitionId));
+      }
+    }
+    assertThat(originalSnapshotFiles).describedAs("backed up snapshot files").isNotEmpty();
+    return originalSnapshotFiles;
   }
 
   /** Backup store can only be configured via UnifiedConfiguration */

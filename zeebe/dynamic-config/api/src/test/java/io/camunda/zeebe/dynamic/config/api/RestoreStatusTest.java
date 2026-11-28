@@ -39,6 +39,7 @@ final class RestoreStatusTest {
   // different id to prove that.
   private static final long RESTORE_CHANGE_ID = -2L;
   private static final MemberId BROKER_1 = MemberId.from("1");
+  private static final MemberId BROKER_2 = MemberId.from("2");
   private static final Instant STARTED_AT = Instant.parse("2024-01-01T10:00:00Z");
 
   @Test
@@ -228,6 +229,82 @@ final class RestoreStatusTest {
     assertThat(status.brokers()).hasSize(1);
     final var partition = status.brokers().getFirst().partitions().getFirst();
     assertThat(partition.state()).isEqualTo(PartitionRestoreState.RESTORED);
+  }
+
+  @Test
+  void shouldNotReportPartitionsMissingFromBackupWhileRestoring() {
+    // given
+    // the backup only contains partition 1, but the group has partitions 1 and 2: partition 2 is
+    // wiped by its pre-restore and never restored. Broker 2 only holds the dropped partition 2.
+    final var configuration =
+        PartitionGroupConfiguration.empty(0)
+            .startGraphConfigurationChange(
+                OperationGraph.sequential(
+                    List.of(
+                        new PartitionPreRestoreOperation(BROKER_1, 1),
+                        new PartitionPreRestoreOperation(BROKER_1, 2),
+                        new PartitionPreRestoreOperation(BROKER_2, 2),
+                        new PartitionRestoreOperation(BROKER_1, 1, backups(10L)),
+                        new ModeChangeOperation(BROKER_1, Mode.PROCESSING))))
+            .completeOperation(new OperationId(0), UnaryOperator.identity())
+            .completeOperation(new OperationId(1), UnaryOperator.identity())
+            .completeOperation(new OperationId(2), UnaryOperator.identity());
+
+    // when
+    final var status = RestoreStatus.of(configuration).orElseThrow();
+
+    // then
+    assertThat(status.brokers()).hasSize(1);
+    final var broker = status.brokers().getFirst();
+    assertThat(broker.brokerId()).isEqualTo("1");
+    assertThat(broker.partitionsRestored()).isZero();
+    assertThat(broker.partitionsToRestore()).isOne();
+    assertThat(broker.partitions())
+        .singleElement()
+        .satisfies(
+            partition -> {
+              assertThat(partition.partitionId()).isEqualTo(1);
+              assertThat(partition.state()).isEqualTo(PartitionRestoreState.RESTORING);
+              assertThat(partition.backupIds()).containsExactly(10L);
+            });
+  }
+
+  @Test
+  void shouldNotReportPartitionsMissingFromBackupOnceRestored() {
+    // given
+    // same plan as above, but every partition in the backup has been restored, so the restore
+    // must report all of its partitions as restored.
+    final var configuration =
+        PartitionGroupConfiguration.empty(0)
+            .startGraphConfigurationChange(
+                OperationGraph.sequential(
+                    List.of(
+                        new PartitionPreRestoreOperation(BROKER_1, 1),
+                        new PartitionPreRestoreOperation(BROKER_1, 2),
+                        new PartitionPreRestoreOperation(BROKER_2, 2),
+                        new PartitionRestoreOperation(BROKER_1, 1, backups(10L)),
+                        new ModeChangeOperation(BROKER_1, Mode.PROCESSING))))
+            .completeOperation(new OperationId(0), UnaryOperator.identity())
+            .completeOperation(new OperationId(1), UnaryOperator.identity())
+            .completeOperation(new OperationId(2), UnaryOperator.identity())
+            .completeOperation(new OperationId(3), UnaryOperator.identity());
+
+    // when
+    final var status = RestoreStatus.of(configuration).orElseThrow();
+
+    // then
+    assertThat(status.brokers()).hasSize(1);
+    final var broker = status.brokers().getFirst();
+    assertThat(broker.brokerId()).isEqualTo("1");
+    assertThat(broker.partitionsRestored()).isOne();
+    assertThat(broker.partitionsToRestore()).isOne();
+    assertThat(broker.partitions())
+        .singleElement()
+        .satisfies(
+            partition -> {
+              assertThat(partition.partitionId()).isEqualTo(1);
+              assertThat(partition.state()).isEqualTo(PartitionRestoreState.RESTORED);
+            });
   }
 
   private static PartitionRestore backups(final long... ids) {
