@@ -121,11 +121,17 @@ routes through it.
 In addition to [the "load tester" application](../../../load-tester), it's possible to run tests
 using [k6](https://grafana.com/docs/k6/latest/) against the deployed Camunda cluster.
 
-### In which case to use k6 tests?
+This is an experimental, unofficial, partially supported way to run load tests against a Camunda
+cluster. Feedback is welcome on [#oc-reliability-testing](https://camunda.slack.com/archives/C0807665N8G).
 
-* This is an experimental, unofficial, partially supported, way to run load tests against Camunda cluster
-* Feedback welcome on [#oc-reliability-testing](https://camunda.slack.com/archives/C0807665N8G)
-* Use it for ad-hoc REST API tests, and if it's simpler to use than patching the load-tester app
+### When to use k6 tests
+
+Use k6 for ad-hoc REST API tests, and when it's simpler than patching the load-tester app. k6 gives:
+
+* Tests written in Javascript. No access to the Camunda node.js SDK though.
+* Automatic metrics: http, etc.
+* Distribution across many pods, if needed.
+* "as code" configuration for adjusting load.
 
 Use the [`load-tester` subchart](../../../load-tester/README.md) instead for:
 
@@ -136,18 +142,9 @@ Use the [`load-tester` subchart](../../../load-tester/README.md) instead for:
   k6 has no built-in way to share state between VUs or scenarios — this scaffold has no
   cross-executor/scenario communication.
 
-#### What to expect
+### Deployed tests
 
-* Write tests using Javascript. No access to the Camunda node.js SDK though
-* Automatic metrics: http, etc.
-* Can be distributed across many pods, if needed
-* "as code" configuration for adjusting load
-
-See [Grafana Dashboards](https://dashboard.benchmark.camunda.cloud/dashboards/f/bfx7qui8e1bswa/k6)
-
-### Which tests are deployed?
-
-* `default` runs for every storage type and version:
+* `default` runs for every storage type and version, as a StatefulSet:
   - checks the cluster topology
   - deploys a small BPMN diagram through `/v2/deployments` (sanity check, not a load test)
 * `data-read`: reads data through the search APIs, so it needs a secondary
@@ -157,7 +154,24 @@ See [Grafana Dashboards](https://dashboard.benchmark.camunda.cloud/dashboards/f/
   `/v2/process-definitions/search` endpoint (`k6_data_read_supported=false` in
   `stable-87/Makefile`).
 
-### How to add a new test?
+### Run mode
+
+Each k6 test runs as a StatefulSet named `k6-<test>` (`kubectl get statefulset k6-<test>`), which runs until the load test is deleted. Kubernetes restarts the pod when it stops, and restarts the pods when the scripts change.
+
+> [!IMPORTANT]
+> A k6 test has these constraints:
+>
+> 1. The `rate` and VUs of a scenario are split between the replicas.
+> 2. `setup()` and `teardown()` run in every pod each time k6 starts, which includes every restart during a
+>    long-running test, and run concurrently in all pods when there are several replicas. They must be
+>    idempotent and safe to run concurrently: prefer read-only calls, and make any write tolerate a duplicate.
+> 3. Metrics have no `pod` label: use `testrun_name` and `instance_id` to identify the instances.
+> 4. A change of `replicas` (set in `k6.tests.<name>`, default 1) restarts all pods, because every pod gets a new execution segment.
+>    Change it only in the values: a pod added with `kubectl scale` gets an invalid k6 execution
+>    segment and does not start.
+> 5. The `k6.resources` limits apply to each replica.
+
+### Add a new test
 
 1. Add the script under [`k6/scripts/`](k6/scripts) (e.g. `test.mytest.js`).
 2. Register it in `k6.tests` in [`values.yaml`](values.yaml):
@@ -170,25 +184,22 @@ See [Grafana Dashboards](https://dashboard.benchmark.camunda.cloud/dashboards/f/
          script: test.mytest.js
    ```
 
-   This creates a separate `TestRun` named `k6-my-test` that you can interact with using:
+   This creates a StatefulSet named `k6-my-test`.
 
-   ```
-   kubectl get testrun k6-my-test
-   ```
+#### Use the shared Camunda client
 
-> [!NOTE]
-> Upgrading a deployed k6 test is not supported. The k6 operator does not restart a `TestRun`
-> when it is updated, so the running test keeps the old script and configuration. To apply a
-> change, delete the `TestRun` (or the namespace) and deploy again.
->
-> [!WARNING]
-> k6 will ignore [the `thresholds` options](https://grafana.com/docs/k6/latest/using-k6/thresholds/) due
-> to [the `K6_NO_THRESHOLDS` environment variable in `testrun.yaml`](templates/k6/testrun.yaml).
-> This keeps k6 from using more and more memory as the test runs.
->
-> To read the results, take a look at the Grafana dashboards.
+[`k6/scripts/lib.camunda.js`](k6/scripts/lib.camunda.js) provides the shared Camunda client:
 
-#### How to run the k6 tests locally?
+```js
+import { Client } from './lib.camunda.js';
+```
+
+* `new Client()` — create it at module level in the test script, so that each VU has its own
+  client. It checks the environment variables, fetches and renews the token by itself, and has one
+  method per endpoint (e.g. `topology()`), plus `get()` and `post()` to add new ones.
+* `client.waitUntilReady()` — call in `setup()` to wait for Camunda to be ready.
+
+#### Run a test locally
 
 It's possible to run a k6 test locally, it needs:
 
@@ -214,7 +225,7 @@ CAMUNDA_BASE_URL=http://localhost:8080 k6 run k6/scripts/test.mytest.js
 > The OAuth host is rewritten to use the `keycloak` port-forward locally,
 > instead of the default in-cluster URL.
 
-#### How to run the k6 unit tests?
+#### Run the unit tests
 
 The scripts in [`k6/scripts/`](k6/scripts) have unit tests in [`k6/tests/`](k6/tests). They run with
 the node.js built-in test runner (node 24 or later) and replace the `k6` and `k6/http` modules with
@@ -224,38 +235,29 @@ mocks. Run them from this directory:
 make -C k6 test
 ```
 
-### Reusing common helpers
+### Read the results
 
-[`k6/scripts/lib.camunda.js`](k6/scripts/lib.camunda.js) provides the shared Camunda client:
+The results are in the [k6 Grafana dashboards](https://dashboard.benchmark.camunda.cloud/dashboards/f/bfx7qui8e1bswa/k6).
 
-```js
-import { Client } from './lib.camunda.js';
-```
+k6 ignores [the `thresholds` options](https://grafana.com/docs/k6/latest/using-k6/thresholds/) due
+to [the `K6_NO_THRESHOLDS` environment variable in `_helpers.tpl`](templates/_helpers.tpl). This
+keeps k6 from using more and more memory as the test runs. Thresholds are also
+[not reported into Prometheus](https://github.com/grafana/k6/issues/4587).
 
-* `new Client()` — create it at module level in the test script, so that each VU has its own
-  client. It checks the environment variables, fetches and renews the token by itself, and has one
-  method per endpoint (e.g. `topology()`), plus `get()` and `post()` to add new ones.
-* `client.waitUntilReady()` — call in `setup()` to wait for Camunda to be ready.
-
-## Caveats
+### Caveats
 
 Known issues and limitations of the k6 tests:
 
-1. [k6 worker pods are not automatically restarted if they fail](https://github.com/grafana/k6-operator/issues/898): this can skew tests results.
-2. Not possible to use the Camunda node.js SDK: k6 is not node.js and the SDK
+1. Not possible to use the Camunda node.js SDK: k6 is not node.js and the SDK
    depends on [node.js APIs which are not available in k6](https://grafana.com/docs/k6/latest/using-k6/modules/#use-nodejs-modules).
-3. When calling HTTP methods, don't set tags with high cardinality values: high
+2. When calling HTTP methods, don't set tags with high cardinality values: high
    cardinality labels have a **severe** impact on Prometheus and can render it
    completely unusable.
-4. Use `console.xxx()` logging calls carefully: it's easy to create many
+3. Use `console.xxx()` logging calls carefully: it's easy to create many
    clients with k6, but a logger inside a tight loop can produce massive logs,
    costing a lot of money.
-5. `setup()` result is copied into each VU: this `context` is not shared between VUs.
-6. k6 [thresholds](https://grafana.com/docs/k6/latest/using-k6/thresholds/) are
-   [not reported into Prometheus](https://github.com/grafana/k6/issues/4587).
-   Thresholds support is anyway disabled by default as it increases k6 memory
-   usage drastically.
-7. Don't build large multipart bodies with the [`FormData`
+4. `setup()` result is copied into each VU: this `context` is not shared between VUs.
+5. Don't build large multipart bodies with the [`FormData`
    jslib](https://jslib.k6.io/formdata/0.0.2/index.js): it's not memory efficient for large payload
    (see [k6#3888](https://github.com/grafana/k6/issues/3888),
    [k6#5760](https://github.com/grafana/k6/issues/5760)). Instead, pass an `http.file()` to

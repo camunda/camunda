@@ -1,5 +1,5 @@
 # description: Verifies a load test deployment is healthy: pods are ready and the client is connected
-#              to the gateway, and the k6 TestRuns (if any) are healthy.
+#              to the gateway, and the k6 tests (if any) are healthy.
 # called-by: camunda-scheduled-release-load-tests.yml, camunda-verify-and-cleanup-load-test.yml
 # type: CI
 # owner: @camunda/reliability-testing
@@ -24,7 +24,7 @@ jobs:
   verify:
     name: Verify
     runs-on: ubuntu-latest
-    # Worst case of `loadtestctl verify` (~115 min with 2 k6 TestRuns), plus setup and final steps.
+    # Worst case of `loadtestctl verify` (~115 min with 2 k6 tests), plus setup and final steps.
     timeout-minutes: 130
     permissions:
       contents: read

@@ -31,6 +31,9 @@ export const options = {
   },
 };
 
+// `setup()` runs again on each pod restart, and concurrently in every replica:
+// it only reads. The definitions are sorted by key, so the replicas pick the
+// same one, except if a new definition appears while they start.
 export function setup() {
   client.waitUntilReady();
 

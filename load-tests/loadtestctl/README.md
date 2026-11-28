@@ -29,7 +29,7 @@ resolved dependency graph.
 
 ### verify
 
-`loadtestctl verify` checks that a deployed load test is up and running: the Camunda platform and load test client pods are ready, the k6 TestRuns (if any) are healthy, the client is connected to the gateway, and k6 reports metrics to Prometheus.
+`loadtestctl verify` checks that a deployed load test is up and running: the Camunda platform and load test client pods are ready, the k6 tests (if any) are healthy, the client is connected to the gateway, and k6 reports metrics to Prometheus.
 
 ```bash
 ./loadtestctl verify <namespace> [options]

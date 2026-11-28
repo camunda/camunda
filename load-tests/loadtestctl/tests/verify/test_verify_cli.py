@@ -83,7 +83,7 @@ def test_should_print_success_status_only_on_stdout(capsys: pytest.CaptureFixtur
     with (
         mock.patch(f"{CLI}.kubectl", return_value=completed()),
         mock.patch(f"{CLI}.wait_for_pods"),
-        mock.patch(f"{CLI}.wait_for_testruns"),
+        mock.patch(f"{CLI}.wait_for_k6_statefulsets"),
         mock.patch(f"{CLI}.verify_connected"),
         mock.patch(f"{CLI}.verify_metrics"),
     ):
@@ -114,7 +114,7 @@ def test_should_print_the_status_when_the_result_file_is_not_writable(
     with (
         mock.patch(f"{CLI}.kubectl", return_value=completed()),
         mock.patch(f"{CLI}.wait_for_pods"),
-        mock.patch(f"{CLI}.wait_for_testruns"),
+        mock.patch(f"{CLI}.wait_for_k6_statefulsets"),
         mock.patch(f"{CLI}.verify_connected"),
         mock.patch(f"{CLI}.verify_metrics"),
     ):
