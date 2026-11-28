@@ -58,6 +58,7 @@ test.describe.serial('roles CRUD', () => {
   }) => {
     await identityRolesPage.clickCreateRoles();
     await identityRolesPage.idField.fill('invalid!!%');
+    await identityRolesPage.idField.blur();
     await expect(identityRolesPage.createRoleModal).toContainText(
       'Please enter a valid role ID',
     );
@@ -172,7 +173,7 @@ test.describe('Roles functionalities', () => {
       await identityAuthorizationsPage.navigateToAuthorizations();
       await identityAuthorizationsPage.createAuthorization({
         ownerType: 'Role',
-        ownerId: TEST_ROLE.name,
+        ownerId: TEST_ROLE.id,
         resourceType: 'Authorization',
         resourceId: '*',
         accessPermissions: ['Update', 'Read', 'Create', 'Delete'],
@@ -188,6 +189,7 @@ test.describe('Roles functionalities', () => {
     await test.step(`Logout and login with test user`, async () => {
       await identityHeader.logout();
       await loginPage.login(TEST_USER.username, TEST_USER.password);
+      await identityUsersPage.navigateToUsers();
       await expect(identityUsersPage.userCell(TEST_USER.email)).toBeVisible();
     });
 
@@ -291,7 +293,7 @@ test.describe('Roles functionalities', () => {
       await identityHeader.navigateToAuthorizations();
       await identityAuthorizationsPage.createAuthorization({
         ownerType: 'Role',
-        ownerId: TEST_ROLE.name,
+        ownerId: TEST_ROLE.id,
         resourceType: 'Authorization',
         resourceId: '*',
         accessPermissions: ['Update', 'Read', 'Create', 'Delete'],
@@ -302,7 +304,7 @@ test.describe('Roles functionalities', () => {
       await identityHeader.navigateToAuthorizations();
       await identityAuthorizationsPage.createAuthorization({
         ownerType: 'Role',
-        ownerId: TEST_ROLE.name,
+        ownerId: TEST_ROLE.id,
         resourceType: 'Role',
         resourceId: '*',
         accessPermissions: ['Create', 'Delete', 'Read', 'Update'],
@@ -360,7 +362,7 @@ test.describe('Roles functionalities', () => {
 });
 
 test.describe.serial('roles list sorting', () => {
-  const DEFAULT_PAGE_SIZE = 10;
+  const DEFAULT_PAGE_SIZE = 20;
   const sortRoleIds: string[] = [];
 
   test.beforeAll(async ({request}) => {

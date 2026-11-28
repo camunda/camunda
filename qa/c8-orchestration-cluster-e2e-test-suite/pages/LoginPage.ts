@@ -17,7 +17,6 @@ export class LoginPage {
   readonly invalidCredentialsError: Locator;
   readonly tasklistHeading: Locator;
   readonly operateHeading: Locator;
-  readonly identityHeading: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -29,7 +28,6 @@ export class LoginPage {
       .getByText(/Username and [Pp]assword do(?: not|n't) match/);
     this.tasklistHeading = page.getByRole('heading', {name: 'Tasklist'});
     this.operateHeading = page.getByRole('heading', {name: 'Operate'});
-    this.identityHeading = page.getByRole('heading', {name: 'Identity'});
   }
 
   async fillUsername(username: string): Promise<void> {

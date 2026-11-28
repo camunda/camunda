@@ -14,21 +14,19 @@ export class IdentityRolesPage {
   readonly page: Page;
   readonly rolesList: Locator;
   readonly createRoleButton: Locator;
-  readonly editRoleButton: (rowName?: string) => Locator;
-  readonly deleteRoleButton: (rowName?: string) => Locator;
+  readonly rowActionsButton: (rowName: string) => Locator;
+  readonly editRoleMenuItem: Locator;
+  readonly deleteRoleMenuItem: Locator;
   readonly createRoleModal: Locator;
-  readonly closeCreateRoleModal: Locator;
   readonly nameField: Locator;
   readonly idField: Locator;
   readonly createRoleModalCancelButton: Locator;
   readonly createRoleSubButton: Locator;
   readonly editRoleModal: Locator;
-  readonly closeEditRoleModal: Locator;
   readonly editNameField: Locator;
   readonly editRoleModalCancelButton: Locator;
   readonly editRoleModalUpdateButton: Locator;
   readonly deleteRoleModal: Locator;
-  readonly closeDeleteRoleModal: Locator;
   readonly deleteRoleModalCancelButton: Locator;
   readonly deleteRoleModalDeleteButton: Locator;
   readonly roleCell: (name: string) => Locator;
@@ -38,8 +36,6 @@ export class IdentityRolesPage {
   readonly assignUserButtonModal: Locator;
   readonly searchBox: Locator;
   readonly searchBoxResult: Locator;
-  readonly removeButton: Locator;
-  readonly removeUserModalButton: Locator;
   readonly emptyStateLocator: Locator;
 
   constructor(page: Page) {
@@ -48,18 +44,15 @@ export class IdentityRolesPage {
     this.createRoleButton = page.getByRole('button', {
       name: 'Create role',
     });
-    this.editRoleButton = (rowName) =>
-      this.rolesList.getByRole('row', {name: rowName}).getByLabel('Edit role');
-    // Delete is labelled by its visible text; only Edit is icon-only with an aria-label.
-    this.deleteRoleButton = (rowName) =>
+    this.rowActionsButton = (rowName) =>
       this.rolesList
-        .getByRole('row', {name: rowName})
-        .getByRole('button', {name: 'Delete', exact: true});
+        .getByRole('row')
+        .filter({hasText: rowName})
+        .getByRole('button', {name: 'Row actions'});
+    this.editRoleMenuItem = page.getByRole('menuitem', {name: 'Edit role'});
+    this.deleteRoleMenuItem = page.getByRole('menuitem', {name: 'Delete role'});
     this.createRoleModal = page.getByRole('dialog', {
       name: 'Create role',
-    });
-    this.closeCreateRoleModal = this.createRoleModal.getByRole('button', {
-      name: 'Close',
     });
     this.idField = this.createRoleModal.getByRole('textbox', {
       name: 'Role ID',
@@ -79,9 +72,6 @@ export class IdentityRolesPage {
     this.editRoleModal = page.getByRole('dialog', {
       name: 'Edit role',
     });
-    this.closeEditRoleModal = this.editRoleModal.getByRole('button', {
-      name: 'Close',
-    });
     this.editNameField = this.editRoleModal.getByRole('textbox', {
       name: 'Role name',
       exact: true,
@@ -92,11 +82,8 @@ export class IdentityRolesPage {
     this.editRoleModalUpdateButton = this.editRoleModal.getByRole('button', {
       name: 'Update role',
     });
-    this.deleteRoleModal = page.getByRole('dialog', {
+    this.deleteRoleModal = page.getByRole('alertdialog', {
       name: 'Delete role',
-    });
-    this.closeDeleteRoleModal = this.deleteRoleModal.getByRole('button', {
-      name: 'Close',
     });
     this.deleteRoleModalCancelButton = this.deleteRoleModal.getByRole(
       'button',
@@ -113,17 +100,12 @@ export class IdentityRolesPage {
     this.rolesHeading = this.page.getByRole('heading', {name: 'Roles'});
     this.assignUserButton = page.getByRole('button', {name: 'Assign user'});
     this.assignUserModal = page.getByRole('dialog', {name: 'Assign user'});
-    // Results portal outside the dialog (DS #496), so scope them to the page.
-    this.searchBox = this.assignUserModal.getByRole('combobox', {
-      name: 'Search by name, email, or username',
-    });
+    this.searchBox = this.assignUserModal.getByRole('combobox');
+    // Results portal outside the dialog, so scope them to the page.
     this.searchBoxResult = page.getByRole('listbox');
     this.assignUserButtonModal = this.assignUserModal.getByRole('button', {
-      name: 'assign user',
-    });
-    this.removeButton = page.getByRole('button', {name: 'Remove'});
-    this.removeUserModalButton = page.getByRole('button', {
-      name: 'Remove user',
+      name: 'Assign user',
+      exact: true,
     });
     this.emptyStateLocator = page.getByText('No roles created yet');
   }
@@ -132,7 +114,8 @@ export class IdentityRolesPage {
   }
 
   async clickEditRoleButton(rowName: string) {
-    await this.editRoleButton(rowName).click();
+    await this.rowActionsButton(rowName).click();
+    await this.editRoleMenuItem.click();
   }
 
   async createRole(role: {id: string; name: string}) {
@@ -166,14 +149,12 @@ export class IdentityRolesPage {
       try {
         await this.assignUserButton.click({timeout: 60000});
         await expect(this.assignUserModal).toBeVisible();
-        // The MultiSelect trigger is a div: open it, then type in the search box.
         await this.searchBox.click();
         await this.page.locator('[data-slot="command-input"]').fill(userName);
-        // The option label is "<name> — <email>" and does not echo the
-        // username, so instead of matching on label text, wait for the
-        // server-side search to narrow to the single matching row.
-        const options = this.searchBoxResult.getByRole('option');
-        await expect(options).toHaveCount(1, {timeout: 30000});
+        const options = this.searchBoxResult
+          .getByRole('option')
+          .filter({hasText: userName});
+        await expect(options.first()).toBeVisible({timeout: 30000});
         await options.first().click({timeout: 20000});
         // The open popover covers the confirm button; Escape closes it, not the dialog.
         await this.page.keyboard.press('Escape');
@@ -197,11 +178,11 @@ export class IdentityRolesPage {
       timeout: 30000,
     });
     await expect(async () => {
-      await expect(this.deleteRoleButton(roleName)).toBeVisible({
+      await expect(this.rowActionsButton(roleName)).toBeVisible({
         timeout: 20000,
       });
-      await this.rolesHeading.click();
-      await this.deleteRoleButton(roleName).click({timeout: 20000});
+      await this.rowActionsButton(roleName).click({timeout: 20000});
+      await this.deleteRoleMenuItem.click({timeout: 20000});
     }).toPass(defaultAssertionOptions);
     await expect(this.deleteRoleModal).toBeVisible();
     await this.deleteRoleModalDeleteButton.click();

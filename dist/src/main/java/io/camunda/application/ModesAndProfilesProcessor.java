@@ -158,7 +158,7 @@ public class ModesAndProfilesProcessor implements SpringApplicationRunListener {
     }
 
     if (WebappsHelper.isIdentityEnabled(environment)) {
-      profiles.add(Profile.IDENTITY.getId());
+      profiles.add(Profile.ADMIN.getId());
     }
   }
 

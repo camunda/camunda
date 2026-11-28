@@ -44,7 +44,7 @@ test.describe.parallel('login page', () => {
     await expect(page).toHaveURL(`${relativizePath(Paths.users())}`);
     await identityHeader.logout();
     await expect(page).toHaveURL(
-      `${relativizePath(Paths.login('admin'))}?next=/admin/`,
+      `${relativizePath(Paths.login('admin'))}?redirect=${encodeURIComponent(Paths.users())}`,
     );
   });
 
@@ -52,7 +52,7 @@ test.describe.parallel('login page', () => {
     await expect(page).toHaveURL(`${relativizePath(Paths.login('admin'))}`);
     await page.goto(`${relativizePath(Paths.users())}`);
     await expect(page).toHaveURL(
-      `${relativizePath(Paths.login('admin'))}?next=${Paths.users()}`,
+      `${relativizePath(Paths.login('admin'))}?redirect=${encodeURIComponent(Paths.users())}`,
     );
 
     await loginPage.login('demo', 'demo');

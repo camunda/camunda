@@ -54,6 +54,7 @@ test.describe.serial('groups CRUD', () => {
   }) => {
     await identityGroupsPage.createGroupButton.click();
     await identityGroupsPage.createGroupIdField.fill('invalid!!%');
+    await identityGroupsPage.createGroupIdField.blur();
     await expect(identityGroupsPage.createGroupModal).toContainText(
       'Please enter a valid group ID',
     );
@@ -178,7 +179,7 @@ test.describe('Groups functionalities', () => {
 
     await test.step('Assign user to group', async () => {
       await identityGroupsPage.clickGroupId(TEST_GROUP.name);
-      await identityGroupsPage.assignUserToGroup('lisa', 'lisa@example.com');
+      await identityGroupsPage.assignUserToGroup('lisa');
       await page.reload();
     });
 
@@ -190,14 +191,14 @@ test.describe('Groups functionalities', () => {
         // groupId as the option title; passing `TEST_GROUP.name` returns no
         // matches.
         ownerId: TEST_GROUP.groupId,
-        resourceType: 'AUDIT_LOG',
+        resourceType: 'Audit log',
         resourceId: '*',
         accessPermissions: ['Read'],
       });
     });
 
     await test.step('Verify authorization was created', async () => {
-      await identityAuthorizationsPage.selectResourceType('AUDIT_LOG');
+      await identityAuthorizationsPage.selectResourceType('Audit log');
       await identityAuthorizationsPage.assertAuthorizationExists(
         TEST_GROUP.groupId,
         'Group',

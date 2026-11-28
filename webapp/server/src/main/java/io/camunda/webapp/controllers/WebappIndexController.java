@@ -40,6 +40,7 @@ public class WebappIndexController {
   private static final String LOGIN_RESOURCE = "/login";
   private static final String TASKLIST = "tasklist";
   private static final String OPERATE = "operate";
+  private static final String ADMIN = "admin";
   private static final String NON_SPA_SEGMENTS =
       "(?:assets|client-config\\.js|custom\\.css|favicon\\.ico)";
 
@@ -71,6 +72,11 @@ public class WebappIndexController {
   @GetMapping({"/operate", "/operate/", "/operate/index.html"})
   public String operate(final Model model) {
     return renderShell(OPERATE, model);
+  }
+
+  @GetMapping({"/admin", "/admin/", "/admin/index.html"})
+  public String admin(final Model model) {
+    return renderShell(ADMIN, model);
   }
 
   /**
@@ -110,12 +116,20 @@ public class WebappIndexController {
     return forwardToShell(OPERATE, request);
   }
 
+  @GetMapping(
+      value = {
+        "/admin/{path:^(?!" + NON_SPA_SEGMENTS + "$).+}",
+        "/admin/{path:^(?!" + NON_SPA_SEGMENTS + "$).+}/**"
+      })
+  public String forwardToAdmin(final HttpServletRequest request) {
+    return forwardToShell(ADMIN, request);
+  }
+
   private String renderShell(final String app, final Model model) {
     requireEnabled(app);
-    // The route tree already includes the app segment (/tasklist, /operate), so the router basepath
-    // is the servlet root. During migration, only the migrated apps enter this shell; root-level
-    // and Admin document requests remain owned by the legacy controllers until their server routes
-    // are migrated.
+    // The route tree already includes the app segment (/tasklist, /operate, /admin), so the router
+    // basepath is the servlet root. Root-level document requests remain owned by the legacy
+    // controllers.
     model.addAttribute("baseName", context.getContextPath() + "/");
     model.addAttribute("contextPath", context.getContextPath());
     model.addAttribute("isEnterprise", webappConfiguration.isEnterprise());

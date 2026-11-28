@@ -94,6 +94,28 @@ class PhysicalTenantBasicAuthAdminSetupRedirectIT {
   }
 
   @Test
+  void shouldRedirectAdminDocumentToSetupWhenPtHasNoAdmin() {
+    buildRunner()
+        .run(
+            ctx -> {
+              final var proxy = buildProxy(ctx);
+              final var request = new MockHttpServletRequest("GET", "/admin/users");
+              PhysicalTenantContext.setPhysicalTenantId(request, PT_WITHOUT_ADMIN);
+              final var response = new MockHttpServletResponse();
+
+              RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+              try {
+                proxy.doFilter(request, response, new MockFilterChain());
+              } finally {
+                RequestContextHolder.resetRequestAttributes();
+              }
+
+              assertThat(response.getStatus()).isEqualTo(302);
+              assertThat(response.getRedirectedUrl()).endsWith("/admin/setup");
+            });
+  }
+
+  @Test
   void shouldNotRedirectWhenPtHasAdmin() {
     buildRunner()
         .run(

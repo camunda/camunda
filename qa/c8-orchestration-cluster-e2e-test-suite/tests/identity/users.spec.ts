@@ -60,6 +60,7 @@ test.describe.serial('users CRUD', () => {
   }) => {
     await identityUsersPage.createUserButton.click();
     await identityUsersPage.createUsernameField.fill('invalid!!%');
+    await identityUsersPage.createUsernameField.blur();
     await expect(identityUsersPage.createUserModal).toContainText(
       'Please enter a valid username',
     );

@@ -51,8 +51,9 @@ test.describe.serial('tenants CRUD', () => {
     }) => {
       await identityTenantsPage.createTenantButton.click();
       await identityTenantsPage.fillTenantId('invalid!!%');
+      await identityTenantsPage.createTenantModalButton.click();
       await expect(identityTenantsPage.createTenantModal).toContainText(
-        'Please enter a valid Tenant ID',
+        'ID must be 1 to 31 characters, using only letters, numbers, and _ . -',
       );
       await expect(identityTenantsPage.tenantFieldId).toHaveAttribute(
         'aria-invalid',

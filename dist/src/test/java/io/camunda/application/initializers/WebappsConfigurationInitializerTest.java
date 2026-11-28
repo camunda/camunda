@@ -97,6 +97,20 @@ class WebappsConfigurationInitializerTest {
   }
 
   @Test
+  void shouldAddWebappStaticLocationWhenAdminProfileIsActive() {
+    final GenericApplicationContext context = new GenericApplicationContext();
+    context.getEnvironment().setActiveProfiles(Profile.ADMIN.getId());
+
+    new WebappsConfigurationInitializer().initialize(context);
+
+    assertThat(context.getEnvironment().getProperty(STATIC_LOCATIONS, String.class))
+        .contains(WEBAPP_LOCATION)
+        .doesNotContain("classpath:/META-INF/resources/admin/")
+        .doesNotContain("classpath:/META-INF/resources/identity/");
+    assertThat(context.getEnvironment().getProperty(DEFAULT_APP)).isEqualTo(Profile.ADMIN.getId());
+  }
+
+  @Test
   void shouldUseOperateAsDefaultAppWhenOperateAndTasklistProfilesAreActive() {
     // given
     final GenericApplicationContext context = new GenericApplicationContext();

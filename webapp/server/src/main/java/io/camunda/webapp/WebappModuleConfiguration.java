@@ -16,15 +16,15 @@ import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGe
 import org.springframework.context.annotation.Profile;
 
 /**
- * Entry point for the unified BFF webapp module. It is gated on the legacy {@code tasklist} and
- * {@code operate} profiles because the unified webapp serves the Tasklist and Operate UIs; its
- * activation will widen as Admin migrates.
+ * Entry point for the unified BFF webapp module. It is gated on the legacy {@code tasklist}, {@code
+ * operate} and {@code admin} profiles because the unified webapp serves the Tasklist, Operate and
+ * Admin UIs.
  */
 @Configuration(proxyBeanMethods = false)
 @ComponentScan(
     basePackages = "io.camunda.webapp",
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
-@Profile({"tasklist", "operate"})
+@Profile({"tasklist", "operate", "admin"})
 public class WebappModuleConfiguration {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(WebappModuleConfiguration.class);

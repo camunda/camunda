@@ -6,34 +6,26 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Page, Route} from '@playwright/test';
+import {Page} from '@playwright/test';
 
-export async function mockOIDCModeUI(
-  page: Page,
-  overrides: Record<string, string> = {isOidc: 'true'},
-): Promise<void> {
-  await page.route('**/config.js', async (route: Route) => {
+/**
+ * Makes the unified Admin behave as if login were delegated to an IdP (OIDC).
+ * Admin reads this from `authentication.isLoginDelegated` in the system
+ * configuration API. Install it before the page loads that configuration.
+ */
+export async function mockOIDCModeUI(page: Page): Promise<void> {
+  await page.route('**/v2/system/configuration', async (route) => {
     const response = await route.fetch();
-    const originalBody = await response.text();
-
-    let config: Record<string, unknown> = {};
-
-    const match = originalBody.match(
-      /window\.clientConfig\s*=\s*(\{[\s\S]*\});?/,
-    );
-
-    if (match) {
-      config = eval('(' + match[1] + ')');
-    }
-
-    Object.entries(overrides).forEach(([key, value]) => {
-      config[key] = value;
-    });
-
+    const configuration = await response.json();
     await route.fulfill({
-      status: 200,
-      contentType: 'application/javascript',
-      body: `window.clientConfig = ${JSON.stringify(config)};`,
+      response,
+      json: {
+        ...configuration,
+        authentication: {
+          ...configuration.authentication,
+          isLoginDelegated: true,
+        },
+      },
     });
   });
 }

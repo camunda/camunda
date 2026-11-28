@@ -61,7 +61,7 @@ test.describe('Identity User Flows', () => {
     await identityUsersPage.deleteUser(testUser);
     await identityHeader.logout();
     await expect(page).toHaveURL(
-      `${relativizePath(Paths.login('admin'))}?next=/admin/`,
+      `${relativizePath(Paths.login('admin'))}?redirect=${encodeURIComponent(Paths.users())}`,
     );
 
     await test.step(`Deleted user cannot access Admin`, async () => {
@@ -328,10 +328,7 @@ test.describe('Identity User Flows', () => {
     await test.step('Assign test user to group', async () => {
       await identityGroupsPage.navigateToGroups();
       await identityGroupsPage.clickGroupId(TEST_GROUP.groupId);
-      await identityGroupsPage.assignUserToGroup(
-        TEST_USER.username,
-        TEST_USER.email!,
-      );
+      await identityGroupsPage.assignUserToGroup(TEST_USER.username);
       await page.reload();
     });
 
@@ -376,6 +373,7 @@ test.describe('Identity User Flows', () => {
         timeout: 30000,
       });
       await tasklistHeader.logout();
+      await page.waitForURL(/login/, {timeout: 30000});
     });
 
     await test.step('Login with demo user and create authorization for the group', async () => {
