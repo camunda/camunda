@@ -11,6 +11,7 @@ import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
 import java.util.Collection;
 import java.util.HashMap;
@@ -20,6 +21,7 @@ import java.util.Map;
 final class MeterReader {
 
   private static final String NO_PARTITION = "none";
+  private static final String PARTITION_PREFIX = "Partition-";
 
   private final MeterRegistry registry;
 
@@ -54,12 +56,39 @@ final class MeterReader {
    * The health tree child a meter belongs to: the partition's component name, as {@code
    * ZeebePartition#componentName} builds it, or {@code fallback} for meters of the whole node.
    */
+  /**
+   * The partition tags of a child that {@link #child} named, also with a {@code :suffix} such as an
+   * exporter id; {@code none} for children that are not a partition.
+   */
+  static Tags partitionTags(final String child) {
+    if (!child.startsWith(PARTITION_PREFIX)) {
+      return PartitionKeyNames.noPartition();
+    }
+    final var suffix = child.indexOf(':');
+    final var name =
+        child.substring(PARTITION_PREFIX.length(), suffix < 0 ? child.length() : suffix);
+    final var lastDash = name.lastIndexOf('-');
+    return lastDash < 0
+        ? Tags.of(
+            PartitionKeyNames.PHYSICAL_TENANT.asString(),
+            "none",
+            PartitionKeyNames.PARTITION.asString(),
+            name)
+        : Tags.of(
+            PartitionKeyNames.PHYSICAL_TENANT.asString(),
+            name.substring(0, lastDash),
+            PartitionKeyNames.PARTITION.asString(),
+            name.substring(lastDash + 1));
+  }
+
   static String child(final Meter.Id id, final String fallback) {
     final var partition = id.getTag(PartitionKeyNames.PARTITION.asString());
     if (partition == null || NO_PARTITION.equals(partition)) {
       return fallback;
     }
     final var tenant = id.getTag(PartitionKeyNames.PHYSICAL_TENANT.asString());
-    return tenant == null ? "Partition-" + partition : "Partition-" + tenant + "-" + partition;
+    return tenant == null
+        ? PARTITION_PREFIX + partition
+        : PARTITION_PREFIX + tenant + "-" + partition;
   }
 }

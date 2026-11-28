@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.system.monitoring.detector;
 
+import io.camunda.zeebe.broker.system.monitoring.DetectorNodeMetrics;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthIssue;
 import io.camunda.zeebe.util.health.HealthMonitorable;
@@ -35,6 +36,7 @@ public abstract class HealthDetector implements HealthMonitorable {
   private final Map<String, HealthReport> children = new TreeMap<>();
   private final List<FailureListener> listeners = new CopyOnWriteArrayList<>();
   private volatile HealthReport report;
+  private @Nullable DetectorNodeMetrics nodeMetrics;
 
   protected HealthDetector(final String name) {
     this.name = name;
@@ -59,6 +61,14 @@ public abstract class HealthDetector implements HealthMonitorable {
   @Override
   public void removeFailureListener(final FailureListener failureListener) {
     listeners.remove(failureListener);
+  }
+
+  /** Reports every child, now and later, as a health tree node metric of its own. */
+  public void exposeChildren(final DetectorNodeMetrics metrics) {
+    synchronized (children) {
+      nodeMetrics = metrics;
+      children.keySet().forEach(child -> expose(metrics, child));
+    }
   }
 
   protected void markHealthy(final String child) {
@@ -93,6 +103,7 @@ public abstract class HealthDetector implements HealthMonitorable {
     // listeners are notified under the lock so that they see reports in the order they were made;
     // health monitors only enqueue the report on their actor, so this does not block
     synchronized (children) {
+      final var before = Set.copyOf(children.keySet());
       change.run();
       final var next =
           HealthReport.fromChildrenStatus(name, children)
@@ -102,7 +113,29 @@ public abstract class HealthDetector implements HealthMonitorable {
       }
       report = next;
       listeners.forEach(listener -> listener.onHealthReport(next));
+      if (nodeMetrics != null) {
+        exposeChanges(nodeMetrics, before, children.keySet());
+      }
     }
+  }
+
+  private void exposeChanges(
+      final DetectorNodeMetrics metrics, final Set<String> before, final Set<String> after) {
+    after.stream().filter(child -> !before.contains(child)).forEach(c -> expose(metrics, c));
+    before.stream()
+        .filter(child -> !after.contains(child))
+        .forEach(child -> metrics.remove(name, child));
+  }
+
+  private void expose(final DetectorNodeMetrics metrics, final String child) {
+    metrics.register(
+        name,
+        child,
+        MeterReader.partitionTags(child),
+        () -> {
+          final var childReport = report.children().get(child);
+          return childReport == null ? null : childReport.status();
+        });
   }
 
   private static HealthReport report(

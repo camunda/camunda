@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.bootstrap;
 
+import io.camunda.zeebe.broker.system.monitoring.DetectorNodeMetrics;
 import io.camunda.zeebe.broker.system.monitoring.detector.ClusterMembershipDetector;
 import io.camunda.zeebe.broker.system.monitoring.detector.DiskSpaceDetector;
 import io.camunda.zeebe.broker.system.monitoring.detector.HealthDetector;
@@ -45,6 +46,7 @@ final class HealthDetectorsStep extends AbstractBrokerStartupStep {
   private @Nullable ClusterMembershipDetector membership;
   private @Nullable DiskSpaceDetector diskSpace;
   private @Nullable HealthDetectorService service;
+  private @Nullable DetectorNodeMetrics nodeMetrics;
 
   @Override
   public String getName() {
@@ -92,6 +94,10 @@ final class HealthDetectorsStep extends AbstractBrokerStartupStep {
     final var sampled = HealthDetectorFactory.create(cfg, context.getMeterRegistry(), roles);
     detectors.addAll(sampled);
     detectors.forEach(healthService::registerMonitoredComponent);
+    final var metrics =
+        new DetectorNodeMetrics(context.getMeterRegistry(), healthService.componentName());
+    detectors.forEach(detector -> detector.exposeChildren(metrics));
+    nodeMetrics = metrics;
 
     service =
         new HealthDetectorService(
@@ -121,6 +127,10 @@ final class HealthDetectorsStep extends AbstractBrokerStartupStep {
     final var healthService = context.getHealthCheckService();
     detectors.forEach(healthService::removeMonitoredComponent);
     detectors.clear();
+    if (nodeMetrics != null) {
+      nodeMetrics.close();
+      nodeMetrics = null;
+    }
     if (membership != null) {
       context.getClusterServices().getMembershipService().removeListener(membership);
     }
