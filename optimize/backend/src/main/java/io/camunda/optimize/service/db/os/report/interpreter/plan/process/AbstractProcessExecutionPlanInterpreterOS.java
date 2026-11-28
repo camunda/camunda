@@ -103,12 +103,10 @@ public abstract class AbstractProcessExecutionPlanInterpreterOS
       final Map<String, List<ProcessFilterDto<?>>> filtersByDefinition,
       final List<Query> filterQueries) {
     if (context.getReportData().getDefinitions().isEmpty()) {
-      if (context.getReportData().isManagementReport()) {
-        // Management report with no accessible definitions: exclude all instances from the result
-        return new BoolQuery.Builder().filter(not(matchAll()));
-      }
-      // No definitions: skip definition-scoped filtering and let other query filters apply
-      return new BoolQuery.Builder().filter(filterQueries);
+      // The definition clauses are what scope the query to the user's tenants, so an empty list
+      // (e.g. the user's tenants hold no data, or every requested key is unknown) must match
+      // nothing rather than every tenant's instances.
+      return new BoolQuery.Builder().filter(not(matchAll()));
     }
     return new BoolQuery.Builder()
         .minimumShouldMatch("1")
