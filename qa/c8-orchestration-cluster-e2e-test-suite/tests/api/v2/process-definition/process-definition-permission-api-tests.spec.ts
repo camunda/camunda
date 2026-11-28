@@ -23,7 +23,12 @@ import {
   createComponentAuthorization,
   createInstanceOnceDeployed,
   createUser,
+  createUserWithProcessDefinitionGrant,
+  deployUserTaskProcess,
   grantUserResourceAuthorization,
+  resumeProcessDefinitions,
+  suspendProcessDefinitions,
+  suspensionOutcomes,
 } from '@requestHelpers';
 
 const PROCESS_DEFINITION_SEARCH_ENDPOINT = '/process-definitions/search';
@@ -40,6 +45,8 @@ const READ_FORBIDDEN_DETAIL =
 const FORM_READ_FORBIDDEN_DETAIL =
   "Unauthorized to perform operation 'READ' on resource 'RESOURCE'";
 const LINKED_START_FORM_ID = 'sign_up_form';
+const SUSPEND_FORBIDDEN_DETAIL =
+  "Insufficient permissions to perform operation 'SUSPEND_PROCESS_DEFINITION' on resource 'PROCESS_DEFINITION'";
 
 type TestUser = {
   username: string;
@@ -436,6 +443,154 @@ test.describe('Process Definition Permission API - Forbidden', () => {
       // Reading the process definition does not grant READ_PROCESS_INSTANCE,
       // so the instance-based statistics stay empty.
       expect(body.items).toHaveLength(0);
+    }).toPass(defaultAssertionOptions);
+  });
+});
+
+test.describe('Process Definition Permission API - Suspension', () => {
+  const suffix = randomUUID().slice(0, 8);
+  const grantedProcessId = `pd-perm-suspend-granted-${suffix}`;
+  const otherProcessId = `pd-perm-suspend-other-${suffix}`;
+
+  let userWithoutPermissions: TestUser;
+  let userWithoutPermissionsToken: string;
+  let userWithSuspendPermission: TestUser;
+  let userWithSuspendPermissionToken: string;
+  let userWithWildcardPermission: TestUser;
+  let userWithWildcardPermissionToken: string;
+  let userWithInstanceSuspensionOnly: TestUser;
+  let userWithInstanceSuspensionOnlyToken: string;
+
+  test.beforeAll(async ({request}) => {
+    await deployUserTaskProcess(grantedProcessId);
+    await deployUserTaskProcess(otherProcessId);
+
+    [userWithoutPermissions, userWithoutPermissionsToken] =
+      await createUserWithProcessDefinitionGrant(request, '*', []);
+    [userWithSuspendPermission, userWithSuspendPermissionToken] =
+      await createUserWithProcessDefinitionGrant(request, grantedProcessId, [
+        'SUSPEND_PROCESS_DEFINITION',
+      ]);
+    [userWithWildcardPermission, userWithWildcardPermissionToken] =
+      await createUserWithProcessDefinitionGrant(request, '*', [
+        'SUSPEND_PROCESS_DEFINITION',
+      ]);
+    [userWithInstanceSuspensionOnly, userWithInstanceSuspensionOnlyToken] =
+      await createUserWithProcessDefinitionGrant(request, otherProcessId, [
+        'SUSPEND_PROCESS_INSTANCE',
+      ]);
+  });
+
+  test.afterAll(async ({request}) => {
+    await cleanupUsers(request, [
+      userWithoutPermissions.username,
+      userWithSuspendPermission.username,
+      userWithWildcardPermission.username,
+      userWithInstanceSuspensionOnly.username,
+    ]);
+  });
+
+  test('Suspend and resume by id - forbidden without SUSPEND_PROCESS_DEFINITION, the same for an existing and an unknown id', async ({
+    request,
+  }) => {
+    const unknownProcessId = `pd-perm-suspend-unknown-${suffix}`;
+
+    await expect(async () => {
+      const existing = await suspendProcessDefinitions(
+        request,
+        {processDefinitionId: otherProcessId},
+        userWithoutPermissionsToken,
+      );
+      const unknown = await suspendProcessDefinitions(
+        request,
+        {processDefinitionId: unknownProcessId},
+        userWithoutPermissionsToken,
+      );
+      const resume = await resumeProcessDefinitions(
+        request,
+        {processDefinitionId: otherProcessId},
+        userWithoutPermissionsToken,
+      );
+
+      // The permission is checked before the id is resolved, so a caller without
+      // it cannot tell whether the process definition exists.
+      await assertForbiddenRequest(existing, SUSPEND_FORBIDDEN_DETAIL);
+      await assertForbiddenRequest(unknown, SUSPEND_FORBIDDEN_DETAIL);
+      await assertForbiddenRequest(resume, SUSPEND_FORBIDDEN_DETAIL);
+    }).toPass(defaultAssertionOptions);
+  });
+
+  test('Suspend and resume - allowed with SUSPEND_PROCESS_DEFINITION on that process only', async ({
+    request,
+  }) => {
+    await expect(async () => {
+      const suspendGranted = await suspendProcessDefinitions(
+        request,
+        {processDefinitionId: grantedProcessId},
+        userWithSuspendPermissionToken,
+      );
+      const resumeGranted = await resumeProcessDefinitions(
+        request,
+        {processDefinitionId: grantedProcessId},
+        userWithSuspendPermissionToken,
+      );
+      const suspendOther = await suspendProcessDefinitions(
+        request,
+        {processDefinitionId: otherProcessId},
+        userWithSuspendPermissionToken,
+      );
+
+      expect(
+        (
+          await suspensionOutcomes(
+            suspendGranted,
+            '/process-definitions/suspension',
+          )
+        )[0]![1],
+      ).toMatch(/^(ALREADY_)?SUSPENDED$/);
+      expect(
+        (
+          await suspensionOutcomes(
+            resumeGranted,
+            '/process-definitions/resumption',
+          )
+        )[0]![1],
+      ).toMatch(/^(ALREADY_)?RESUMED$/);
+      await assertForbiddenRequest(suspendOther, SUSPEND_FORBIDDEN_DETAIL);
+    }).toPass(defaultAssertionOptions);
+  });
+
+  test('Suspend - allowed with a wildcard SUSPEND_PROCESS_DEFINITION grant', async ({
+    request,
+  }) => {
+    await expect(async () => {
+      const suspend = await suspendProcessDefinitions(
+        request,
+        {processDefinitionId: otherProcessId},
+        userWithWildcardPermissionToken,
+      );
+      const resume = await resumeProcessDefinitions(
+        request,
+        {processDefinitionId: otherProcessId},
+        userWithWildcardPermissionToken,
+      );
+
+      await assertStatusCode(suspend, 200);
+      await assertStatusCode(resume, 200);
+    }).toPass(defaultAssertionOptions);
+  });
+
+  test('Suspend - forbidden with SUSPEND_PROCESS_INSTANCE only', async ({
+    request,
+  }) => {
+    await expect(async () => {
+      const res = await suspendProcessDefinitions(
+        request,
+        {processDefinitionId: otherProcessId},
+        userWithInstanceSuspensionOnlyToken,
+      );
+
+      await assertForbiddenRequest(res, SUSPEND_FORBIDDEN_DETAIL);
     }).toPass(defaultAssertionOptions);
   });
 });

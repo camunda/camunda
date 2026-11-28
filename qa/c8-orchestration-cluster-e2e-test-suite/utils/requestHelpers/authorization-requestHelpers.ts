@@ -14,6 +14,7 @@ import {
   assertStatusCode,
   buildUrl,
   jsonHeaders,
+  encode,
 } from '../http';
 import {expect} from '@playwright/test';
 import {
@@ -21,6 +22,7 @@ import {
   authorizedComponentRequiredFields,
 } from '../beans/requestBeans';
 import {validateResponse} from 'json-body-assertions';
+import {createUser} from './user-requestHelpers';
 import {defaultAssertionOptions} from 'utils/constants';
 
 export interface Authorization {
@@ -233,4 +235,28 @@ export async function grantUserTaskAuthorization(
     permissionTypes,
     ...target,
   });
+}
+
+/**
+ * Creates a user holding `permissionTypes` on one process definition id, or no
+ * grant at all when the list is empty, and returns it with its basic-auth token.
+ */
+export async function createUserWithProcessDefinitionGrant(
+  request: APIRequestContext,
+  resourceId: string,
+  permissionTypes: string[],
+): Promise<
+  [{username: string; name: string; email: string; password: string}, string]
+> {
+  const user = await createUser(request);
+  if (permissionTypes.length > 0) {
+    await createComponentAuthorization(request, {
+      ownerId: user.username,
+      ownerType: 'USER',
+      resourceId,
+      resourceType: 'PROCESS_DEFINITION',
+      permissionTypes,
+    });
+  }
+  return [user, encode(`${user.username}:${user.password}`)];
 }
