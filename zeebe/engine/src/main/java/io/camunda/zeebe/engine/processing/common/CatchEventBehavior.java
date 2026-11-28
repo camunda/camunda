@@ -293,7 +293,11 @@ public final class CatchEventBehavior {
     final Expression messageNameExpression = message.getMessageNameExpression();
     return evaluation
         .expressionProcessor()
-        .evaluateStringExpression(messageNameExpression, scopeKey, tenantId)
+        .evaluateStringExpression(
+            messageNameExpression,
+            scopeKey,
+            tenantId,
+            ExpressionLabel.messageNameExpression(event.getId()))
         .flatMap(
             messageName ->
                 validateLength("message name", messageName, scopeKey).map(valid -> messageName))
