@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.deployment.transform;
 
 import io.camunda.zeebe.model.bpmn.instance.BaseElement;
 import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
@@ -41,7 +42,9 @@ public final class ValidationErrorFormatter implements ValidationResultFormatter
 
   @Override
   public int getFormattedSuffixWithOmittedResultsSize(final int count) {
-    return String.format(OMITTED_RESULTS_SUFFIX_FORMAT, count).getBytes().length;
+    return String.format(OMITTED_RESULTS_SUFFIX_FORMAT, count)
+        .getBytes(StandardCharsets.UTF_8)
+        .length;
   }
 
   /**

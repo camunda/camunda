@@ -12,6 +12,7 @@ import static io.camunda.zeebe.db.impl.ZeebeDbConstants.ZB_DB_BYTE_ORDER;
 import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.nio.charset.StandardCharsets;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -21,7 +22,7 @@ public final class DbString implements DbKey, DbValue {
   private final DirectBuffer bytes = new UnsafeBuffer(0, 0);
 
   public void wrapString(final String string) {
-    bytes.wrap(string.getBytes());
+    bytes.wrap(string.getBytes(StandardCharsets.UTF_8));
   }
 
   public void wrapBuffer(final DirectBuffer buffer) {

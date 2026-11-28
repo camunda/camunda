@@ -12,6 +12,7 @@ import io.camunda.zeebe.broker.protocol.ExporterStateEncoder;
 import io.camunda.zeebe.broker.protocol.ExporterStateEncoder.StateEncoder;
 import io.camunda.zeebe.protocol.impl.encoding.SbeBufferWriterReader;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import org.agrona.DirectBuffer;
@@ -96,7 +97,8 @@ public class ExporterStateDistributeMessage
       final var metadataBuffer = new UnsafeBuffer(metadataBytes);
 
       exporterState.put(
-          new String(exporterIdBytes), new ExporterStateEntry(position, metadataBuffer));
+          new String(exporterIdBytes, StandardCharsets.UTF_8),
+          new ExporterStateEntry(position, metadataBuffer));
     }
   }
 

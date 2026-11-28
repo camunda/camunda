@@ -16,6 +16,7 @@
 package io.camunda.client.impl.basicauth;
 
 import io.camunda.client.CredentialsProvider;
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
 public class BasicAuthCredentialsProvider implements CredentialsProvider {
@@ -25,7 +26,9 @@ public class BasicAuthCredentialsProvider implements CredentialsProvider {
 
   BasicAuthCredentialsProvider(final String username, final String password) {
     final String base64EncodedCredentials =
-        Base64.getEncoder().encodeToString(String.format("%s:%s", username, password).getBytes());
+        Base64.getEncoder()
+            .encodeToString(
+                String.format("%s:%s", username, password).getBytes(StandardCharsets.UTF_8));
     authHeaderValue = String.format("Basic %s", base64EncodedCredentials);
   }
 

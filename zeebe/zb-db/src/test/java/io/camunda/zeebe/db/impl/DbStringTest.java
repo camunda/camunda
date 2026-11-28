@@ -12,6 +12,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.nio.charset.StandardCharsets;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -35,6 +36,24 @@ public final class DbStringTest {
     assertThat(zbString.toString()).isEqualTo("foo");
     assertThat(buffer.getInt(0, ZB_DB_BYTE_ORDER)).isEqualTo(3);
     assertThat(BufferUtil.bufferAsString(buffer, Integer.BYTES, 3)).isEqualTo("foo");
+  }
+
+  @Test
+  public void shouldWrapNonAsciiStringAsUtf8() {
+    // given
+    final String value = "Grüße, zeebe 👋";
+    final int length = value.getBytes(StandardCharsets.UTF_8).length;
+    zbString.wrapString(value);
+
+    // when
+    final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
+    zbString.write(buffer, 0);
+
+    // then
+    assertThat(zbString.getLength()).isEqualTo(length + Integer.BYTES);
+    assertThat(zbString.toString()).isEqualTo(value);
+    assertThat(buffer.getInt(0, ZB_DB_BYTE_ORDER)).isEqualTo(length);
+    assertThat(BufferUtil.bufferAsString(buffer, Integer.BYTES, length)).isEqualTo(value);
   }
 
   @Test
