@@ -17,7 +17,7 @@ fi
 SLEEP=$(awk "BEGIN {printf \"%.3f\", 1/$RATE}")
 
 echo "Waiting for Zeebe to be ready..."
-until curl -sf "$API/../v1/topology" > /dev/null 2>&1; do sleep 1; done
+until curl -sf "$API/topology" > /dev/null 2>&1; do sleep 1; done
 
 echo "Deploying processes..."
 

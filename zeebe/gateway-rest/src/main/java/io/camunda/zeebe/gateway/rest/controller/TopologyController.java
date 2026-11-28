@@ -18,7 +18,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 @CamundaRestController
-@RequestMapping(path = {"/v1", "/v2"})
+@RequestMapping(path = "/v2")
 public final class TopologyController {
 
   private final ServiceRegistry serviceRegistry;
