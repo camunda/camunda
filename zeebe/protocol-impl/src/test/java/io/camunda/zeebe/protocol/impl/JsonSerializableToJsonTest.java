@@ -6584,7 +6584,8 @@ final class JsonSerializableToJsonTest {
                     .setRequestStreamId(7)
                     .setOperationReference(789L)
                     .setBatchOperationReference(1011L)
-                    .setStorageOrdinal(1234),
+                    .setStorageOrdinal(1234)
+                    .setReceiverId("zone-a_0"),
         """
         {
           "scopeKey": 123,
@@ -6594,7 +6595,8 @@ final class JsonSerializableToJsonTest {
           "requestStreamId": 7,
           "operationReference": 789,
           "batchOperationReference": 1011,
-          "storageOrdinal": 1234
+          "storageOrdinal": 1234,
+          "receiverId": "zone-a_0"
         }
         """
       },
@@ -6617,7 +6619,8 @@ final class JsonSerializableToJsonTest {
           "requestStreamId": 7,
           "operationReference": -1,
           "batchOperationReference": -1,
-          "storageOrdinal": 0
+          "storageOrdinal": 0,
+          "receiverId": ""
         }
         """
       }

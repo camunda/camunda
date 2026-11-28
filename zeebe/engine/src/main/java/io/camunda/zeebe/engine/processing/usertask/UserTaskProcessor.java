@@ -293,7 +293,8 @@ public class UserTaskProcessor
                             persistedRecord.getUserTaskKey(),
                             command.getValue().getDeniedReason()),
                         request.requestId(),
-                        request.requestStreamId());
+                        request.requestStreamId(),
+                        request.receiverId());
                 case VARIABLE_DOCUMENT ->
                     variableState
                         .findVariableDocumentState(userTaskInstanceKey)
@@ -318,7 +319,8 @@ public class UserTaskProcessor
                                   RejectionType.INVALID_STATE,
                                   deniedReason,
                                   request.requestId(),
-                                  request.requestStreamId());
+                                  request.requestStreamId(),
+                                  request.receiverId());
                             });
                 default ->
                     throw new IllegalArgumentException(

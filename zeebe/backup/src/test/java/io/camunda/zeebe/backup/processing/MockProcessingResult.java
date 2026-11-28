@@ -92,7 +92,8 @@ record MockProcessingResult(
         final RejectionType rejectionType,
         final String rejectionReason,
         final long requestId,
-        final int requestStreamId) {
+        final int requestStreamId,
+        final String receiverId) {
 
       response = new Response(type, intent, rejectionType, rejectionReason);
       return this;

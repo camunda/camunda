@@ -161,7 +161,8 @@ public final class BpmnProcessors {
         storageOrdinalProvider,
         processEngineMetrics,
         config,
-        cslCheck);
+        cslCheck,
+        asyncRequestBehavior);
     addProcessInstanceModificationStreamProcessors(
         typedRecordProcessors, processingState, writers, bpmnBehaviors, cslCheck);
     addProcessInstanceMigrationStreamProcessors(
@@ -393,7 +394,8 @@ public final class BpmnProcessors {
       final StorageOrdinalProvider storageOrdinalProvider,
       final ProcessEngineMetrics metrics,
       final EngineConfiguration config,
-      final CslAuthorizationCheck cslCheck) {
+      final CslAuthorizationCheck cslCheck,
+      final AsyncRequestBehavior asyncRequestBehavior) {
     final MutableElementInstanceState elementInstanceState =
         processingState.getElementInstanceState();
     final KeyGenerator keyGenerator = processingState.getKeyGenerator();
@@ -426,7 +428,7 @@ public final class BpmnProcessors {
             metrics,
             processInstanceCreationHelper,
             bpmnBehaviors.caseBehavior(),
-            elementInstanceState));
+            asyncRequestBehavior));
   }
 
   private static void addProcessInstanceModificationStreamProcessors(

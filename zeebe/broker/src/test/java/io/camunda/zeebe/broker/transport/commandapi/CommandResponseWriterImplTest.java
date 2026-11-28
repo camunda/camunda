@@ -17,10 +17,12 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
+import java.util.ArrayList;
+import java.util.List;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public final class CommandResponseWriterImplTest {
+final class CommandResponseWriterImplTest {
   private static final int PARTITION_ID = 1;
   private static final long KEY = 2L;
   private static final byte[] EVENT = getBytes("state");
@@ -29,7 +31,7 @@ public final class CommandResponseWriterImplTest {
   private final ExecuteCommandResponseDecoder responseDecoder = new ExecuteCommandResponseDecoder();
 
   @Test
-  public void shouldWriteResponse() {
+  void shouldWriteResponse() {
     // given
     final var responseWriter = new CommandResponseWriterImpl(null);
 
@@ -71,5 +73,21 @@ public final class CommandResponseWriterImplTest {
 
     final byte[] event = readBytes(responseDecoder::getValue, responseDecoder::valueLength);
     assertThat(event).isEqualTo(EVENT);
+  }
+
+  @Test
+  void shouldAddressResponseToTheMemberThatReceivedTheRequest() {
+    // given
+    final List<String> receiverIds = new ArrayList<>();
+    final var responseWriter =
+        new CommandResponseWriterImpl(response -> receiverIds.add(response.getReceiverId()));
+    final var eventWriter = new DirectBufferWriter(new UnsafeBuffer(EVENT), 0, EVENT.length);
+
+    // when
+    responseWriter.valueWriter(eventWriter).receiverId("zone-b_0").tryWriteResponse(1, 1L);
+    responseWriter.valueWriter(eventWriter).tryWriteResponse(1, 2L);
+
+    // then
+    assertThat(receiverIds).containsExactly("zone-b_0", "");
   }
 }

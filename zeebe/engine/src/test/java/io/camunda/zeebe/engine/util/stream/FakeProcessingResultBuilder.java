@@ -75,7 +75,8 @@ public class FakeProcessingResultBuilder<V extends UnifiedRecordValue>
       final RejectionType rejectionType,
       final String rejectionReason,
       final long requestId,
-      final int requestStreamId) {
+      final int requestStreamId,
+      final String receiverId) {
     throw new UnsupportedOperationException("Responses are not yet supported by this fake");
   }
 

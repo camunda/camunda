@@ -10,10 +10,12 @@ package io.camunda.zeebe.protocol.impl.record.value;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.AsyncRequestRecordValue;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 
 public final class AsyncRequestRecord extends UnifiedRecordValue
     implements AsyncRequestRecordValue {
@@ -30,9 +32,10 @@ public final class AsyncRequestRecord extends UnifiedRecordValue
   private final LongProperty batchOperationReferenceProperty =
       new LongProperty("batchOperationReference", -1);
   private final IntegerProperty storageOrdinalProperty = new IntegerProperty("storageOrdinal", 0);
+  private final StringProperty receiverIdProperty = new StringProperty("receiverId", "");
 
   public AsyncRequestRecord() {
-    super(8);
+    super(9);
     declareProperty(scopeKeyProperty)
         .declareProperty(valueTypeProperty)
         .declareProperty(intentProperty)
@@ -40,7 +43,8 @@ public final class AsyncRequestRecord extends UnifiedRecordValue
         .declareProperty(requestStreamIdProperty)
         .declareProperty(operationReferenceProperty)
         .declareProperty(batchOperationReferenceProperty)
-        .declareProperty(storageOrdinalProperty);
+        .declareProperty(storageOrdinalProperty)
+        .declareProperty(receiverIdProperty);
   }
 
   public void wrap(final AsyncRequestRecord record) {
@@ -52,6 +56,7 @@ public final class AsyncRequestRecord extends UnifiedRecordValue
     operationReferenceProperty.setValue(record.getOperationReference());
     batchOperationReferenceProperty.setValue(record.getBatchOperationReference());
     storageOrdinalProperty.setValue(record.getStorageOrdinal());
+    receiverIdProperty.setValue(record.getReceiverId());
   }
 
   @Override
@@ -141,6 +146,16 @@ public final class AsyncRequestRecord extends UnifiedRecordValue
 
   public AsyncRequestRecord setStorageOrdinal(final int storageOrdinal) {
     storageOrdinalProperty.setValue(storageOrdinal);
+    return this;
+  }
+
+  @Override
+  public String getReceiverId() {
+    return BufferUtil.bufferAsString(receiverIdProperty.getValue());
+  }
+
+  public AsyncRequestRecord setReceiverId(final String receiverId) {
+    receiverIdProperty.setValue(receiverId);
     return this;
   }
 }

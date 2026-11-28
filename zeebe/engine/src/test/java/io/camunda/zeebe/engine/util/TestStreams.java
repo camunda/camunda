@@ -119,6 +119,7 @@ public final class TestStreams {
     when(mockCommandResponseWriter.rejectionReason(any())).thenReturn(mockCommandResponseWriter);
     when(mockCommandResponseWriter.valueType(any())).thenReturn(mockCommandResponseWriter);
     when(mockCommandResponseWriter.valueWriter(any())).thenReturn(mockCommandResponseWriter);
+    when(mockCommandResponseWriter.receiverId(any())).thenReturn(mockCommandResponseWriter);
   }
 
   public void withStreamProcessorMode(final StreamProcessorMode streamProcessorMode) {

@@ -15,6 +15,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AsyncRequestIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
@@ -255,6 +256,45 @@ public final class AsyncRequestStorageOrdinalTest {
                 .withRequestScopeKey(userTaskElementInstanceKey)
                 .withRequestValueType(ValueType.VARIABLE_DOCUMENT)
                 .withRequestIntent(VariableDocumentIntent.UPDATE)
+                .limit(2))
+        .extracting(Record::getIntent, record -> record.getValue().getStorageOrdinal())
+        .containsExactly(
+            tuple(AsyncRequestIntent.RECEIVED, FIXED_ORDINAL),
+            tuple(AsyncRequestIntent.PROCESSED, FIXED_ORDINAL));
+  }
+
+  @Test
+  public void shouldAssignInstanceOrdinalToCreateWithResultRequestRecords() {
+    // given
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("async-request-await-result-process")
+                .startEvent()
+                .serviceTask("task", t -> t.zeebeJobType("async-request-await-result-job"))
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId("async-request-await-result-process")
+            .withResult()
+            .create();
+
+    // when
+    engine
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType("async-request-await-result-job")
+        .complete();
+
+    // then
+    assertThat(
+            RecordingExporter.asyncRequestRecords()
+                .withRequestScopeKey(processInstanceKey)
+                .withRequestValueType(ValueType.PROCESS_INSTANCE_CREATION)
+                .withRequestIntent(ProcessInstanceCreationIntent.CREATE_WITH_AWAITING_RESULT)
                 .limit(2))
         .extracting(Record::getIntent, record -> record.getValue().getStorageOrdinal())
         .containsExactly(

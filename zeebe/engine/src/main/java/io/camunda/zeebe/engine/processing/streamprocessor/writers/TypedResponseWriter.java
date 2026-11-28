@@ -35,6 +35,21 @@ public interface TypedResponseWriter {
       final long requestId,
       final int requestStreamId);
 
+  /**
+   * @param receiverId the ID of the cluster member that received the request, if it may be another
+   *     member than this one
+   */
+  void writeRejectedResponse(
+      final long key,
+      final Intent intent,
+      final UnifiedRecordValue value,
+      final ValueType valueType,
+      final RejectionType type,
+      final String reason,
+      final long requestId,
+      final int requestStreamId,
+      final String receiverId);
+
   void writeAcceptedResponse(TypedRecord<?> event);
 
   void writeAcceptedResponseOnCommand(
@@ -47,4 +62,17 @@ public interface TypedResponseWriter {
       ValueType valueType,
       long requestId,
       int requestStreamId);
+
+  /**
+   * @param receiverId the ID of the cluster member that received the request, if it may be another
+   *     member than this one
+   */
+  void writeAcceptedResponse(
+      long eventKey,
+      Intent eventState,
+      UnpackedObject eventValue,
+      ValueType valueType,
+      long requestId,
+      int requestStreamId,
+      String receiverId);
 }

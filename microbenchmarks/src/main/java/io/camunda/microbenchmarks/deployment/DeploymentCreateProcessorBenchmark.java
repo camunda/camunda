@@ -298,7 +298,8 @@ public class DeploymentCreateProcessorBenchmark {
         final RejectionType rejectionType,
         final String rejectionReason,
         final long requestId,
-        final int requestStreamId) {
+        final int requestStreamId,
+        final String receiverId) {
       return this;
     }
 
