@@ -116,7 +116,13 @@ final class TestJournalFactory {
         "journal",
         loader,
         metrics,
+<<<<<<< HEAD
         metaStore);
+=======
+        metaStore,
+        deletionExecutor,
+        () -> SegmentsManager.newBackgroundIoExecutor(name));
+>>>>>>> 9e14e4af (refactor: inject how the journal creates its segment preparation executor)
   }
 
   SegmentedJournal journal(final SegmentsManager segments) {

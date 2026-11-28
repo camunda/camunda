@@ -32,6 +32,15 @@ import java.util.SortedMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentSkipListMap;
+<<<<<<< HEAD
+=======
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.function.Supplier;
+import org.agrona.CloseHelper;
+import org.jspecify.annotations.Nullable;
+>>>>>>> 9e14e4af (refactor: inject how the journal creates its segment preparation executor)
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,6 +64,12 @@ final class SegmentsManager implements AutoCloseable {
   private final SegmentLoader segmentLoader;
   private final String name;
   private final JournalMetaStore metaStore;
+<<<<<<< HEAD
+=======
+  private final Executor deletionExecutor;
+  private final Supplier<ExecutorService> preparationExecutors;
+  private @Nullable ExecutorService bgIoExecutor;
+>>>>>>> 9e14e4af (refactor: inject how the journal creates its segment preparation executor)
 
   private volatile Segment currentSegment;
 
@@ -65,7 +80,13 @@ final class SegmentsManager implements AutoCloseable {
       final String name,
       final SegmentLoader segmentLoader,
       final JournalMetrics journalMetrics,
+<<<<<<< HEAD
       final JournalMetaStore metaStore) {
+=======
+      final JournalMetaStore metaStore,
+      final Executor deletionExecutor,
+      final Supplier<ExecutorService> preparationExecutors) {
+>>>>>>> 9e14e4af (refactor: inject how the journal creates its segment preparation executor)
     this.name = checkNotNull(name, "name cannot be null");
     this.journalIndex = journalIndex;
     this.maxSegmentSize = maxSegmentSize;
@@ -73,6 +94,11 @@ final class SegmentsManager implements AutoCloseable {
     this.segmentLoader = segmentLoader;
     this.journalMetrics = journalMetrics;
     this.metaStore = metaStore;
+<<<<<<< HEAD
+=======
+    this.deletionExecutor = deletionExecutor;
+    this.preparationExecutors = preparationExecutors;
+>>>>>>> 9e14e4af (refactor: inject how the journal creates its segment preparation executor)
   }
 
   @Override
@@ -314,6 +340,23 @@ final class SegmentsManager implements AutoCloseable {
     // node was stopped. It is safe to delete it now since there are no readers opened for these
     // segments.
     deleteDeferredFiles();
+<<<<<<< HEAD
+=======
+
+    // created last, so that nothing above can fail while holding an executor that no one would
+    // close; the executor is only needed once open() has returned, to prepare the next segment
+    bgIoExecutor = preparationExecutors.get();
+  }
+
+  /**
+   * The executor that pre-creates the next segment of a journal: a single daemon thread, named
+   * after the journal so that it can be found in thread dumps.
+   */
+  static ExecutorService newBackgroundIoExecutor(final String journalName) {
+    return Executors.newSingleThreadExecutor(
+        task ->
+            Thread.ofPlatform().name("journal-bg-io-" + journalName).daemon(true).unstarted(task));
+>>>>>>> 9e14e4af (refactor: inject how the journal creates its segment preparation executor)
   }
 
   private void prepareNextSegment() {
