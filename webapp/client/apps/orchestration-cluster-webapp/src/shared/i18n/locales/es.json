@@ -1293,6 +1293,7 @@
 					"sourceElements": "Elementos de origen",
 					"targetElements": "Elementos de destino",
 					"targetFor": "Elemento de destino para {{name}}",
+					"mappingRowSelected": "Fila de asignación seleccionada {{index}} de {{total}}: {{name}}.",
 					"notMapped": "No asignado",
 					"autoMapped": "Este elemento se asignó automáticamente",
 					"embeddedFormElement": "El formulario incrustado de esta tarea de usuario se sustituirá por el formulario definido en el elemento de destino.",

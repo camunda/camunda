@@ -1296,6 +1296,7 @@
 					"sourceElements": "Éléments source",
 					"targetElements": "Éléments cibles",
 					"targetFor": "Élément cible pour {{name}}",
+					"mappingRowSelected": "Ligne de mappage sélectionnée {{index}} sur {{total}} : {{name}}.",
 					"notMapped": "Non mappé",
 					"autoMapped": "Cet élément a été mappé automatiquement",
 					"embeddedFormElement": "Le formulaire intégré de cette tâche utilisateur sera remplacé par le formulaire défini dans l’élément cible.",

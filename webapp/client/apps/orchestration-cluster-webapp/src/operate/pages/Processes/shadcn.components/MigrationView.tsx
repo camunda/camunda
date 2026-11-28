@@ -105,6 +105,10 @@ const MigrationView: React.FC<Props> = ({source, scope, onExit}) => {
 		setSelectedTargetElementId(undefined);
 		setSelectedSourceElementId(selectedSourceElementId === elementId ? undefined : elementId);
 	};
+	const selectSourceElementByKeyboard = (elementId: string) => {
+		setSelectedTargetElementId(undefined);
+		setSelectedSourceElementId(elementId);
+	};
 	const selectTargetElement = (elementId?: string) => {
 		setSelectedSourceElementId(undefined);
 		setSelectedTargetElementId(selectedTargetElementId === elementId ? undefined : elementId);
@@ -191,6 +195,7 @@ const MigrationView: React.FC<Props> = ({source, scope, onExit}) => {
 									autoMapping={autoMapping}
 									selectedSourceElementIds={selectedSourceElementIds}
 									onSourceElementSelection={selectSourceElement}
+									onSourceElementKeyboardSelection={selectSourceElementByKeyboard}
 									onMappingChange={updateMapping}
 								/>
 							</ResizablePanel>

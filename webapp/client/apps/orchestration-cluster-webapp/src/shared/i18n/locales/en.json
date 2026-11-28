@@ -1305,6 +1305,7 @@
 					"sourceElements": "Source elements",
 					"targetElements": "Target elements",
 					"targetFor": "Target element for {{name}}",
+					"mappingRowSelected": "Selected mapping row {{index}} of {{total}}: {{name}}.",
 					"notMapped": "Not mapped",
 					"autoMapped": "This element was automatically mapped",
 					"embeddedFormElement": "Embedded form in this user task will be replaced by the form defined in the target element.",
