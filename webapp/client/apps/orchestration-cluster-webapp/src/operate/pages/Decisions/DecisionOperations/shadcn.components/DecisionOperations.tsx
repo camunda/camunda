@@ -20,6 +20,7 @@ import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {request, type RequestError} from '#/shared/http/request';
 import {endpoints} from '#/shared/http/endpoints';
 import {getDecisionDefinitionName} from '../../getDecisionDefinitionName';
+import {getCachedDecisionDefinitionSelection} from '../../decisions.queries';
 import {handleOperationError} from '#/operate/shared/utils/handleOperationError';
 
 type Props = {
@@ -38,7 +39,12 @@ const DecisionOperations: React.FC<Props> = ({definition}) => {
 	const {mutate: deleteDefinition} = useMutation<
 		void,
 		RequestError,
-		{decisionDefinitionId: string; version: number; tenantId: string | undefined}
+		{
+			decisionDefinitionId: string;
+			version: number;
+			tenantId: string | undefined;
+			decisionRequirementsKey: string;
+		}
 	>({
 		mutationKey,
 		mutationFn: async () => {
@@ -50,18 +56,20 @@ const DecisionOperations: React.FC<Props> = ({definition}) => {
 				throw error;
 			}
 		},
-		onSuccess: (_, {decisionDefinitionId, version, tenantId}) => {
+		onSuccess: (_, {decisionDefinitionId, version, tenantId, decisionRequirementsKey}) => {
 			notificationsStore.displayNotification({
 				kind: 'success',
 				title: t('operate.decisions.definitionDeletion.successTitle'),
 				isDismissable: true,
 			});
 			const {search} = router.state.location;
-			if (
+			const isDeletedSelection =
 				search.decisionDefinitionId === decisionDefinitionId &&
 				search.decisionDefinitionVersion === version &&
-				search.tenantId === tenantId
-			) {
+				search.tenantId === tenantId;
+			const isSelectionInDeletedDrd =
+				getCachedDecisionDefinitionSelection(queryClient, search)?.decisionRequirementsKey === decisionRequirementsKey;
+			if (isDeletedSelection || isSelectionInDeletedDrd) {
 				void router.navigate({
 					to: '.',
 					replace: true,
@@ -141,6 +149,7 @@ const DecisionOperations: React.FC<Props> = ({definition}) => {
 						decisionDefinitionId: definition.decisionDefinitionId,
 						version: definition.version,
 						tenantId: router.state.location.search.tenantId,
+						decisionRequirementsKey: definition.decisionRequirementsKey,
 					});
 				}}
 			/>
