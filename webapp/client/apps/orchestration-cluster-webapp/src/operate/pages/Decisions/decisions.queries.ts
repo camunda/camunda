@@ -6,9 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {queryOptions} from '@tanstack/react-query';
+import {queryOptions, type QueryClient} from '@tanstack/react-query';
 import type {DecisionDefinition} from '@camunda/camunda-api-zod-schemas/8.11';
 import {queries} from '#/shared/http/queries';
+import {isSpecificTenant} from '#/operate/shared/utils/isSpecificTenant';
 
 const PAGE_LIMIT = 1000;
 
@@ -55,4 +56,30 @@ function decisionDefinitionSelectionOptions({
 	};
 }
 
-export {decisionDefinitionsOptions, decisionDefinitionSelectionOptions};
+/** Reads the single-version definition that the Decisions page loaded for this URL selection. */
+function getCachedDecisionDefinitionSelection(
+	queryClient: QueryClient,
+	{decisionDefinitionId, decisionDefinitionVersion, tenantId}: DecisionDefinitionSelectionOptions,
+) {
+	if (decisionDefinitionId === undefined || decisionDefinitionVersion === undefined) {
+		return undefined;
+	}
+
+	const specificTenantId = isSpecificTenant(tenantId) ? tenantId : undefined;
+	const {queryKey} = decisionDefinitionSelectionOptions({
+		decisionDefinitionId,
+		decisionDefinitionVersion,
+		tenantId: specificTenantId,
+	});
+
+	return queryClient
+		.getQueryData(queryKey)
+		?.items.find(
+			(definition) =>
+				definition.decisionDefinitionId === decisionDefinitionId &&
+				definition.version === decisionDefinitionVersion &&
+				(specificTenantId === undefined || definition.tenantId === specificTenantId),
+		);
+}
+
+export {decisionDefinitionsOptions, decisionDefinitionSelectionOptions, getCachedDecisionDefinitionSelection};

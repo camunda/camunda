@@ -8,15 +8,22 @@
 
 import {afterEach, describe, expect} from 'vitest';
 import {userEvent} from 'vitest/browser';
-import {HttpResponse} from 'msw';
+import {HttpResponse, http} from 'msw';
 import {z} from 'zod';
+import {useQuery} from '@tanstack/react-query';
+import {Link, useSearch} from '@tanstack/react-router';
+import {endpoints, queryDecisionDefinitionsRequestBodySchema} from '@camunda/camunda-api-zod-schemas/8.11';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {mockDeleteResourceEndpoint} from '#/shared-test-modules/mock-handlers';
-import {createDecisionDefinition} from '#/shared-test-modules/api-mocks/decision-definitions';
+import {
+	createDecisionDefinition,
+	createQueryDecisionDefinitionsResponse,
+} from '#/shared-test-modules/api-mocks/decision-definitions';
 import {Toaster, toast} from '@camunda/design-system';
 import {Notifications} from '#/shared/notifications/shadcn.components/Notifications';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
+import {decisionDefinitionSelectionOptions} from '../../decisions.queries';
 import {DecisionOperations} from './DecisionOperations';
 
 const DEFINITION = createDecisionDefinition({tenantId: 'tenant-a'});
@@ -24,6 +31,21 @@ const INITIAL_ENTRY =
 	'/operate/decisions?decisionDefinitionId=my-decision&decisionDefinitionVersion=1&tenantId=tenant-a&businessId=order-1&failed=false';
 const ACTION_NAME = 'Delete decision definition "My Decision - version 1"';
 const CONFIRMATION = 'Yes, I confirm I want to delete this DRD and all related instances.';
+const NEXT_VERSION_DEFINITION = createDecisionDefinition({
+	version: DEFINITION.version + 1,
+	tenantId: DEFINITION.tenantId,
+	decisionDefinitionKey: '2251799813685290',
+	decisionRequirementsKey: '2251799813685291',
+});
+const NEXT_VERSION_ACTION_NAME = 'Delete decision definition "My Decision - version 2"';
+const SAME_DRD_DEFINITION = createDecisionDefinition({
+	name: 'My Other Decision',
+	decisionDefinitionId: 'my-other-decision',
+	tenantId: DEFINITION.tenantId,
+	decisionDefinitionKey: '2251799813685292',
+	decisionRequirementsKey: DEFINITION.decisionRequirementsKey,
+});
+const SAME_DRD_ACTION_NAME = 'Delete decision definition "My Other Decision - version 1"';
 
 function renderOperations(definition = DEFINITION) {
 	return renderWithRouter(
@@ -34,6 +56,74 @@ function renderOperations(definition = DEFINITION) {
 				<Notifications />
 			</>
 		),
+		{path: '/operate/decisions', initialEntry: INITIAL_ENTRY},
+	);
+}
+
+function mockDecisionDefinitionsByIdAndVersion(definitions: (typeof DEFINITION)[]) {
+	return http.post(endpoints.queryDecisionDefinitions.getUrl(), async ({request}) => {
+		const {filter} = queryDecisionDefinitionsRequestBodySchema.parse(await request.json());
+		const items = definitions.filter(
+			(definition) =>
+				definition.decisionDefinitionId === filter?.decisionDefinitionId && definition.version === filter.version,
+		);
+		return HttpResponse.json(createQueryDecisionDefinitionsResponse({items}));
+	});
+}
+
+function mockPendingDeleteResourceEndpoint() {
+	let release!: () => void;
+	const released = new Promise<void>((resolve) => {
+		release = resolve;
+	});
+	const handler = http.post(endpoints.deleteResource.getUrl({resourceKey: ':resourceKey'}), async () => {
+		await released;
+		return HttpResponse.json({});
+	});
+	return {handler, release};
+}
+
+function renderOperationsWithSelectionLinks() {
+	return renderWithRouter(
+		() => {
+			const {decisionDefinitionId, decisionDefinitionVersion, tenantId} = useSearch({strict: false});
+			const {data} = useQuery(
+				decisionDefinitionSelectionOptions({decisionDefinitionId, decisionDefinitionVersion, tenantId}),
+			);
+			const definition = data?.items[0];
+
+			return (
+				<>
+					<Link
+						to="/operate/decisions"
+						search={(prev) => ({
+							...prev,
+							evaluated: prev.evaluated ?? false,
+							failed: prev.failed ?? false,
+							decisionDefinitionVersion: NEXT_VERSION_DEFINITION.version,
+						})}
+					>
+						Version 2
+					</Link>
+					<Link
+						to="/operate/decisions"
+						search={(prev) => ({
+							...prev,
+							evaluated: prev.evaluated ?? false,
+							failed: prev.failed ?? false,
+							decisionDefinitionId: SAME_DRD_DEFINITION.decisionDefinitionId,
+						})}
+					>
+						My Other Decision
+					</Link>
+					{definition !== undefined && (
+						<DecisionOperations key={definition.decisionDefinitionKey} definition={definition} />
+					)}
+					<Toaster />
+					<Notifications />
+				</>
+			);
+		},
 		{path: '/operate/decisions', initialEntry: INITIAL_ENTRY},
 	);
 }
@@ -108,6 +198,49 @@ describe('<DecisionOperations />', () => {
 
 		await expect.element(screen.getByText('Operation created', {exact: true})).toBeVisible();
 		await expect.element(screen.getByRole('button', {name: ACTION_NAME})).toBeEnabled();
+		expect(screen.router.state.location.search).toEqual({
+			tenantId: 'tenant-a',
+			businessId: 'order-1',
+			evaluated: false,
+			failed: false,
+		});
+	});
+
+	it('should keep the newly selected version and not clear it when the previous deletion finishes', async ({
+		worker,
+	}) => {
+		const deleteResource = mockPendingDeleteResourceEndpoint();
+		worker.use(mockDecisionDefinitionsByIdAndVersion([DEFINITION, NEXT_VERSION_DEFINITION]), deleteResource.handler);
+		const screen = await renderOperationsWithSelectionLinks();
+		await submit(screen);
+		await expect.element(screen.getByRole('button', {name: ACTION_NAME})).toBeDisabled();
+
+		await userEvent.click(screen.getByRole('link', {name: 'Version 2'}));
+		await expect.element(screen.getByRole('button', {name: NEXT_VERSION_ACTION_NAME})).toBeEnabled();
+		deleteResource.release();
+
+		await expect.element(screen.getByText('Operation created', {exact: true})).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: NEXT_VERSION_ACTION_NAME})).toBeEnabled();
+		expect(screen.router.state.location.search).toMatchObject({
+			decisionDefinitionVersion: 2,
+			tenantId: 'tenant-a',
+			businessId: 'order-1',
+		});
+	});
+
+	it('should clear the newly selected decision when it was deleted with the same DRD', async ({worker}) => {
+		const deleteResource = mockPendingDeleteResourceEndpoint();
+		worker.use(mockDecisionDefinitionsByIdAndVersion([DEFINITION, SAME_DRD_DEFINITION]), deleteResource.handler);
+		const screen = await renderOperationsWithSelectionLinks();
+		await submit(screen);
+		await expect.element(screen.getByRole('button', {name: ACTION_NAME})).toBeDisabled();
+
+		await userEvent.click(screen.getByRole('link', {name: 'My Other Decision'}));
+		await expect.element(screen.getByRole('button', {name: SAME_DRD_ACTION_NAME})).toBeDisabled();
+		deleteResource.release();
+
+		await expect.element(screen.getByText('Operation created', {exact: true})).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: SAME_DRD_ACTION_NAME})).not.toBeInTheDocument();
 		expect(screen.router.state.location.search).toEqual({
 			tenantId: 'tenant-a',
 			businessId: 'order-1',
