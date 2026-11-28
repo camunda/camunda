@@ -63,11 +63,9 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
-import org.agrona.DirectBuffer;
 
 public class ResourceDeletionDeleteProcessor
     implements DistributedTypedRecordProcessor<ResourceDeletionRecord> {
@@ -419,18 +417,25 @@ public class ResourceDeletionDeleteProcessor
     final var processRecord = process.toProcessRecord();
     final String processId = processRecord.getBpmnProcessId();
     final var latestVersion = processState.getLatestProcessVersion(processId, tenantId);
+    // A newer version may still be draining, so the latest version does not always hold the start
+    // events. Checked before DRAINING is written, while this version still counts as active.
+    final boolean holdsStartEvents =
+        processState
+            .findLatestActiveProcessVersionBefore(processIdBuffer, latestVersion + 1, tenantId)
+            .map(latestActive -> latestActive.getKey() == process.getKey())
+            .orElse(false);
 
     processRecord.setDrainPartitions(routingInfo.desiredPartitions());
     processRecord.setDeleteHistory(command.getValue().isDeleteHistory());
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), ProcessIntent.DRAINING, processRecord);
 
-    // If we are deleting the latest version we must unsubscribe the start events
-    if (latestVersion == process.getVersion()) {
+    if (holdsStartEvents) {
       unsubscribeStartEvents(process);
 
       // Hand the start subscription down to the latest ACTIVE version; DRAINING/deleted versions
       // reject new instances so must stay unsubscribed.
-      findLatestActiveVersionBelow(processIdBuffer, processId, latestVersion, tenantId)
+      processState
+          .findLatestActiveProcessVersionBefore(processIdBuffer, process.getVersion(), tenantId)
           .ifPresent(startEventSubscriptions::resubscribeToStartEvents);
     }
 
@@ -497,33 +502,6 @@ public class ResourceDeletionDeleteProcessor
 
     resourceDeletionRecord.setBatchOperationKey(batchOperationKey);
     resourceDeletionRecord.setBatchOperationType(BatchOperationType.DELETE_DECISION_INSTANCE);
-  }
-
-  /**
-   * Latest active version (see {@link DeployedProcess#isActive()}) strictly below {@code version}.
-   * Skips draining versions so they do not hold start-event subscriptions.
-   *
-   * <p>Loads known versions once and scans newest-first. {@code version >=} the deleted latest is
-   * skipped because that version is already draining.
-   */
-  private Optional<DeployedProcess> findLatestActiveVersionBelow(
-      final DirectBuffer processIdBuffer,
-      final String processId,
-      final int version,
-      final String tenantId) {
-    final var knownVersions = processState.getKnownProcessVersions(processId, tenantId);
-    for (int i = knownVersions.size() - 1; i >= 0; i--) {
-      final int candidateVersion = knownVersions.get(i).intValue();
-      if (candidateVersion >= version) {
-        continue;
-      }
-      final var process =
-          processState.getProcessByProcessIdAndVersion(processIdBuffer, candidateVersion, tenantId);
-      if (process != null && process.isActive()) {
-        return Optional.of(process);
-      }
-    }
-    return Optional.empty();
   }
 
   private void unsubscribeStartEvents(final DeployedProcess deployedProcess) {
