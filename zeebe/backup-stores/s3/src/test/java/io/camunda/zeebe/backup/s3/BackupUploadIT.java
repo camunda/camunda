@@ -7,12 +7,16 @@
  */
 package io.camunda.zeebe.backup.s3;
 
+import static io.camunda.zeebe.backup.common.RateLimitedInputStream.MAX_BYTES_PER_READ;
+
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupImpl;
+import io.camunda.zeebe.backup.common.BackupReadRateLimiter;
 import io.camunda.zeebe.backup.common.NamedFileSetImpl;
 import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
+import io.camunda.zeebe.backup.testkit.support.BackupAssert;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.test.util.testcontainers.ContainerLogsDumper;
 import io.camunda.zeebe.util.VersionUtil;
@@ -27,8 +31,11 @@ import java.util.concurrent.CompletableFuture;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.assertj.core.api.Assertions;
+import org.assertj.core.api.InstanceOfAssertFactory;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.testcontainers.containers.localstack.LocalStackContainer;
@@ -110,6 +117,38 @@ final class BackupUploadIT {
 
     // then
     Assertions.assertThat(saveFuture).succeedsWithin(Duration.ofSeconds(60));
+  }
+
+  @Test
+  void shouldSaveALimitedBackupThatWaitsForTheReadLimitLongerThanTheApiCallTimeout(
+      @TempDir final Path target) throws IOException {
+    // given - four 256 KiB files share a limit of one 64 KiB read per second, so each upload waits
+    // for the limit for well over the API call timeout of 2 seconds
+    final var config =
+        new Builder()
+            .withBucketName(BUCKET_NAME)
+            .withBasePath(RandomStringUtils.randomAlphabetic(10).toLowerCase())
+            .withEndpoint(S3.getEndpointOverride(Service.S3).toString())
+            .withRegion(S3.getRegion())
+            .withCredentials(S3.getAccessKey(), S3.getSecretKey())
+            .withApiCallTimeout(Duration.ofSeconds(2))
+            .build();
+    final var store = S3BackupStore.of(config, BackupReadRateLimiter.of(MAX_BYTES_PER_READ));
+    final var backup = backupWithLargeFiles(256 * 1024, false);
+
+    try {
+      // when
+      final var saved = store.save(backup);
+
+      // then - the SDK's timeout does not count the waits, and neither does the one applied instead
+      Assertions.assertThat(saved).succeedsWithin(Duration.ofSeconds(60));
+      Assertions.assertThat(store.restore(backup.id(), target))
+          .succeedsWithin(Duration.ofSeconds(30))
+          .asInstanceOf(new InstanceOfAssertFactory<>(Backup.class, BackupAssert::assertThatBackup))
+          .hasSameContentsAs(backup);
+    } finally {
+      store.closeAsync().join();
+    }
   }
 
   Backup backupWithManyFiles(final int numberOfSegments, final boolean legacy) throws IOException {

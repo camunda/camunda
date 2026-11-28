@@ -863,6 +863,13 @@ public class BrokerBasedPropertiesOverride {
         "BackupStore writeTimeout must be positive");
     backupCfg.setWriteTimeout(primaryStorageBackup.getWriteTimeout());
 
+    Preconditions.test(
+        primaryStorageBackup.getMaxReadRate() != null
+            && primaryStorageBackup.getMaxReadRate().toBytes() < BackupCfg.MIN_MAX_READ_RATE_BYTES,
+        "BackupStore maxReadRate must be at least %d bytes per second; leave it unset to not limit the read rate"
+            .formatted(BackupCfg.MIN_MAX_READ_RATE_BYTES));
+    backupCfg.setMaxReadRate(primaryStorageBackup.getMaxReadRate());
+
     populateFromS3(override, camunda);
     populateFromGcs(override, camunda);
     populateFromAzure(override, camunda);
