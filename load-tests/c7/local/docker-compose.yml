@@ -1,0 +1,170 @@
+# Local C7 benchmark: PostgreSQL + C7 engine + starter + external task workers + Prometheus + Grafana.
+#
+#   docker compose up -d --build        # start (RATE=50 by default)
+#   RATE=300 docker compose up -d starter
+#   open http://localhost:3000          # Grafana, dashboard "C7 Benchmark"
+#   open http://localhost:8080/camunda  # Cockpit (demo/demo)
+#   docker compose down -v              # stop and wipe the database
+#
+# Resource limits keep the components from starving each other on a laptop. Absolute
+# numbers are only comparable between runs on the same machine.
+name: c7-benchmark
+
+x-load-tester: &load-tester
+  build:
+    context: ..
+    dockerfile: load-tester/Dockerfile
+  image: c7-bench/load-tester:local
+  restart: unless-stopped
+  depends_on:
+    engine:
+      condition: service_started
+
+services:
+  postgres:
+    image: postgres:18
+    environment:
+      POSTGRES_DB: camunda
+      POSTGRES_USER: camunda
+      POSTGRES_PASSWORD: camunda
+    # Same tuning as the C8 load-test CNPG cluster, memory scaled down.
+    command:
+      - postgres
+      - -c
+      - shared_preload_libraries=pg_stat_statements
+      - -c
+      - pg_stat_statements.track=all
+      - -c
+      - track_io_timing=on
+      - -c
+      - max_connections=300
+      - -c
+      - shared_buffers=1GB
+      - -c
+      - effective_cache_size=2GB
+      - -c
+      - work_mem=32MB
+      - -c
+      - maintenance_work_mem=256MB
+      - -c
+      - wal_buffers=128MB
+      - -c
+      - max_wal_size=4GB
+      - -c
+      - min_wal_size=1GB
+      - -c
+      - checkpoint_timeout=20min
+      - -c
+      - checkpoint_completion_target=0.9
+      - -c
+      - autovacuum_max_workers=6
+      - -c
+      - autovacuum_naptime=15s
+      - -c
+      - autovacuum_vacuum_scale_factor=0.03
+      - -c
+      - autovacuum_analyze_scale_factor=0.02
+      - -c
+      - autovacuum_vacuum_cost_limit=5000
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql
+      - ./postgres-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U camunda -d camunda"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+    shm_size: 1g
+    cpus: ${POSTGRES_CPUS:-4}
+    mem_limit: 2g
+
+  postgres-exporter:
+    image: quay.io/prometheuscommunity/postgres-exporter:v0.17.1
+    environment:
+      DATA_SOURCE_URI: postgres:5432/camunda?sslmode=disable
+      DATA_SOURCE_USER: camunda
+      DATA_SOURCE_PASS: camunda
+      PG_EXPORTER_EXTEND_QUERY_PATH: /etc/postgres-exporter/queries.yaml
+    volumes:
+      - ../monitor/postgres/queries.yaml:/etc/postgres-exporter/queries.yaml:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  engine:
+    build:
+      context: ..
+      dockerfile: engine/Dockerfile
+    image: c7-bench/engine:local
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/camunda${DB_URL_PARAMS:-}
+      DB_USERNAME: camunda
+      DB_PASSWORD: camunda
+      DB_POOL_SIZE: ${DB_POOL_SIZE:-30}
+      HISTORY_LEVEL: ${HISTORY_LEVEL:-full}
+      HISTORY_REMOVAL_TIME_STRATEGY: ${HISTORY_REMOVAL_TIME_STRATEGY:-end}
+      SPRING_PROFILES_ACTIVE: ${ENGINE_PROFILES:-default}
+      COCKPIT_ENABLED: ${COCKPIT_ENABLED:-true}
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    cpus: ${ENGINE_CPUS:-3}
+    mem_limit: 2g
+
+  starter:
+    <<: *load-tester
+    environment:
+      SPRING_PROFILES_ACTIVE: starter
+      ENGINE_URL: http://engine:8080
+      LOAD_TESTER_STARTER_RATE: ${RATE:-50}
+      LOAD_TESTER_STARTER_PAYLOAD_PATH: ${PAYLOAD:-payload/typical_payload.json}
+    cpus: 1
+    mem_limit: 768m
+
+  worker:
+    <<: *load-tester
+    environment:
+      SPRING_PROFILES_ACTIVE: worker
+      ENGINE_URL: http://engine:8080
+      LOAD_TESTER_WORKER_CAPACITY: ${WORKER_CAPACITY:-60}
+      LOAD_TESTER_WORKER_THREADS: ${WORKER_THREADS:-10}
+      LOAD_TESTER_WORKER_COMPLETION_DELAY: ${WORKER_COMPLETION_DELAY:-50ms}
+      LOAD_TESTER_WORKER_PAYLOAD_PATH: ${PAYLOAD:-payload/typical_payload.json}
+    deploy:
+      replicas: ${WORKER_REPLICAS:-3}
+    cpus: 0.75
+    mem_limit: 512m
+
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=14d
+      - --web.enable-lifecycle
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - promdata:/prometheus
+
+  grafana:
+    image: grafana/grafana:12.1.1
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/c7-benchmark.json
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ../monitor/grafana:/var/lib/grafana/dashboards:ro
+
+volumes:
+  pgdata:
+  promdata:

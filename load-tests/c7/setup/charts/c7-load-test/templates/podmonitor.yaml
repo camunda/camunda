@@ -1,0 +1,15 @@
+# Scrapes engine, starter and workers (/metrics on port 9600).
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: c7-benchmark
+  labels:
+    {{- toYaml .Values.monitoring.labels | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/part-of: c7-benchmark
+  podMetricsEndpoints:
+    - port: metrics
+      path: /metrics
+      interval: 15s

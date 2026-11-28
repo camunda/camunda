@@ -1,0 +1,84 @@
+# C7 benchmark engine. Every value can be overridden with environment variables
+# (Spring relaxed binding), e.g. CAMUNDA_BPM_HISTORY_LEVEL=audit.
+
+server:
+  port: 8080
+  tomcat:
+    mbeanregistry:
+      enabled: true
+    threads:
+      max: ${SERVER_TOMCAT_THREADS_MAX:200}
+
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/camunda}
+    username: ${DB_USERNAME:camunda}
+    password: ${DB_PASSWORD:camunda}
+    hikari:
+      maximum-pool-size: ${DB_POOL_SIZE:30}
+      minimum-idle: ${DB_POOL_SIZE:30}
+      pool-name: engine
+
+camunda:
+  bpm:
+    database:
+      type: postgres
+      schema-update: true
+    # full is the Spring Boot starter default and what most C7 customers run.
+    history-level: ${HISTORY_LEVEL:full}
+    authorization:
+      enabled: false
+    # Cockpit at http://<engine>:8080/camunda. On locally, off on the cluster so the
+    # engine under test only serves the benchmark load.
+    webapp:
+      enabled: ${COCKPIT_ENABLED:false}
+    admin-user:
+      id: ${COCKPIT_USER:demo}
+      password: ${COCKPIT_PASSWORD:demo}
+    job-execution:
+      enabled: true
+    # Engine-internal meters written to ACT_RU_METER_LOG, as in production.
+    metrics:
+      enabled: true
+    generic-properties:
+      properties:
+        # Both values are the C7 defaults, set explicitly for visibility. With "end",
+        # every process instance end updates REMOVAL_TIME_ in all its history rows.
+        # History cleanup only runs when a batch window is configured.
+        # Disabled by default so history grows (growing-state scenario).
+        # Enable with the "history-cleanup" profile.
+        history-cleanup-strategy: removalTimeBased
+        history-removal-time-strategy: ${HISTORY_REMOVAL_TIME_STRATEGY:end}
+
+management:
+  server:
+    port: 9600
+  endpoints:
+    web:
+      base-path: /
+      path-mapping:
+        prometheus: metrics
+      exposure:
+        include: health,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  metrics:
+    tags:
+      application: c7-engine
+
+logging:
+  level:
+    root: ${LOG_LEVEL:INFO}
+    org.camunda.bpm.engine.context: ERROR
+
+---
+spring.config.activate.on-profile: history-cleanup
+camunda:
+  bpm:
+    generic-properties:
+      properties:
+        history-cleanup-batch-window-start-time: "00:00"
+        history-cleanup-batch-window-end-time: "23:59"
+        history-cleanup-degree-of-parallelism: ${HISTORY_CLEANUP_PARALLELISM:1}

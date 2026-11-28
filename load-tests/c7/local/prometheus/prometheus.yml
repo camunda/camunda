@@ -1,0 +1,44 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+# Every series gets namespace="local", like the per-namespace load tests on Kubernetes,
+# so the same dashboard works in both places.
+scrape_configs:
+  - job_name: engine
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["engine:9600"]
+        labels: {namespace: local, pod: engine}
+
+  - job_name: starter
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["starter:9600"]
+        labels: {namespace: local, pod: starter}
+
+  # One target per worker replica.
+  - job_name: worker
+    metrics_path: /metrics
+    dns_sd_configs:
+      - names: ["worker"]
+        type: A
+        port: 9600
+    relabel_configs:
+      - target_label: namespace
+        replacement: local
+      - source_labels: [__address__]
+        target_label: pod
+        regex: "(.*):.*"
+        replacement: "worker-$1"
+
+  - job_name: postgres
+    static_configs:
+      - targets: ["postgres-exporter:9187"]
+        labels: {namespace: local, pod: postgres}
+    # Align with CNPG naming (cnpg_<query>_<column>).
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: "(c7_.*)"
+        target_label: __name__
+        replacement: "cnpg_$1"

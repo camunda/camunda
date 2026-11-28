@@ -1,0 +1,9 @@
+target/
+cp.txt
+*.iml
+.idea/
+setup/c7-*/
+results-out/
+.terraform/
+.terraform.lock.hcl
+*.tfstate*

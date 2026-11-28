@@ -1,0 +1,52 @@
+# C7 load tester. Run with SPRING_PROFILES_ACTIVE=starter or =worker.
+# Defaults mirror the C8 load-tester chart defaults (camunda-load-tests-helm):
+# starter 300 PI/s with typical_payload.json, worker capacity 60, 10 threads, 50ms delay.
+
+server:
+  port: 9600
+
+management:
+  endpoints:
+    web:
+      base-path: /
+      path-mapping:
+        prometheus: metrics
+      exposure:
+        include: health,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+logging:
+  level:
+    root: ${LOG_LEVEL:WARN}
+    io.camunda.c7bench: INFO
+    # The client logs every failed fetch/complete; keep quiet under load.
+    org.camunda.bpm.client: ERROR
+
+load-tester:
+  engine-url: ${ENGINE_URL:http://localhost:8080}
+  starter:
+    process-id: ${LOAD_TESTER_STARTER_PROCESS_ID:benchmark}
+    rate: ${LOAD_TESTER_STARTER_RATE:300}
+    rate-duration: ${LOAD_TESTER_STARTER_RATE_DURATION:1s}
+    threads: ${LOAD_TESTER_STARTER_THREADS:4}
+    bpmn-xml-path: ${LOAD_TESTER_STARTER_BPMN_XML_PATH:bpmn/one_task.bpmn}
+    payload-path: ${LOAD_TESTER_STARTER_PAYLOAD_PATH:payload/typical_payload.json}
+    history-time-to-live: ${LOAD_TESTER_STARTER_HISTORY_TTL:}
+    workload-model: ${LOAD_TESTER_STARTER_WORKLOAD_MODEL:open}
+    request-timeout: ${LOAD_TESTER_STARTER_REQUEST_TIMEOUT:30s}
+    duration-limit: ${LOAD_TESTER_STARTER_DURATION_LIMIT:0}
+  worker:
+    topic: ${LOAD_TESTER_WORKER_TOPIC:benchmark-task}
+    worker-name: ${LOAD_TESTER_WORKER_NAME:benchmark-worker}
+    max-tasks: ${LOAD_TESTER_WORKER_MAX_TASKS:30}
+    capacity: ${LOAD_TESTER_WORKER_CAPACITY:60}
+    threads: ${LOAD_TESTER_WORKER_THREADS:10}
+    completion-delay: ${LOAD_TESTER_WORKER_COMPLETION_DELAY:50ms}
+    lock-duration: ${LOAD_TESTER_WORKER_LOCK_DURATION:30s}
+    async-response-timeout: ${LOAD_TESTER_WORKER_ASYNC_RESPONSE_TIMEOUT:20s}
+    payload-path: ${LOAD_TESTER_WORKER_PAYLOAD_PATH:payload/typical_payload.json}
+    complete-with-payload: ${LOAD_TESTER_WORKER_COMPLETE_WITH_PAYLOAD:true}
+    fetch-variables: ${LOAD_TESTER_WORKER_FETCH_VARIABLES:true}

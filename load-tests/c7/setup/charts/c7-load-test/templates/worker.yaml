@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker
+  labels:
+    {{- include "c7.labels" . | nindent 4 }}
+    app.kubernetes.io/component: worker
+spec:
+  replicas: {{ .Values.worker.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/part-of: c7-benchmark
+      app.kubernetes.io/component: worker
+  template:
+    metadata:
+      labels:
+        {{- include "c7.labels" . | nindent 8 }}
+        app.kubernetes.io/component: worker
+    spec:
+      {{- include "c7.podSpecCommon" . | nindent 6 }}
+      containers:
+        - name: worker
+          image: {{ include "c7.image" (dict "root" . "image" .Values.worker.image) }}
+          imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+          env:
+            - {name: SPRING_PROFILES_ACTIVE, value: worker}
+            - {name: ENGINE_URL, value: {{ include "c7.engineUrl" . | quote }}}
+            - {name: LOAD_TESTER_WORKER_TOPIC, value: {{ .Values.worker.topic | quote }}}
+            - {name: LOAD_TESTER_WORKER_MAX_TASKS, value: {{ .Values.worker.maxTasks | quote }}}
+            - {name: LOAD_TESTER_WORKER_CAPACITY, value: {{ .Values.worker.capacity | quote }}}
+            - {name: LOAD_TESTER_WORKER_THREADS, value: {{ .Values.worker.threads | quote }}}
+            - {name: LOAD_TESTER_WORKER_COMPLETION_DELAY, value: {{ .Values.worker.completionDelay | quote }}}
+            - {name: LOAD_TESTER_WORKER_LOCK_DURATION, value: {{ .Values.worker.lockDuration | quote }}}
+            - {name: LOAD_TESTER_WORKER_ASYNC_RESPONSE_TIMEOUT, value: {{ .Values.worker.asyncResponseTimeout | quote }}}
+            - {name: LOAD_TESTER_WORKER_PAYLOAD_PATH, value: {{ .Values.worker.payloadPath | quote }}}
+            - {name: LOAD_TESTER_WORKER_COMPLETE_WITH_PAYLOAD, value: {{ .Values.worker.completeWithPayload | quote }}}
+            {{- with .Values.worker.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          ports:
+            - {name: metrics, containerPort: 9600}
+          resources:
+            {{- toYaml .Values.worker.resources | nindent 12 }}
