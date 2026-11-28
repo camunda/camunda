@@ -502,10 +502,10 @@
       "Process Instance History",
       "Verify process Instance modification"
     ],
-    "last_action": "open_pr",
-    "last_reason": "iter1 95% vs baseline 90% (+5pp)",
-    "last_run": "https://github.com/camunda/camunda/actions/runs/44472113192",
-    "updated_at": "2026-11-19T07:46:30Z",
+    "last_action": "not_reproduced",
+    "last_reason": "baseline passed all 20 runs; the nightly flake did not reproduce",
+    "last_run": "https://github.com/camunda/camunda/actions/runs/46116508615",
+    "updated_at": "2026-11-28T06:42:04Z",
     "pr": "https://github.com/camunda/camunda/pull/69956",
     "post_merge": {
       "unit": "nights",
@@ -520,7 +520,8 @@
       "last_flake_run_id": "46092528252",
       "checked_at": "2026-11-28T06:24:29.557Z",
       "pr_flagged_at": "2026-11-25T06:26:44Z"
-    }
+    },
+    "cooldown_until": "2026-12-01T06:42:04Z"
   },
   "d1a57168": {
     "version": "8.10",
